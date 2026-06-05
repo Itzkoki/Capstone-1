@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email | Barcarse Psychological Services</title>
+  <meta name="description" content="Verify your email address to complete your Barcarse Psychological Services registration.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="verify-otp.css">
+</head>
+<body class="auth-page">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links">
+        <li><a href="landingpage.html#cta">Booking</a></li>
+        <li><a href="landingpage.html#cta">Inquiry</a></li>
+        <li><a href="intakeform.html">Intake Form</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== OTP VERIFICATION CARD ===== -->
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h1 class="auth-card__title">Enter OTP</h1>
+      <p class="auth-card__subtitle">Enter the 6-digit code sent to <a href="#" id="user-email">name@company.com</a></p>
+
+      <form id="otp-form" novalidate>
+        <!-- 6 individual OTP digit boxes -->
+        <div class="otp-inputs" id="otp-inputs">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-1" aria-label="Digit 1" autocomplete="one-time-code">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-2" aria-label="Digit 2">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-3" aria-label="Digit 3">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-4" aria-label="Digit 4">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-5" aria-label="Digit 5">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-6" aria-label="Digit 6">
+        </div>
+
+        <div class="otp-resend">
+          Didn't receive code? <a href="#" id="resend-link" class="disabled">Click to resend in <span id="countdown">30</span>s</a>
+        </div>
+
+        <button type="submit" class="auth-btn" id="verify-btn">Verify OTP</button>
+
+        <div class="otp-status" id="otp-status"></div>
+      </form>
+
+      <div class="auth-footer">
+        Back to <a href="login.html">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Configuration ──────────────────────────────────
+    const API_BASE = 'http://localhost:5000/api/auth';
+    const RESEND_COOLDOWN = 30; // seconds
+
+    // ── DOM Elements ───────────────────────────────────
+    const otpInputs = document.querySelectorAll('.otp-inputs input');
+    const otpForm = document.getElementById('otp-form');
+    const verifyBtn = document.getElementById('verify-btn');
+    const statusEl = document.getElementById('otp-status');
+    const resendLink = document.getElementById('resend-link');
+    const countdownEl = document.getElementById('countdown');
+    const userEmailEl = document.getElementById('user-email');
+
+    // ── Populate email from registration ───────────────
+    const storedUser = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
+    const userEmail = storedUser.email || 'name@company.com';
+    userEmailEl.textContent = userEmail;
+
+    // ── OTP Input Behavior ─────────────────────────────
+    otpInputs.forEach((input, index) => {
+      // Only allow single digit
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '');
+        e.target.value = val.slice(0, 1);
+
+        // Remove error state on typing
+        e.target.classList.remove('error');
+
+        // Add filled state
+        if (val) {
+          e.target.classList.add('filled');
+          // Auto-focus next input
+          if (index < otpInputs.length - 1) {
+            otpInputs[index + 1].focus();
+          }
+        } else {
+          e.target.classList.remove('filled');
+        }
+      });
+
+      // Handle backspace navigation
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+          otpInputs[index - 1].focus();
+          otpInputs[index - 1].value = '';
+          otpInputs[index - 1].classList.remove('filled');
+        }
+        // Arrow key navigation
+        if (e.key === 'ArrowLeft' && index > 0) {
+          e.preventDefault();
+          otpInputs[index - 1].focus();
+        }
+        if (e.key === 'ArrowRight' && index < otpInputs.length - 1) {
+          e.preventDefault();
+          otpInputs[index + 1].focus();
+        }
+      });
+
+      // Handle paste — distribute digits across boxes
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        pasteData.split('').slice(0, 6).forEach((digit, i) => {
+          if (otpInputs[index + i]) {
+            otpInputs[index + i].value = digit;
+            otpInputs[index + i].classList.add('filled');
+            otpInputs[index + i].classList.remove('error');
+          }
+        });
+        // Focus the next empty box or last box
+        const nextEmpty = Array.from(otpInputs).findIndex(inp => !inp.value);
+        if (nextEmpty !== -1) otpInputs[nextEmpty].focus();
+        else otpInputs[otpInputs.length - 1].focus();
+      });
+
+      // Select content on focus
+      input.addEventListener('focus', () => {
+        input.select();
+      });
+    });
+
+    // ── Get OTP value from all boxes ───────────────────
+    function getOTP() {
+      return Array.from(otpInputs).map(i => i.value).join('');
+    }
+
+    // ── Show status message ────────────────────────────
+    function showStatus(message, type) {
+      statusEl.textContent = message;
+      statusEl.className = 'otp-status ' + type;
+    }
+
+    function clearStatus() {
+      statusEl.className = 'otp-status';
+      statusEl.textContent = '';
+    }
+
+    // ── Shake error animation ──────────────────────────
+    function showInputError() {
+      otpInputs.forEach(input => {
+        input.classList.add('error');
+      });
+      setTimeout(() => {
+        otpInputs.forEach(input => input.classList.remove('error'));
+      }, 600);
+    }
+
+    // ── Form Submit — Verify OTP ───────────────────────
+    otpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearStatus();
+
+      const otp = getOTP();
+
+      // Validate all 6 digits entered
+      if (otp.length < 6) {
+        showInputError();
+        showStatus('Please enter all 6 digits of your verification code.', 'error');
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+
+      try {
+        const res = await fetch(`${API_BASE}/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, otp }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showStatus('<svg viewBox="0 0 24 24" width="16" height="16" style="fill:#22543d;vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Email verified successfully! Redirecting to login...', 'success');
+          otpInputs.forEach(input => {
+            input.disabled = true;
+            input.classList.add('filled');
+          });
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+        } else {
+          showInputError();
+          showStatus(data.message || 'Invalid verification code. Please try again.', 'error');
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify OTP';
+        }
+      } catch (err) {
+        showStatus('Unable to connect to server. Please try again later.', 'error');
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify OTP';
+      }
+    });
+
+    // ── Resend Countdown Timer ─────────────────────────
+    let resendTimer;
+
+    function startCountdown() {
+      let seconds = RESEND_COOLDOWN;
+      resendLink.classList.add('disabled');
+      countdownEl.textContent = seconds;
+
+      // Show the countdown text
+      resendLink.innerHTML = `Click to resend in <span id="countdown">${seconds}</span>s`;
+
+      resendTimer = setInterval(() => {
+        seconds--;
+        const cdEl = document.getElementById('countdown');
+        if (cdEl) cdEl.textContent = seconds;
+
+        if (seconds <= 0) {
+          clearInterval(resendTimer);
+          resendLink.classList.remove('disabled');
+          resendLink.innerHTML = 'Resend code';
+        }
+      }, 1000);
+    }
+
+    // Start initial countdown
+    startCountdown();
+
+    // ── Resend OTP ─────────────────────────────────────
+    resendLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (resendLink.classList.contains('disabled')) return;
+
+      clearStatus();
+      resendLink.innerHTML = 'Sending...';
+
+      try {
+        const res = await fetch(`${API_BASE}/resend-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showStatus('A new verification code has been sent to your email.', 'success');
+        } else {
+          showStatus(data.message || 'Failed to resend code.', 'error');
+        }
+      } catch (err) {
+        showStatus('Unable to connect to server.', 'error');
+      }
+
+      // Clear inputs
+      otpInputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('filled', 'error');
+      });
+      otpInputs[0].focus();
+
+      startCountdown();
+    });
+
+    // ── Auto-focus first input on load ─────────────────
+    otpInputs[0].focus();
+  </script>
+</body>
+</html>

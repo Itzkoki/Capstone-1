@@ -1,0 +1,257 @@
+/* ===== STAFF MANAGEMENT ===== */
+.staff-page {
+  padding-top: calc(var(--nav-height) + 20px);
+  min-height: 100vh;
+  background: var(--gradient-page);
+}
+
+.staff-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 32px 60px;
+}
+
+.staff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.staff-header__title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.staff-header__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 10px 16px;
+  border: 1px solid rgba(52,199,89,0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  background: rgba(255,255,255,0.8);
+  color: var(--text-dark);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.filter-select:focus { border-color: var(--green-primary); }
+
+/* ── Staff Table ───────────── */
+.staff-table-wrapper {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  border: 1px solid rgba(52,199,89,0.1);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.staff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.staff-table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-body);
+  background: rgba(52,199,89,0.05);
+  border-bottom: 2px solid rgba(52,199,89,0.15);
+}
+
+.staff-table td {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--text-dark);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.staff-table tr:hover td {
+  background: rgba(52,199,89,0.03);
+}
+
+.staff-table .role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge--psychometrician { background: #e3f2fd; color: #1565c0; }
+.role-badge--supervising_psychometrician { background: #f3e5f5; color: #7b1fa2; }
+.role-badge--qc_psychometrician { background: #fff3e0; color: #e65100; }
+.role-badge--psychologist { background: #e8f5e9; color: #2e7d32; }
+.role-badge--clinical_director { background: #fce4ec; color: #c62828; }
+
+.staff-actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-body);
+}
+
+.btn-sm--edit {
+  background: rgba(52,199,89,0.1);
+  color: var(--green-primary);
+}
+
+.btn-sm--edit:hover { background: rgba(52,199,89,0.2); }
+
+.btn-sm--danger {
+  background: rgba(229,62,62,0.1);
+  color: #e53e3e;
+}
+
+.btn-sm--danger:hover { background: rgba(229,62,62,0.2); }
+
+/* ── Modal ─────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+  animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal__title {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+}
+
+.modal__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+  margin-bottom: 6px;
+}
+
+.modal__select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  margin-bottom: 20px;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-modal {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.3s;
+}
+
+.btn-modal--primary {
+  background: var(--green-primary);
+  color: #fff;
+}
+
+.btn-modal--primary:hover { background: var(--green-dark); }
+
+.btn-modal--cancel {
+  background: #f0f0f0;
+  color: var(--text-body);
+}
+
+.btn-modal--cancel:hover { background: #e0e0e0; }
+
+/* ── Activity Logs Section ── */
+.logs-section {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(52,199,89,0.1);
+}
+
+.logs-section__title {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-size: 13px;
+}
+
+.log-item:last-child { border-bottom: none; }
+
+.log-item__info { color: var(--text-body); }
+.log-item__info strong { color: var(--text-dark); }
+.log-item__time { color: #a0a0a0; font-size: 11px; white-space: nowrap; }
+
+/* ── Responsive ────────────── */
+@media (max-width: 768px) {
+  .staff-container { padding: 16px; }
+  .staff-table { font-size: 12px; }
+  .staff-table th, .staff-table td { padding: 10px 12px; }
+  .staff-header { flex-direction: column; align-items: flex-start; }
+}

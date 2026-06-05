@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intake Form | Barcarse Psychological Services</title>
+  <meta name="description" content="Complete the intake form to schedule your consultation at Barcarse Psychological Services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="intakeform.css">
+  <link rel="stylesheet" href="toast.css">
+</head>
+<body class="intake-page logged-in">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links">
+        <li><a href="meetings.html">Teleconference</a></li>
+        <li><a href="community.html">Community</a></li>
+        <li><a href="intakeform.html" style="color:var(--green-primary);font-weight:700;">Intake Form</a></li>
+      </ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN WRAPPER ===== -->
+  <div class="intake-wrapper">
+
+    <!-- STEPPER -->
+    <div class="stepper" id="stepper">
+      <div class="stepper__progress" id="stepper-progress"></div>
+      <div class="step active" data-step="1">
+        <div class="step__circle">1</div>
+        <div class="step__label">Personal Details</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="2">
+        <div class="step__circle">2</div>
+        <div class="step__label">Presenting Concern</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step__circle">3</div>
+        <div class="step__label">Medication History</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="4">
+        <div class="step__circle">4</div>
+        <div class="step__label">Appointment Scheduling</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="5">
+        <div class="step__circle">5</div>
+        <div class="step__label">Minor Client Information</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="6">
+        <div class="step__circle">6</div>
+        <div class="step__label">Emergency Contact</div>
+        <div class="step__sublabel">Basic information</div>
+      </div>
+      <div class="step" data-step="7">
+        <div class="step__circle">7</div>
+        <div class="step__label">Review and Submit</div>
+        <div class="step__sublabel">Confirm your details</div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 1: Personal Details                     -->
+    <!-- ============================================ -->
+    <div class="step-panel active" id="panel-1">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Personal Details</h2>
+
+        <div class="field">
+          <label for="fullName">Full Name <span class="req">*</span></label>
+          <input type="text" id="fullName" placeholder="e.g. Juan Dela Cruz" required>
+          <div class="field__error-msg" id="err-fullName">Full name is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="nickName">Nickname (Optional)</label>
+          <input type="text" id="nickName" placeholder="e.g. JD">
+        </div>
+
+        <div class="field-row" style="overflow: visible; position: relative; z-index: 10;">
+          <div class="field">
+            <label for="age">Age <span class="req">*</span></label>
+            <input type="number" id="age" placeholder="e.g. 25" min="5" max="120" required>
+            <div class="field__error-msg" id="err-age">Age must be at least 5.</div>
+          </div>
+          <div class="field field--dob">
+            <label>Date of Birth <span class="req">*</span></label>
+            <input type="hidden" id="dob" required>
+            <div class="dob-trigger" id="dob-trigger" tabindex="0">
+              <span id="dob-display">Select date of birth</span>
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" fill="currentColor"/></svg>
+            </div>
+            <div class="dob-calendar" id="dob-calendar">
+              <div class="dob-cal__header">
+                <div class="dob-cal__selects">
+                  <select id="dob-month-select"></select>
+                  <select id="dob-year-select"></select>
+                </div>
+              </div>
+              <div class="dob-cal__weekdays">
+                <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+              </div>
+              <div class="dob-cal__grid" id="dob-cal-grid"></div>
+              <div class="dob-cal__footer">
+                <button type="button" class="dob-cal__btn dob-cal__btn--close" id="dob-cal-close">Close</button>
+                <button type="button" class="dob-cal__btn dob-cal__btn--confirm" id="dob-cal-confirm">Confirm</button>
+              </div>
+            </div>
+            <div class="field__error-msg" id="err-dob">Date of birth is required. Client must be at least 5 years old.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Gender <span class="req">*</span></label>
+          <div class="radio-group" id="gender-group">
+            <label class="radio-option"><input type="radio" name="gender" value="Male"><span>Male</span></label>
+            <label class="radio-option"><input type="radio" name="gender" value="Female"><span>Female</span></label>
+            <label class="radio-option"><input type="radio" name="gender" value="Other"><span>Other</span></label>
+          </div>
+          <div class="specify-input" id="gender-specify">
+            <input type="text" id="genderOther" placeholder="Please specify gender">
+          </div>
+          <div class="field__error-msg" id="err-gender">Please select a gender.</div>
+        </div>
+
+        <div class="field">
+          <label>Civil Status <span class="req">*</span></label>
+          <div class="radio-group" id="civil-group">
+            <label class="radio-option"><input type="radio" name="civilStatus" value="Single"><span>Single</span></label>
+            <label class="radio-option"><input type="radio" name="civilStatus" value="Married"><span>Married</span></label>
+            <label class="radio-option"><input type="radio" name="civilStatus" value="Separated"><span>Separated</span></label>
+            <label class="radio-option"><input type="radio" name="civilStatus" value="Widowed"><span>Widowed</span></label>
+            <label class="radio-option"><input type="radio" name="civilStatus" value="Other"><span>Other</span></label>
+          </div>
+          <div class="specify-input" id="civil-specify">
+            <input type="text" id="civilOther" placeholder="Please specify civil status">
+          </div>
+          <div class="field__error-msg" id="err-civil">Please select a civil status.</div>
+        </div>
+
+        <div class="field">
+          <label for="address">Complete Address <span class="req">*</span></label>
+          <input type="text" id="address" placeholder="House #, Street, Barangay, City, Province" required>
+          <div class="field__error-msg" id="err-address">Address is required.</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="cellphone">Cellphone Number <span class="req">*</span></label>
+            <input type="tel" id="cellphone" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required>
+            <div class="field__error-msg" id="err-cellphone">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
+          </div>
+          <div class="field">
+            <label for="homePhone">Landline</label>
+            <input type="tel" id="homePhone" placeholder="(02) XXXX-XXXX">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="your@email.com" required>
+          <div class="field__error-msg" id="err-email">Enter a valid email address.</div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-next" onclick="goToStep(2)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 2: Presenting Concern                   -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-2">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Presenting Concern</h2>
+
+        <div class="field">
+          <label for="concernDesc">Description of the Concern <span class="req">*</span></label>
+          <textarea id="concernDesc" placeholder="Please describe your concern in detail (minimum 20 characters)..." required></textarea>
+          <div class="field__error-msg" id="err-concernDesc">Must be at least 20 characters.</div>
+        </div>
+
+        <div class="field">
+          <label for="reasonCounseling">Reason for Counseling / Clinical Assessment <span class="req">*</span></label>
+          <textarea id="reasonCounseling" placeholder="Why are you seeking counseling or clinical assessment?" required></textarea>
+          <div class="field__error-msg" id="err-reasonCounseling">This field is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="sinceWhen">Since When? <span class="req">*</span></label>
+          <input type="text" id="sinceWhen" placeholder="e.g. Since January 2024" required>
+          <div class="field__error-msg" id="err-sinceWhen">This field is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="howLong">How Long Has This Been a Problem? <span class="req">*</span></label>
+          <select id="howLong" required>
+            <option value="">Select duration</option>
+            <option value="Less than 1 month">Less than 1 month</option>
+            <option value="1–3 months">1–3 months</option>
+            <option value="3–6 months">3–6 months</option>
+            <option value="6 months – 1 year">6 months – 1 year</option>
+            <option value="More than 1 year">More than 1 year</option>
+          </select>
+          <div class="field__error-msg" id="err-howLong">Please select a duration.</div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(1)">← Previous</button>
+        <button type="button" class="btn-next" onclick="goToStep(3)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 3: Therapy and Medication History        -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-3">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Therapy and Medication History</h2>
+
+        <div class="field">
+          <label>Have you sought therapy before? <span class="req">*</span></label>
+          <div class="yn-group" id="therapy-group">
+            <div class="yn-option" data-value="Yes" onclick="selectYN(this,'therapyBefore')">Yes</div>
+            <div class="yn-option" data-value="No" onclick="selectYN(this,'therapyBefore')">No</div>
+          </div>
+          <input type="hidden" id="therapyBefore">
+          <div class="field__error-msg" id="err-therapyBefore">Please select an option.</div>
+        </div>
+
+        <div class="field">
+          <label>Are you taking medications in connection with the concern? <span class="req">*</span></label>
+          <div class="yn-group" id="medication-group">
+            <div class="yn-option" data-value="Yes" onclick="selectYN(this,'medicationHistory')">Yes</div>
+            <div class="yn-option" data-value="No" onclick="selectYN(this,'medicationHistory')">No</div>
+          </div>
+          <input type="hidden" id="medicationHistory">
+          <div class="field__error-msg" id="err-medicationHistory">Please select an option.</div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(2)">← Previous</button>
+        <button type="button" class="btn-next" onclick="goToStep(4)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 4: Appointment Scheduling               -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-4">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Appointment Scheduling Preferences</h2>
+
+        <div class="field">
+          <label>Preferred Schedule (Date and Time) <span class="req">*</span></label>
+          <input type="hidden" id="prefSchedule" required>
+          <div class="cal-widget" id="cal-widget">
+            <div class="cal-header">
+              <button type="button" class="cal-nav" id="cal-prev" title="Previous month">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
+              </button>
+              <div class="cal-title" id="cal-title">May 2026</div>
+              <button type="button" class="cal-nav" id="cal-next" title="Next month">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div class="cal-weekdays">
+              <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+            <div class="cal-time-row">
+              <label for="cal-time">Time:</label>
+              <select id="cal-time">
+                <option value="">Select time</option>
+                <option value="09:00">9:00 AM</option>
+                <option value="10:00">10:00 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="12:00">12:00 PM</option>
+                <option value="13:00">1:00 PM</option>
+                <option value="14:00">2:00 PM</option>
+                <option value="15:00">3:00 PM</option>
+                <option value="16:00">4:00 PM</option>
+                <option value="17:00">5:00 PM</option>
+              </select>
+            </div>
+            <div class="cal-availability" id="cal-availability"></div>
+            <div class="cal-selected" id="cal-selected">No date selected</div>
+          </div>
+          <div class="field__error-msg" id="err-prefSchedule">Please select a date and time.</div>
+        </div>
+
+        <div class="field">
+          <label>Session Language Preference <span class="req">*</span></label>
+          <div class="radio-group" id="language-group">
+            <label class="radio-option"><input type="radio" name="language" value="English"><span>English</span></label>
+            <label class="radio-option"><input type="radio" name="language" value="Tagalog"><span>Tagalog</span></label>
+            <label class="radio-option"><input type="radio" name="language" value="Other"><span>Other</span></label>
+          </div>
+          <div class="specify-input" id="language-specify">
+            <input type="text" id="languageOther" placeholder="Please specify language">
+          </div>
+          <div class="field__error-msg" id="err-language">Please select a language.</div>
+        </div>
+
+        <div class="field">
+          <label>Session Modality <span class="req">*</span></label>
+          <div class="radio-group" id="modality-group">
+            <label class="radio-option"><input type="radio" name="modality" value="Online"><span>Online (Zoom, Google Meet, etc.)</span></label>
+            <label class="radio-option"><input type="radio" name="modality" value="Face-to-Face"><span>Face-to-Face (Manila)</span></label>
+          </div>
+          <div class="field__error-msg" id="err-modality">Please select a session modality.</div>
+        </div>
+
+        <div class="field">
+          <label>Preferred Gender of Counselor/Therapist <span class="req">*</span></label>
+          <div class="radio-group" id="counselorGender-group">
+            <label class="radio-option"><input type="radio" name="counselorGender" value="Male"><span>Male</span></label>
+            <label class="radio-option"><input type="radio" name="counselorGender" value="Female"><span>Female</span></label>
+            <label class="radio-option"><input type="radio" name="counselorGender" value="No preference"><span>No preference</span></label>
+          </div>
+          <div class="field__error-msg" id="err-counselorGender">Please select an option.</div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(3)">← Previous</button>
+        <button type="button" class="btn-next" onclick="goToStep(5)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 5: Minor Client Information              -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-5">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Minor Client Information</h2>
+
+        <div class="field">
+          <label>Is the Client a Minor? <span class="req">*</span></label>
+          <div class="radio-group" id="minor-group">
+            <label class="radio-option"><input type="radio" name="isMinor" value="Yes"><span>Yes</span></label>
+            <label class="radio-option"><input type="radio" name="isMinor" value="No"><span>No</span></label>
+            <label class="radio-option"><input type="radio" name="isMinor" value="Other"><span>Other</span></label>
+          </div>
+          <div class="field__error-msg" id="err-isMinor">Please select an option.</div>
+        </div>
+
+        <!-- Conditional: If Yes -->
+        <div class="conditional-section" id="minor-yes-section">
+          <div class="field">
+            <label for="guardianName">Full Name of Parent or Guardian <span class="req">*</span></label>
+            <input type="text" id="guardianName" placeholder="Parent / Guardian full name">
+            <div class="field__error-msg" id="err-guardianName">Guardian name is required for minor clients.</div>
+          </div>
+          <div class="field">
+            <label for="guardianContact">Parent / Guardian Contact Number <span class="req">*</span></label>
+            <input type="tel" id="guardianContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX">
+            <div class="field__error-msg" id="err-guardianContact">Valid contact number is required.</div>
+          </div>
+          <div class="field">
+            <label for="guardianRelation">Relationship to Client <span class="req">*</span></label>
+            <select id="guardianRelation">
+              <option value="">Select relationship</option>
+              <option value="Mother">Mother</option>
+              <option value="Father">Father</option>
+              <option value="Legal Guardian">Legal Guardian</option>
+              <option value="Relative">Relative</option>
+            </select>
+            <div class="field__error-msg" id="err-guardianRelation">Please select a relationship.</div>
+          </div>
+        </div>
+
+        <!-- Conditional: If Other -->
+        <div class="conditional-section" id="minor-other-section">
+          <div class="field">
+            <label for="minorOtherReason">Please state reason <span class="req">*</span></label>
+            <textarea id="minorOtherReason" placeholder="Please explain..."></textarea>
+            <div class="field__error-msg" id="err-minorOtherReason">Please provide a reason.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(4)">← Previous</button>
+        <button type="button" class="btn-next" onclick="goToStep(6)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 6: Emergency Contact                     -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-6">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Emergency Contact Information</h2>
+
+        <div class="field">
+          <label for="emerName">Full Name <span class="req">*</span></label>
+          <input type="text" id="emerName" placeholder="Emergency contact full name" required>
+          <div class="field__error-msg" id="err-emerName">Emergency contact name is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="emerAddress">Complete Address <span class="req">*</span></label>
+          <input type="text" id="emerAddress" placeholder="Complete address" required>
+          <div class="field__error-msg" id="err-emerAddress">Address is required.</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="emerContact">Contact Number <span class="req">*</span></label>
+            <input type="tel" id="emerContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" required>
+            <div class="field__error-msg" id="err-emerContact">Enter a valid phone number.</div>
+          </div>
+          <div class="field">
+            <label for="emerEmail">Email Address <span class="req">*</span></label>
+            <input type="email" id="emerEmail" placeholder="contact@email.com" required>
+            <div class="field__error-msg" id="err-emerEmail">Enter a valid email address.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="emerRelation">Relationship to Client <span class="req">*</span></label>
+          <select id="emerRelation" required>
+            <option value="">Select relationship</option>
+            <option value="Parent">Parent</option>
+            <option value="Spouse">Spouse</option>
+            <option value="Sibling">Sibling</option>
+            <option value="Guardian">Guardian</option>
+            <option value="Friend">Friend</option>
+          </select>
+          <div class="field__error-msg" id="err-emerRelation">Please select a relationship.</div>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(5)">← Previous</button>
+        <button type="button" class="btn-next" onclick="goToStep(7)">Next Step →</button>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- STEP 7: Review and Submit                     -->
+    <!-- ============================================ -->
+    <div class="step-panel" id="panel-7">
+      <div class="intake-card">
+        <h2 class="intake-card__title">Review and Submit</h2>
+        <div id="review-content"></div>
+
+        <div class="acknowledge-box">
+          <label>
+            <input type="checkbox" id="acknowledge">
+            I certify that the information given above is true and correct.
+          </label>
+        </div>
+
+        <div class="security-info">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          <p>Your data is transmitted securely via HTTPS with TLS 1.3 encryption and stored with AES-256 encryption. All sensitive fields including personal information, presenting concerns, therapy history, and emergency contacts are encrypted at rest.</p>
+        </div>
+      </div>
+
+      <div class="intake-nav">
+        <button type="button" class="btn-prev" onclick="goToStep(6)">← Previous</button>
+        <button type="button" class="btn-submit" id="submit-btn" disabled onclick="submitForm()">Submit Intake Form</button>
+      </div>
+    </div>
+
+  </div><!-- /intake-wrapper -->
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+
+    let currentStep = 1;
+    const totalSteps = 7;
+
+    // ===== STEPPER =====
+    function updateStepper() {
+      document.querySelectorAll('.step').forEach(s => {
+        const n = parseInt(s.dataset.step);
+        s.classList.remove('active', 'completed');
+        if (n === currentStep) s.classList.add('active');
+        else if (n < currentStep) s.classList.add('completed');
+      });
+      // Progress bar
+      const pct = ((currentStep - 1) / (totalSteps - 1)) * 100;
+      const bar = document.getElementById('stepper-progress');
+      const stepperEl = document.getElementById('stepper');
+      const totalW = stepperEl.offsetWidth - 80;
+      bar.style.width = (totalW * pct / 100) + 'px';
+    }
+
+    function showPanel(step) {
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + step).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goToStep(step) {
+      // Validate current step before moving forward
+      if (step > currentStep) {
+        if (!validateStep(currentStep)) return;
+      }
+      currentStep = step;
+      updateStepper();
+      showPanel(step);
+      if (step === 7) buildReview();
+    }
+
+    // ===== VALIDATION =====
+    function showError(id, show) {
+      const el = document.getElementById('err-' + id);
+      if (el) { show ? el.classList.add('show') : el.classList.remove('show'); }
+      const inp = document.getElementById(id);
+      if (inp) { show ? inp.classList.add('field-error') : inp.classList.remove('field-error'); }
+    }
+
+    function getRadio(name) {
+      const checked = document.querySelector('input[name="'+name+'"]:checked');
+      return checked ? checked.value : '';
+    }
+
+    const phPhoneRegex = /^(\+63|0)9\d{9}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function validateStep(step) {
+      let valid = true;
+      if (step === 1) {
+        const fullName = document.getElementById('fullName').value.trim();
+        const age = parseInt(document.getElementById('age').value);
+        const dob = document.getElementById('dob').value;
+        const gender = getRadio('gender');
+        const civil = getRadio('civilStatus');
+        const addr = document.getElementById('address').value.trim();
+        const cell = document.getElementById('cellphone').value.trim().replace(/[\s-]/g,'');
+        const em = document.getElementById('email').value.trim();
+
+        showError('fullName', !fullName); if (!fullName) valid = false;
+        showError('age', !age || age < 5); if (!age || age < 5) valid = false;
+        // DOB: required AND must be at least 5 years old
+        let dobInvalid = false;
+        if (!dob) {
+          dobInvalid = true;
+        } else {
+          const dobDate = new Date(dob);
+          const today = new Date();
+          let dobAge = today.getFullYear() - dobDate.getFullYear();
+          const mDiff = today.getMonth() - dobDate.getMonth();
+          if (mDiff < 0 || (mDiff === 0 && today.getDate() < dobDate.getDate())) dobAge--;
+          if (dobAge < 5) dobInvalid = true;
+        }
+        showError('dob', dobInvalid); if (dobInvalid) valid = false;
+        showError('gender', !gender); if (!gender) valid = false;
+        if (gender === 'Other' && !document.getElementById('genderOther').value.trim()) { showError('gender', true); valid = false; }
+        showError('civil', !civil); if (!civil) valid = false;
+        if (civil === 'Other' && !document.getElementById('civilOther').value.trim()) { showError('civil', true); valid = false; }
+        showError('address', !addr); if (!addr) valid = false;
+        showError('cellphone', !phPhoneRegex.test(cell)); if (!phPhoneRegex.test(cell)) valid = false;
+        showError('email', !emailRegex.test(em)); if (!emailRegex.test(em)) valid = false;
+      }
+      else if (step === 2) {
+        const desc = document.getElementById('concernDesc').value.trim();
+        const reason = document.getElementById('reasonCounseling').value.trim();
+        const since = document.getElementById('sinceWhen').value.trim();
+        const howLong = document.getElementById('howLong').value;
+
+        showError('concernDesc', desc.length < 20); if (desc.length < 20) valid = false;
+        showError('reasonCounseling', !reason); if (!reason) valid = false;
+        showError('sinceWhen', !since); if (!since) valid = false;
+        showError('howLong', !howLong); if (!howLong) valid = false;
+      }
+      else if (step === 3) {
+        const therapy = document.getElementById('therapyBefore').value;
+        const meds = document.getElementById('medicationHistory').value;
+        showError('therapyBefore', !therapy); if (!therapy) valid = false;
+        showError('medicationHistory', !meds); if (!meds) valid = false;
+      }
+      else if (step === 4) {
+        const sched = document.getElementById('prefSchedule').value;
+        const lang = getRadio('language');
+        const mod = getRadio('modality');
+        const cg = getRadio('counselorGender');
+
+        showError('prefSchedule', !sched); if (!sched) valid = false;
+        showError('language', !lang); if (!lang) valid = false;
+        if (lang === 'Other' && !document.getElementById('languageOther').value.trim()) { showError('language', true); valid = false; }
+        showError('modality', !mod); if (!mod) valid = false;
+        showError('counselorGender', !cg); if (!cg) valid = false;
+      }
+      else if (step === 5) {
+        const isMinor = getRadio('isMinor');
+        showError('isMinor', !isMinor); if (!isMinor) valid = false;
+        if (isMinor === 'Yes') {
+          const gn = document.getElementById('guardianName').value.trim();
+          const gc = document.getElementById('guardianContact').value.trim().replace(/[\s-]/g,'');
+          const gr = document.getElementById('guardianRelation').value;
+          showError('guardianName', !gn); if (!gn) valid = false;
+          showError('guardianContact', !phPhoneRegex.test(gc)); if (!phPhoneRegex.test(gc)) valid = false;
+          showError('guardianRelation', !gr); if (!gr) valid = false;
+        }
+        if (isMinor === 'Other') {
+          const reason = document.getElementById('minorOtherReason').value.trim();
+          showError('minorOtherReason', !reason); if (!reason) valid = false;
+        }
+      }
+      else if (step === 6) {
+        const en = document.getElementById('emerName').value.trim();
+        const ea = document.getElementById('emerAddress').value.trim();
+        const ec = document.getElementById('emerContact').value.trim().replace(/[\s-]/g,'');
+        const ee = document.getElementById('emerEmail').value.trim();
+        const er = document.getElementById('emerRelation').value;
+
+        showError('emerName', !en); if (!en) valid = false;
+        showError('emerAddress', !ea); if (!ea) valid = false;
+        showError('emerContact', !phPhoneRegex.test(ec)); if (!phPhoneRegex.test(ec)) valid = false;
+        showError('emerEmail', !emailRegex.test(ee)); if (!emailRegex.test(ee)) valid = false;
+        showError('emerRelation', !er); if (!er) valid = false;
+      }
+      return valid;
+    }
+
+    // ===== YES / NO TOGGLE =====
+    function selectYN(el, hiddenId) {
+      el.parentElement.querySelectorAll('.yn-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById(hiddenId).value = el.dataset.value;
+      showError(hiddenId, false);
+    }
+
+    // ===== RADIO HANDLERS =====
+    document.querySelectorAll('.radio-group input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const group = radio.closest('.radio-group');
+        group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+        radio.closest('.radio-option').classList.add('selected');
+
+        // Show/hide specify inputs
+        if (radio.name === 'gender') {
+          document.getElementById('gender-specify').classList.toggle('show', radio.value === 'Other');
+          showError('gender', false);
+        }
+        if (radio.name === 'civilStatus') {
+          document.getElementById('civil-specify').classList.toggle('show', radio.value === 'Other');
+          showError('civil', false);
+        }
+        if (radio.name === 'language') {
+          document.getElementById('language-specify').classList.toggle('show', radio.value === 'Other');
+          showError('language', false);
+        }
+        if (radio.name === 'isMinor') {
+          document.getElementById('minor-yes-section').classList.toggle('show', radio.value === 'Yes');
+          document.getElementById('minor-other-section').classList.toggle('show', radio.value === 'Other');
+          showError('isMinor', false);
+        }
+      });
+    });
+
+    // ===== DOB CALENDAR WIDGET =====
+    (function initDobCalendar() {
+      const trigger = document.getElementById('dob-trigger');
+      const display = document.getElementById('dob-display');
+      const calendar = document.getElementById('dob-calendar');
+      const grid = document.getElementById('dob-cal-grid');
+      const monthSelect = document.getElementById('dob-month-select');
+      const yearSelect = document.getElementById('dob-year-select');
+      const closeBtn = document.getElementById('dob-cal-close');
+      const confirmBtn = document.getElementById('dob-cal-confirm');
+      const hiddenInput = document.getElementById('dob');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let selectedDate = null;
+      let tempSelected = null; // temp selection before Confirm
+
+      const MONTHS = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+
+      // Populate month dropdown
+      MONTHS.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+      monthSelect.value = today.getMonth();
+
+      // Populate year dropdown (1920 to current year)
+      const currentYear = today.getFullYear();
+      for (let y = currentYear; y >= 1920; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+      }
+      yearSelect.value = currentYear;
+
+      function renderDobGrid() {
+        const viewMonth = parseInt(monthSelect.value);
+        const viewYear = parseInt(yearSelect.value);
+        const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+
+        let html = '';
+
+        // Previous month trailing (Sun-based, so firstDay is offset directly)
+        for (let i = firstDay - 1; i >= 0; i--) {
+          html += `<button type="button" class="dob-cal__day dob-cal__day--other" disabled>${daysInPrev - i}</button>`;
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          date.setHours(0, 0, 0, 0);
+
+          const isFuture = date > today;
+          const isToday = date.getTime() === today.getTime();
+          const isSelected = tempSelected && tempSelected.getTime() === date.getTime();
+
+          let cls = 'dob-cal__day';
+          if (isToday) cls += ' dob-cal__day--today';
+          if (isSelected) cls += ' dob-cal__day--selected';
+          if (isFuture) cls += ' dob-cal__day--disabled';
+
+          html += `<button type="button" class="${cls}" data-day="${d}" ${isFuture ? 'disabled' : ''}>${d}</button>`;
+        }
+
+        // Next month trailing
+        const totalCells = firstDay + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+          html += `<button type="button" class="dob-cal__day dob-cal__day--other" disabled>${i}</button>`;
+        }
+
+        grid.innerHTML = html;
+
+        // Click handlers for day buttons — immediate selection
+        grid.querySelectorAll('.dob-cal__day:not([disabled])').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const day = parseInt(btn.dataset.day);
+            tempSelected = new Date(parseInt(yearSelect.value), parseInt(monthSelect.value), day);
+            tempSelected.setHours(0, 0, 0, 0);
+            confirmSelection();
+          });
+        });
+      }
+
+      function openCalendar() {
+        tempSelected = selectedDate ? new Date(selectedDate) : null;
+        if (selectedDate) {
+          monthSelect.value = selectedDate.getMonth();
+          yearSelect.value = selectedDate.getFullYear();
+        }
+        renderDobGrid();
+        calendar.classList.add('open');
+      }
+
+      function closeCal() {
+        calendar.classList.remove('open');
+      }
+
+      function confirmSelection() {
+        if (!tempSelected) {
+          BPSToast.warning('Please select a date.', { title: 'No Date Selected' });
+          return;
+        }
+
+        selectedDate = new Date(tempSelected);
+        const yyyy = selectedDate.getFullYear();
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(selectedDate.getDate()).padStart(2, '0');
+        hiddenInput.value = `${yyyy}-${mm}-${dd}`;
+
+        // Format display
+        display.textContent = selectedDate.toLocaleDateString('en-PH', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        trigger.classList.add('has-value');
+
+        // Auto-calculate age
+        let age = today.getFullYear() - selectedDate.getFullYear();
+        const m = today.getMonth() - selectedDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < selectedDate.getDate())) age--;
+        if (age > 0) document.getElementById('age').value = age;
+
+        // Validate minimum age of 5
+        if (age < 5) {
+          showError('dob', true);
+          BPSToast.warning('The client must be at least 5 years old to submit the intake form.', { title: 'Age Requirement' });
+        } else {
+          showError('dob', false);
+        }
+
+        closeCal();
+      }
+
+      // Event listeners
+      trigger.addEventListener('click', openCalendar);
+      trigger.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCalendar(); } });
+      closeBtn.addEventListener('click', closeCal);
+      confirmBtn.addEventListener('click', confirmSelection);
+      monthSelect.addEventListener('change', renderDobGrid);
+      yearSelect.addEventListener('change', renderDobGrid);
+
+      // Close when clicking outside
+      document.addEventListener('click', (e) => {
+        if (calendar.classList.contains('open') && !calendar.contains(e.target) && !trigger.contains(e.target)) {
+          closeCal();
+        }
+      });
+    })();
+
+    // ===== CALENDAR WIDGET =====
+    (function initCalendar() {
+      const grid = document.getElementById('cal-grid');
+      const title = document.getElementById('cal-title');
+      const prevBtn = document.getElementById('cal-prev');
+      const nextBtn = document.getElementById('cal-next');
+      const timeSelect = document.getElementById('cal-time');
+      const selectedLabel = document.getElementById('cal-selected');
+      const availabilityLabel = document.getElementById('cal-availability');
+      const hiddenInput = document.getElementById('prefSchedule');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let viewYear = today.getFullYear();
+      let viewMonth = today.getMonth();
+      let selectedDate = null;
+      let fullDates = new Set(); // Dates that have 5+ bookings
+      let dateAvailabilityCache = {}; // Cache: 'YYYY-MM-DD' -> { count, bookedSlots, isFull, remaining }
+
+      const ALL_TIME_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+      const TIME_LABELS = {
+        '09:00':'9:00 AM','10:00':'10:00 AM','11:00':'11:00 AM','12:00':'12:00 PM',
+        '13:00':'1:00 PM','14:00':'2:00 PM','15:00':'3:00 PM','16:00':'4:00 PM','17:00':'5:00 PM'
+      };
+
+      const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+      // Fetch availability for a specific date from API
+      async function fetchAvailability(dateStr) {
+        if (dateAvailabilityCache[dateStr]) return dateAvailabilityCache[dateStr];
+        try {
+          const token = BPSSession.getToken();
+          if (!token) return null;
+          const res = await fetch(`http://localhost:5000/api/appointments/availability?date=${dateStr}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const json = await res.json();
+          if (json.success) {
+            dateAvailabilityCache[dateStr] = json.data;
+            if (json.data.isFull) fullDates.add(dateStr);
+            return json.data;
+          }
+        } catch (e) { console.error('Failed to fetch availability:', e); }
+        return null;
+      }
+
+      // Pre-load availability for the entire visible month
+      async function loadMonthAvailability() {
+        const token = BPSSession.getToken();
+        if (!token) return;
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const promises = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          if (date < today) continue;
+          const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          if (!dateAvailabilityCache[dateStr]) {
+            promises.push(fetchAvailability(dateStr));
+          }
+        }
+        await Promise.all(promises);
+        renderCalendar();
+      }
+
+      function renderCalendar() {
+        title.textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+
+        // Disable prev button if viewing current month
+        const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+        prevBtn.disabled = isCurrentMonth;
+
+        // First day of month (0=Sun, adjust to Mon=0)
+        const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        const startOffset = (firstDay === 0) ? 6 : firstDay - 1; // Mon-based offset
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+        let html = '';
+
+        // Previous month trailing days
+        for (let i = startOffset - 1; i >= 0; i--) {
+          html += `<button type="button" class="cal-day cal-day--other" disabled>${daysInPrevMonth - i}</button>`;
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          date.setHours(0, 0, 0, 0);
+          const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+          const isPast = date < today;
+          const isToday = date.getTime() === today.getTime();
+          const isFull = fullDates.has(dateStr);
+          const isSelected = selectedDate && selectedDate.getTime() === date.getTime();
+          const cached = dateAvailabilityCache[dateStr];
+
+          let cls = 'cal-day';
+          if (isToday) cls += ' cal-day--today';
+          if (isSelected) cls += ' cal-day--selected';
+          if (isPast) cls += ' cal-day--disabled';
+          else if (isFull) cls += ' cal-day--full';
+
+          const disabled = isPast || isFull;
+          let titleAttr = '';
+          if (isFull) titleAttr = 'Fully booked (5/5 clients)';
+          else if (isPast) titleAttr = 'Past date';
+          else if (cached) titleAttr = `${cached.remaining} slot${cached.remaining !== 1 ? 's' : ''} available`;
+
+          html += `<button type="button" class="${cls}" data-date="${dateStr}" ${disabled ? 'disabled' : ''} ${titleAttr ? `title="${titleAttr}"` : ''}>${d}</button>`;
+        }
+
+        // Next month leading days
+        const totalCells = startOffset + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+          html += `<button type="button" class="cal-day cal-day--other" disabled>${i}</button>`;
+        }
+
+        grid.innerHTML = html;
+
+        // Add click handlers
+        grid.querySelectorAll('.cal-day:not([disabled])').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const parts = btn.dataset.date.split('-');
+            selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            selectedDate.setHours(0, 0, 0, 0);
+
+            // Fetch availability for the selected date and update time slots
+            const dateStr = btn.dataset.date;
+            const avail = await fetchAvailability(dateStr);
+            updateTimeSlots(avail);
+            updateHiddenInput();
+            renderCalendar();
+          });
+        });
+      }
+
+      // Update time <select> based on booked slots
+      function updateTimeSlots(avail) {
+        // Reset all options
+        let html = '<option value="">Select time</option>';
+        ALL_TIME_SLOTS.forEach(slot => {
+          const isBooked = avail && avail.bookedSlots && avail.bookedSlots.includes(slot);
+          if (isBooked) {
+            html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Booked</option>`;
+          } else {
+            html += `<option value="${slot}">${TIME_LABELS[slot]}</option>`;
+          }
+        });
+        timeSelect.innerHTML = html;
+
+        // Update availability indicator
+        if (avail) {
+          const remaining = avail.remaining;
+          const total = avail.maxPerDay;
+          let cls = 'cal-availability';
+          if (remaining <= 1) cls += ' cal-availability--low';
+          else if (remaining <= 3) cls += ' cal-availability--medium';
+          else cls += ' cal-availability--good';
+          availabilityLabel.className = cls;
+          availabilityLabel.innerHTML = `<span class="cal-avail-dot"></span> ${remaining} of ${total} slot${remaining !== 1 ? 's' : ''} available`;
+          availabilityLabel.style.display = 'flex';
+        } else {
+          availabilityLabel.style.display = 'none';
+        }
+
+        // If current selected time is now booked, reset
+        if (avail && avail.bookedSlots && avail.bookedSlots.includes(timeSelect.value)) {
+          timeSelect.value = '';
+          hiddenInput.value = '';
+          BPSToast.warning('This appointment time is already taken. Please choose another available time.', { title: 'Time Unavailable' });
+        }
+      }
+
+      function updateHiddenInput() {
+        const time = timeSelect.value;
+        if (selectedDate && time) {
+          const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+          hiddenInput.value = `${dateStr}T${time}`;
+          const dt = new Date(hiddenInput.value);
+          selectedLabel.innerHTML = `Selected: <strong>${dt.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at ${dt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}</strong>`;
+          showError('prefSchedule', false);
+        } else if (selectedDate) {
+          selectedLabel.innerHTML = `Date: <strong>${selectedDate.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong> — please select a time`;
+          hiddenInput.value = '';
+        } else {
+          selectedLabel.textContent = 'No date selected';
+          hiddenInput.value = '';
+        }
+      }
+
+      prevBtn.addEventListener('click', () => {
+        viewMonth--;
+        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        renderCalendar();
+        loadMonthAvailability();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        viewMonth++;
+        if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        renderCalendar();
+        loadMonthAvailability();
+      });
+
+      timeSelect.addEventListener('change', updateHiddenInput);
+
+      renderCalendar();
+      loadMonthAvailability();
+    })();
+
+    // ===== ACKNOWLEDGMENT CHECKBOX =====
+    document.getElementById('acknowledge').addEventListener('change', function() {
+      document.getElementById('submit-btn').disabled = !this.checked;
+    });
+
+    // ===== BUILD REVIEW SUMMARY =====
+    function buildReview() {
+      const gender = getRadio('gender');
+      const genderVal = gender === 'Other' ? document.getElementById('genderOther').value || 'Other' : gender;
+      const civil = getRadio('civilStatus');
+      const civilVal = civil === 'Other' ? document.getElementById('civilOther').value || 'Other' : civil;
+      const lang = getRadio('language');
+      const langVal = lang === 'Other' ? document.getElementById('languageOther').value || 'Other' : lang;
+      const schedRaw = document.getElementById('prefSchedule').value;
+      const schedVal = schedRaw ? new Date(schedRaw).toLocaleString('en-PH') : '';
+
+      const sections = [
+        { title: 'Personal Details', rows: [
+          ['Full Name', document.getElementById('fullName').value],
+          ['Nickname', document.getElementById('nickName').value || '—'],
+          ['Age', document.getElementById('age').value],
+          ['Date of Birth', document.getElementById('dob').value],
+          ['Gender', genderVal],
+          ['Civil Status', civilVal],
+          ['Address', document.getElementById('address').value],
+          ['Cellphone', document.getElementById('cellphone').value],
+          ['Home Phone', document.getElementById('homePhone').value || '—'],
+          ['Email', document.getElementById('email').value],
+        ]},
+        { title: 'Presenting Concern', rows: [
+          ['Description', document.getElementById('concernDesc').value],
+          ['Reason', document.getElementById('reasonCounseling').value],
+          ['Since When', document.getElementById('sinceWhen').value],
+          ['Duration', document.getElementById('howLong').value],
+        ]},
+        { title: 'Therapy & Medication History', rows: [
+          ['Sought therapy before', document.getElementById('therapyBefore').value],
+          ['Taking medications', document.getElementById('medicationHistory').value],
+        ]},
+        { title: 'Appointment Preferences', rows: [
+          ['Preferred Schedule', schedVal],
+          ['Language', langVal],
+          ['Modality', getRadio('modality')],
+          ['Counselor Gender Pref.', getRadio('counselorGender')],
+        ]},
+        { title: 'Minor Client Information', rows: [
+          ['Is Minor', getRadio('isMinor')],
+          ...(getRadio('isMinor') === 'Yes' ? [
+            ['Guardian Name', document.getElementById('guardianName').value],
+            ['Guardian Contact', document.getElementById('guardianContact').value],
+            ['Relationship', document.getElementById('guardianRelation').value],
+          ] : []),
+          ...(getRadio('isMinor') === 'Other' ? [
+            ['Reason', document.getElementById('minorOtherReason').value],
+          ] : []),
+        ]},
+        { title: 'Emergency Contact', rows: [
+          ['Full Name', document.getElementById('emerName').value],
+          ['Address', document.getElementById('emerAddress').value],
+          ['Contact', document.getElementById('emerContact').value],
+          ['Email', document.getElementById('emerEmail').value],
+          ['Relationship', document.getElementById('emerRelation').value],
+        ]},
+      ];
+
+      let html = '';
+      sections.forEach(sec => {
+        html += `<div class="review-section"><div class="review-section__title">${sec.title}</div>`;
+        sec.rows.forEach(([label, value]) => {
+          const display = (value && value.length > 80) ? value.substring(0, 80) + '...' : (value || '—');
+          html += `<div class="review-row"><span class="review-row__label">${label}</span><span class="review-row__value">${display}</span></div>`;
+        });
+        html += '</div>';
+      });
+      document.getElementById('review-content').innerHTML = html;
+    }
+
+    // ===== SUBMIT =====
+    async function submitForm() {
+      if (!document.getElementById('acknowledge').checked) return;
+
+      const data = {
+        fullName: document.getElementById('fullName').value,
+        nickName: document.getElementById('nickName').value,
+        age: document.getElementById('age').value,
+        dob: document.getElementById('dob').value,
+        gender: getRadio('gender') === 'Other' ? document.getElementById('genderOther').value : getRadio('gender'),
+        civilStatus: getRadio('civilStatus') === 'Other' ? document.getElementById('civilOther').value : getRadio('civilStatus'),
+        address: document.getElementById('address').value,
+        cellphone: document.getElementById('cellphone').value,
+        homePhone: document.getElementById('homePhone').value,
+        email: document.getElementById('email').value,
+        concernDesc: document.getElementById('concernDesc').value,
+        reasonCounseling: document.getElementById('reasonCounseling').value,
+        sinceWhen: document.getElementById('sinceWhen').value,
+        howLong: document.getElementById('howLong').value,
+        therapyBefore: document.getElementById('therapyBefore').value,
+        medicationHistory: document.getElementById('medicationHistory').value,
+        prefSchedule: document.getElementById('prefSchedule').value,
+        language: getRadio('language') === 'Other' ? document.getElementById('languageOther').value : getRadio('language'),
+        modality: getRadio('modality'),
+        counselorGender: getRadio('counselorGender'),
+        isMinor: getRadio('isMinor'),
+        guardianName: document.getElementById('guardianName').value,
+        guardianContact: document.getElementById('guardianContact').value,
+        guardianRelation: document.getElementById('guardianRelation').value,
+        minorOtherReason: document.getElementById('minorOtherReason').value,
+        emerName: document.getElementById('emerName').value,
+        emerAddress: document.getElementById('emerAddress').value,
+        emerContact: document.getElementById('emerContact').value,
+        emerEmail: document.getElementById('emerEmail').value,
+        emerRelation: document.getElementById('emerRelation').value,
+        submittedAt: new Date().toISOString(),
+      };
+
+      // Also keep a localStorage copy for offline access
+      localStorage.setItem('bps_intake', JSON.stringify(data));
+
+      // Submit to backend API if authenticated
+      const token = typeof BPSSession !== 'undefined' ? BPSSession.getToken() : sessionStorage.getItem('bps_token');
+      if (token) {
+        try {
+          const res = await fetch('http://localhost:5000/api/intake-forms', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+          });
+
+          const json = await res.json();
+          if (res.ok && json.success) {
+            BPSToast.success('Intake form submitted successfully! Our team will review it and contact you to confirm your appointment.', { title: 'Form Submitted', duration: 5000 });
+            setTimeout(() => { window.location.href = 'landingpage.html'; }, 2000);
+            return;
+          } else {
+            BPSToast.error(json.message || 'Failed to submit intake form. Please try again.', { title: 'Submission Error' });
+            console.error('Intake API error:', json.message);
+            return;
+          }
+        } catch (err) {
+          console.error('Failed to submit intake form to server:', err);
+          BPSToast.error('Network error. Please check your connection and try again.', { title: 'Connection Error' });
+          return;
+        }
+      }
+
+      // Fallback: if not authenticated
+      BPSToast.warning('Please log in to submit your intake form.', { title: 'Authentication Required' });
+    }
+
+    // Init
+    updateStepper();
+  </script>
+</body>
+</html>

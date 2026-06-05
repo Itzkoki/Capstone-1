@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Management | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="staff-management.css">
+</head>
+<body class="staff-page logged-in">
+
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="staff-management.html" style="color:var(--green-primary)">Staff</a></li>
+        <li><a href="articles.html">Articles</a></li>
+        <li><a href="meetings.html">Meetings</a></li>
+        <li><a href="intake-submissions.html">Intake Forms</a></li>
+        <li><a href="community.html">Community</a></li>
+      </ul>
+      <a href="profile.html" class="navbar__profile" title="Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="staff-container">
+    <div class="staff-header">
+      <h1 class="staff-header__title">Staff Management</h1>
+      <div class="staff-header__actions">
+        <select class="filter-select" id="role-filter">
+          <option value="">All Roles</option>
+          <option value="client">Client</option>
+          <option value="psychometrician">Psychometrician</option>
+          <option value="supervising_psychometrician">Supervising Psychometrician</option>
+          <option value="qc_psychometrician">QC Psychometrician</option>
+          <option value="psychologist">Psychologist</option>
+          <option value="clinical_director">Clinical Director</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="staff-table-wrapper">
+      <table class="staff-table" id="staff-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="staff-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-body)">Loading staff...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="logs-section" id="logs-section">
+      <h2 class="logs-section__title">Activity Logs</h2>
+      <div id="logs-content">Loading logs...</div>
+    </div>
+  </div>
+
+  <!-- Role Edit Modal -->
+  <div class="modal-overlay" id="role-modal">
+    <div class="modal">
+      <h3 class="modal__title">Change Staff Role</h3>
+      <p style="font-size:14px;color:var(--text-body);margin-bottom:16px" id="modal-name"></p>
+      <label class="modal__label">New Role</label>
+      <select class="modal__select" id="modal-role-select">
+        <option value="client">Client</option>
+        <option value="psychometrician">Psychometrician</option>
+        <option value="supervising_psychometrician">Supervising Psychometrician</option>
+        <option value="qc_psychometrician">QC Psychometrician</option>
+        <option value="psychologist">Psychologist</option>
+        <option value="clinical_director">Clinical Director</option>
+      </select>
+      <div class="modal__actions">
+        <button class="btn-modal btn-modal--cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-modal btn-modal--primary" id="modal-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+    if (user.role !== 'clinical_director') { window.location.replace('admin-dashboard.html'); }
+
+    const ROLE_LABELS = {
+      client: 'Client',
+      psychometrician: 'Psychometrician',
+      supervising_psychometrician: 'Supervising Psych.',
+      qc_psychometrician: 'QC Psychometrician',
+      psychologist: 'Psychologist',
+      clinical_director: 'Clinical Director',
+    };
+
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff/60000);
+      if(m<60) return m+'m ago';
+      const h = Math.floor(m/60);
+      if(h<24) return h+'h ago';
+      return Math.floor(h/24)+'d ago';
+    }
+
+    function formatDate(d) {
+      return new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers } });
+      if (res.status === 401) { window.location.href = 'login.html'; }
+      return res.json();
+    }
+
+    async function loadStaff() {
+      const role = document.getElementById('role-filter').value;
+      const url = role ? `/staff?role=${role}` : '/staff';
+      const data = await apiFetch(url);
+      const tbody = document.getElementById('staff-tbody');
+      if (!data.success || !data.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-body)">No staff found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.data.map(s => `
+        <tr>
+          <td><strong>${s.full_name}</strong></td>
+          <td>${s.email}</td>
+          <td><span class="role-badge role-badge--${s.role}">${ROLE_LABELS[s.role] || s.role}</span></td>
+          <td>${s.is_verified ? '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#22543d;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Verified' : '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#d69e2e;vertical-align:middle;margin-right:3px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Pending'}</td>
+          <td>${formatDate(s.created_at)}</td>
+          <td class="staff-actions-cell">
+            <button class="btn-sm btn-sm--edit" onclick="openRoleModal(${s.id},'${s.full_name}','${s.role}')">Edit Role</button>
+            ${s.id !== user.id ? `<button class="btn-sm btn-sm--danger" onclick="removeStaff(${s.id},'${s.full_name}')">Remove</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    let editingUserId = null;
+    function openRoleModal(id, name, currentRole) {
+      editingUserId = id;
+      document.getElementById('modal-name').textContent = name;
+      document.getElementById('modal-role-select').value = currentRole;
+      document.getElementById('role-modal').classList.add('active');
+    }
+    function closeModal() { document.getElementById('role-modal').classList.remove('active'); }
+
+    document.getElementById('modal-save-btn').addEventListener('click', async () => {
+      const role = document.getElementById('modal-role-select').value;
+      await apiFetch(`/staff/${editingUserId}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
+      closeModal();
+      loadStaff();
+    });
+
+    async function removeStaff(id, name) {
+      if (!confirm(`Remove ${name}? This action is permanent.`)) return;
+      await apiFetch(`/staff/${id}`, { method: 'DELETE' });
+      loadStaff();
+    }
+
+    async function loadLogs() {
+      const data = await apiFetch('/staff/activity-logs?limit=20');
+      const el = document.getElementById('logs-content');
+      if (!data.success || !data.data.length) { el.innerHTML = '<p style="color:var(--text-body);font-size:14px">No activity logs yet.</p>'; return; }
+      el.innerHTML = data.data.map(l => `
+        <div class="log-item">
+          <div class="log-item__info"><strong>${l.full_name || 'System'}</strong> — ${l.action}</div>
+          <div class="log-item__time">${timeAgo(l.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('role-filter').addEventListener('change', loadStaff);
+    loadStaff();
+    loadLogs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSYGEN — Psychological Report Module</title>
+  <meta name="description" content="Professional psychological assessment report generation and management system">
+  <link rel="stylesheet" href="psych-reports.css">
+  <link rel="stylesheet" href="common.css">
+</head>
+
+<body>
+  <div class="bg-gradient"></div>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <h1>PSYGEN</h1>
+        <p>Report Module</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Reports</div>
+        <a class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
+          <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+            </svg></span> Dashboard
+        </a>
+        <a class="nav-item" data-view="create" onclick="showView('create')">
+          <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path
+                d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
+            </svg></span> New Report
+        </a>
+        <a class="nav-item" data-view="templates" onclick="showView('templates')">
+          <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path
+                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+            </svg></span> Templates
+        </a>
+        <div id="directorNav" class="hidden">
+          <div class="nav-section-title">Director</div>
+          <a class="nav-item" data-view="reviews" onclick="showView('reviews')">
+            <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg></span> Pending Reviews <span class="badge" id="pendingBadge">0</span>
+          </a>
+          <a class="nav-item" data-view="audit" onclick="showView('audit')">
+            <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg></span> Audit Logs
+          </a>
+          <a class="nav-item" data-view="manageTpl" onclick="showView('manageTpl')">
+            <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z" />
+              </svg></span> Manage Templates
+          </a>
+        </div>
+      </nav>
+      <!-- Exit Button -->
+      <div style="padding:12px 16px">
+        <a href="admin-dashboard.html" class="btn btn-outline" style="width:100%;justify-content:center;gap:8px">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+          </svg>
+          Exit
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <div class="user-details">
+            <div class="name" id="userName">Loading...</div>
+            <div class="role" id="userRole">—</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- ═══ Dashboard View ═══ -->
+      <div class="view active" id="view-dashboard">
+        <div class="page-header">
+          <div>
+            <h2>Report Dashboard</h2>
+            <p class="subtitle">Manage your psychological assessment reports</p>
+          </div>
+          <button class="btn btn-primary" onclick="showView('create')"><svg viewBox="0 0 24 24" width="16" height="16"
+              fill="currentColor">
+              <path
+                d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
+            </svg> New Report</button>
+        </div>
+        <div class="stats-row" id="statsRow"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Reports</h3>
+            <div class="search-bar" style="margin:0;flex:1;max-width:500px;margin-left:24px">
+              <input class="search-input" id="reportSearch" placeholder="Search reports..." oninput="filterReports()">
+              <select class="filter-select" id="statusFilter" onchange="filterReports()">
+                <option value="">All Status</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Submitted</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="finalized">Finalized</option>
+              </select>
+            </div>
+          </div>
+          <table class="report-table" id="reportTable">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Template</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportBody"></tbody>
+          </table>
+          <div class="empty-state hidden" id="emptyReports">
+            <div class="icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity="0.5">
+                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
+              </svg></div>
+            <h4>No reports yet</h4>
+            <p>Create your first psychological assessment report.</p>
+            <button class="btn btn-primary" onclick="showView('create')">Create Report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Create Report View ═══ -->
+      <div class="view" id="view-create">
+        <div class="page-header">
+          <div>
+            <h2>New Report</h2>
+            <p class="subtitle">Select a template and enter client information</p>
+          </div>
+        </div>
+        <!-- Circular Progress Stepper -->
+        <div class="circular-stepper" id="createStepper">
+          <div class="circle-step active" data-step="1">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5"
+                  stroke-dashoffset="83.8" />
+              </svg><span class="circle-num">1</span></div><span class="circle-label">Template</span>
+          </div>
+          <div class="circle-connector"></div>
+          <div class="circle-step" data-step="2">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5"
+                  stroke-dashoffset="67.0" />
+              </svg><span class="circle-num">2</span></div><span class="circle-label">Client</span>
+          </div>
+          <div class="circle-connector"></div>
+          <div class="circle-step" data-step="3">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5"
+                  stroke-dashoffset="50.3" />
+              </svg><span class="circle-num">3</span></div><span class="circle-label">Assessment</span>
+          </div>
+          <div class="circle-connector"></div>
+          <div class="circle-step" data-step="4">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5"
+                  stroke-dashoffset="33.5" />
+              </svg><span class="circle-num">4</span></div><span class="circle-label">Scores</span>
+          </div>
+          <div class="circle-connector"></div>
+          <div class="circle-step" data-step="5">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5"
+                  stroke-dashoffset="16.8" />
+              </svg><span class="circle-num">5</span></div><span class="circle-label">Generate</span>
+          </div>
+          <div class="circle-connector"></div>
+          <div class="circle-step" data-step="6">
+            <div class="circle-ring"><svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16" />
+                <circle class="progress" cx="18" cy="18" r="16" stroke-dasharray="100.5 100.5" stroke-dashoffset="0" />
+              </svg><span class="circle-num">6</span></div><span class="circle-label">Submit</span>
+          </div>
+        </div>
+        <!-- Step 1: Template Selection -->
+        <div class="create-step" id="cstep-1">
+          <div class="card">
+            <div class="card-header">
+              <h3>Select Assessment Template</h3>
+            </div>
+            <div class="template-grid" id="templateGrid"></div>
+            <div style="margin-top:24px;text-align:right"><button class="btn btn-primary" onclick="nextCreateStep(2)"
+                id="btnTplNext" disabled>Continue <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg></button></div>
+          </div>
+        </div>
+        <!-- Step 2: Client Info (from Intake Forms) -->
+        <div class="create-step hidden" id="cstep-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Select Client</h3>
+            </div>
+            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">Select a client who has completed
+              an intake form. Client information is auto-populated from the intake submission.</p>
+            <div class="form-group">
+              <label>Client (from Intake Form) *</label>
+              <select class="form-control" id="cClientSelect" onchange="onClientSelect()">
+                <option value="">— Select a client —</option>
+              </select>
+            </div>
+            <div id="clientInfoPreview" class="hidden"
+              style="padding:16px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);margin-bottom:20px">
+              <div class="form-row">
+                <div class="form-group"><label>Full Name</label>
+                  <p id="previewName" style="color:var(--text-primary);font-weight:600">—</p>
+                </div>
+                <div class="form-group"><label>Age</label>
+                  <p id="previewAge" style="color:var(--text-primary);font-weight:600">—</p>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Gender</label>
+                  <p id="previewGender" style="color:var(--text-primary);font-weight:600">—</p>
+                </div>
+                <div class="form-group"><label>Email</label>
+                  <p id="previewEmail" style="color:var(--text-primary);font-weight:600">—</p>
+                </div>
+              </div>
+            </div>
+            <div class="form-group"><label>Date of Assessment *</label><input class="form-control" id="cAssessDate"
+                type="date"></div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+              <button class="btn btn-outline" onclick="nextCreateStep(1)"><svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg> Back</button>
+              <button class="btn btn-primary" onclick="createReportFromForm()">Create Report & Continue <svg
+                  viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Step 3: Assessment Data -->
+        <div class="create-step hidden" id="cstep-3">
+          <div class="card">
+            <div class="card-header">
+              <h3>Assessment Data</h3>
+            </div>
+            <div class="form-group"><label>Tests Administered (comma-separated)</label><input class="form-control"
+                id="cTests" placeholder="e.g. WISC-V, AQ-10, BASC-3"></div>
+            <div class="form-group"><label>Observational Notes</label><textarea class="form-control" id="cObsNotes"
+                placeholder="Describe behavioral observations during assessment..."></textarea></div>
+            <div class="form-group"><label>Behavioral Observations</label><textarea class="form-control" id="cBehObs"
+                placeholder="Note any significant behavioral patterns..."></textarea></div>
+            <div class="form-group"><label>Interview Findings</label><textarea class="form-control" id="cInterview"
+                placeholder="Key interview responses and findings..."></textarea></div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+              <button class="btn btn-outline" onclick="nextCreateStep(2)"><svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg> Back</button>
+              <button class="btn btn-primary" onclick="saveAssessmentStep()">Save & Continue <svg viewBox="0 0 24 24"
+                  width="14" height="14" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Step 4: Test Scores -->
+        <div class="create-step hidden" id="cstep-4">
+          <div class="card">
+            <div class="card-header">
+              <h3>Test Scores</h3><button class="btn btn-sm btn-outline" onclick="showAddScoreForm()"><svg
+                  viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                </svg> Add Score</button>
+            </div>
+            <div class="hidden" id="addScoreForm"
+              style="margin-bottom:20px;padding:16px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border)">
+              <div class="form-row">
+                <div class="form-group"><label>Test Name *</label><input class="form-control" id="sTestName"></div>
+                <div class="form-group"><label>Category *</label>
+                  <select class="form-control" id="sCategory">
+                    <option value="">Select</option>
+                    <option value="cognitive">Cognitive</option>
+                    <option value="asd_screening">ASD Screening</option>
+                    <option value="emotional">Emotional/Behavioral</option>
+                    <option value="adaptive">Adaptive Behavior</option>
+                    <option value="personality">Personality</option>
+                    <option value="academic">Academic</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Raw Score</label><input class="form-control" id="sRaw" type="number">
+                </div>
+                <div class="form-group"><label>Percentile</label><input class="form-control" id="sPercentile"
+                    type="number" min="0" max="100"></div>
+                <div class="form-group"><label>Standard Score</label><input class="form-control" id="sStandard"
+                    type="number"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Descriptive Range</label>
+                  <select class="form-control" id="sRange">
+                    <option value="">Select</option>
+                    <option>Very Superior</option>
+                    <option>Superior</option>
+                    <option>High Average</option>
+                    <option>Average</option>
+                    <option>Low Average</option>
+                    <option>Borderline</option>
+                    <option>Extremely Low</option>
+                    <option>Clinically Elevated</option>
+                    <option>At-Risk</option>
+                    <option>Within Normal Limits</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Interpretation Notes</label><input class="form-control" id="sNotes">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px"><button class="btn btn-success btn-sm" onclick="addTestScore()">Add
+                  Score</button><button class="btn btn-ghost btn-sm" onclick="hideAddScoreForm()">Cancel</button></div>
+            </div>
+            <div id="scoresList"></div>
+            <div class="empty-state hidden" id="emptyScores" style="padding:30px">
+              <div class="icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity="0.5">
+                  <path
+                    d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                </svg></div>
+              <h4>No scores added</h4>
+              <p>Add test scores to enable narrative generation.</p>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+              <button class="btn btn-outline" onclick="nextCreateStep(3)"><svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg> Back</button>
+              <button class="btn btn-primary" onclick="nextCreateStep(5)">Continue <svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Step 5: Generate Narratives -->
+        <div class="create-step hidden" id="cstep-5">
+          <div class="card">
+            <div class="card-header">
+              <h3>Rule-Based Narrative Generation</h3>
+            </div>
+            <p style="color:var(--text-secondary);margin-bottom:20px;font-size:13px">The system will analyze test scores
+              and generate clinical narrative interpretations using the rule engine.</p>
+            <button class="btn btn-primary btn-lg" onclick="generateNarratives()" id="btnGenerate"><svg
+                viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.49 12.65 0L21 3v7.12z" />
+              </svg> Generate Narratives</button>
+            <div id="narrativeResults" class="hidden" style="margin-top:24px"></div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+              <button class="btn btn-outline" onclick="nextCreateStep(4)"><svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg> Back</button>
+              <button class="btn btn-primary hidden" onclick="nextCreateStep(6)" id="btnToEdit">Continue to Editor <svg
+                  viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Step 6: Edit & Submit -->
+        <div class="create-step hidden" id="cstep-6">
+          <div class="card">
+            <div class="card-header">
+              <h3>Edit Report Sections</h3>
+              <div><button class="btn btn-sm btn-outline" onclick="showVersionModal()"><svg viewBox="0 0 24 24"
+                    width="14" height="14" fill="currentColor">
+                    <path
+                      d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                  </svg> Versions</button> <button class="btn btn-sm btn-success" onclick="submitReport()"><svg
+                    viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg> Submit for Review</button></div>
+            </div>
+            <div class="sections-editor" id="sectionsEditor"></div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+              <button class="btn btn-outline" onclick="nextCreateStep(5)"><svg viewBox="0 0 24 24" width="14"
+                  height="14" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg> Back</button>
+              <button class="btn btn-primary" onclick="submitReport()">Submit for Review <svg viewBox="0 0 24 24"
+                  width="14" height="14" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Templates View ═══ -->
+      <div class="view" id="view-templates">
+        <div class="page-header">
+          <div>
+            <h2>Report Templates</h2>
+            <p class="subtitle">Available assessment templates</p>
+          </div>
+        </div>
+        <div class="template-grid" id="viewTemplateGrid"></div>
+      </div>
+
+      <!-- ═══ Pending Reviews View (Director) ═══ -->
+      <div class="view" id="view-reviews">
+        <div class="page-header">
+          <div>
+            <h2>Pending Reviews</h2>
+            <p class="subtitle">Reports awaiting your approval</p>
+          </div>
+        </div>
+        <div id="reviewsList"></div>
+        <div class="empty-state hidden" id="emptyReviews">
+          <div class="icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity="0.5">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg></div>
+          <h4>All caught up</h4>
+          <p>No reports pending review.</p>
+        </div>
+      </div>
+
+      <!-- ═══ Report Detail View ═══ -->
+      <div class="view" id="view-detail">
+        <div class="page-header">
+          <div>
+            <h2 id="detailTitle">Report Detail</h2>
+            <p class="subtitle" id="detailSubtitle"></p>
+          </div>
+          <div id="detailActions"></div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="showDetailTab('info')">Overview</div>
+          <div class="tab" onclick="showDetailTab('sections')">Sections</div>
+          <div class="tab" onclick="showDetailTab('scores')">Scores</div>
+          <div class="tab" onclick="showDetailTab('history')">Versions</div>
+        </div>
+        <div id="detailContent"></div>
+      </div>
+
+      <!-- ═══ Audit Logs View ═══ -->
+      <div class="view" id="view-audit">
+        <div class="page-header">
+          <div>
+            <h2>Audit Logs</h2>
+            <p class="subtitle">Report activity monitoring</p>
+          </div>
+        </div>
+        <div class="card">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ Manage Templates View (Director) ═══ -->
+      <div class="view" id="view-manageTpl">
+        <div class="page-header">
+          <div>
+            <h2>Manage Templates</h2>
+            <p class="subtitle">Create and edit report templates</p>
+          </div>
+          <button class="btn btn-primary" onclick="showTplModal()"><svg viewBox="0 0 24 24" width="14" height="14"
+              fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg> New Template</button>
+        </div>
+        <div id="manageTplList"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Version History Modal -->
+  <div class="modal-overlay" id="versionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Version History</h3><button class="modal-close" onclick="closeModal('versionModal')">&#x2715;</button>
+      </div>
+      <div class="version-timeline" id="versionTimeline"></div>
+    </div>
+  </div>
+  <!-- Template Modal -->
+  <div class="modal-overlay" id="tplModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="tplModalTitle">New Template</h3><button class="modal-close"
+          onclick="closeModal('tplModal')">&#x2715;</button>
+      </div>
+      <div class="form-group"><label>Template Name *</label><input class="form-control" id="tplName"></div>
+      <div class="form-group"><label>Description</label><textarea class="form-control" id="tplDesc"></textarea></div>
+      <div class="form-group"><label>Template Type *</label>
+        <select class="form-control" id="tplType">
+          <option value="neurodevelopmental">Neurodevelopmental / Educational</option>
+          <option value="clinical">Clinical Psychological</option>
+          <option value="pre_employment">Pre-Employment</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Sections (JSON)</label><textarea class="form-control" id="tplSections"
+          style="min-height:150px;font-family:monospace;font-size:12px"></textarea>
+        <p class="form-hint">Array of {key, title, required} objects</p>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:20px"><button class="btn btn-primary" id="tplSaveBtn"
+          onclick="saveTemplate()">Save Template</button><button class="btn btn-outline"
+          onclick="closeModal('tplModal')">Cancel</button></div>
+    </div>
+  </div>
+  <!-- Approval Modal -->
+  <div class="modal-overlay" id="approvalModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="approvalModalTitle">Review Report</h3><button class="modal-close"
+          onclick="closeModal('approvalModal')">&#x2715;</button>
+      </div>
+      <div class="form-group"><label>Comments</label><textarea class="form-control" id="approvalComments"
+          placeholder="Add review comments..."></textarea></div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button class="btn btn-success" onclick="handleApproval('approve')"><svg viewBox="0 0 24 24" width="14"
+            height="14" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg> Approve</button>
+        <button class="btn btn-danger" onclick="handleApproval('reject')"><svg viewBox="0 0 24 24" width="14"
+            height="14" fill="currentColor">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg> Reject</button>
+        <button class="btn btn-outline" onclick="closeModal('approvalModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Preview & E-Sign Modal -->
+  <div class="pdf-preview-modal" id="pdfPreviewModal">
+    <div class="pdf-preview-header">
+      <div class="pdf-preview-title">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+        <span>Report Preview</span>
+      </div>
+      <div class="pdf-preview-actions">
+        <button class="btn-pdf-action" onclick="doDownloadPdf()" title="Download PDF">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Download
+        </button>
+        <button class="btn-pdf-action btn-esign" onclick="openEsignModal()" title="E-Sign Document">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          E-Sign
+        </button>
+        <button class="btn-pdf-close" onclick="closePdfPreview()" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="pdf-preview-body" id="pdfPreviewContainer">
+      <iframe id="pdfPreviewFrame" class="pdf-preview-frame"></iframe>
+    </div>
+    <div class="pdf-preview-body hidden" id="esignContainer">
+      <div class="esign-header">
+        <button class="btn-pdf-action" onclick="backToPdfPreview()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          Back to Preview
+        </button>
+        <span class="esign-label">✍️ Sign the document below</span>
+      </div>
+      <iframe id="esignFrame" class="pdf-preview-frame" allow="camera"></iframe>
+    </div>
+  </div>
+
+  <!-- E-Signature Draw/Upload Modal -->
+  <div class="modal-overlay" id="esignDrawModal">
+    <div class="modal esign-modal">
+      <div class="modal-header">
+        <h3>Add Your Signature</h3>
+        <button class="modal-close" onclick="closeEsignModal()">&#x2715;</button>
+      </div>
+      <p class="esign-modal-desc">Draw your signature or upload an image of your signature.</p>
+
+      <!-- Tabs -->
+      <div class="esign-tabs">
+        <button class="esign-tab active" id="esignTabDraw" onclick="switchEsignTab('draw')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          Draw
+        </button>
+        <button class="esign-tab" id="esignTabUpload" onclick="switchEsignTab('upload')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+          Upload
+        </button>
+      </div>
+
+      <!-- Draw Panel -->
+      <div class="esign-panel" id="esignPanelDraw">
+        <div class="esign-canvas-wrapper">
+          <canvas id="esignCanvas" width="520" height="200"></canvas>
+        </div>
+        <div class="esign-canvas-controls">
+          <div class="esign-pen-options">
+            <label class="esign-pen-label">Pen:</label>
+            <button class="esign-color-btn active" data-color="#1a2e1a" onclick="setSignatureColor('#1a2e1a', this)" style="background:#1a2e1a" title="Dark Green"></button>
+            <button class="esign-color-btn" data-color="#000000" onclick="setSignatureColor('#000000', this)" style="background:#000" title="Black"></button>
+            <button class="esign-color-btn" data-color="#1a237e" onclick="setSignatureColor('#1a237e', this)" style="background:#1a237e" title="Navy Blue"></button>
+            <input type="range" id="esignPenSize" min="1" max="6" value="2" class="esign-pen-slider" title="Pen thickness" oninput="setSignaturePenSize(this.value)">
+          </div>
+          <div class="esign-action-btns">
+            <button class="btn btn-ghost btn-sm" onclick="undoSignatureStroke()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+              Undo
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="clearSignatureCanvas()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Panel -->
+      <div class="esign-panel hidden" id="esignPanelUpload">
+        <div class="esign-upload-zone" id="esignUploadZone" onclick="document.getElementById('esignFileInput').click()">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" opacity="0.4"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+          <p class="esign-upload-text">Click to browse or drag & drop</p>
+          <p class="esign-upload-hint">PNG, JPG, or SVG • Max 2MB</p>
+          <input type="file" id="esignFileInput" accept="image/png,image/jpeg,image/svg+xml" style="display:none" onchange="handleEsignUpload(event)">
+        </div>
+        <div class="esign-upload-preview hidden" id="esignUploadPreview">
+          <img id="esignUploadImg" alt="Uploaded signature">
+          <button class="btn btn-ghost btn-sm esign-remove-btn" onclick="removeEsignUpload()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            Remove
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="esign-modal-actions">
+        <button class="btn btn-outline" onclick="closeEsignModal()">Cancel</button>
+        <button class="btn btn-primary" id="btnApplySignature" onclick="applySignature()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Apply Signature
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+  <!-- Toast -->
+  <div class="rpt-toast" id="rptToast"></div>
+
+  <script src="psych-reports.js"></script>
+</body>
+
+</html>

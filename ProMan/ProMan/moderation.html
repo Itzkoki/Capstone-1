@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderation | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .mod-container { max-width: 960px; margin: 80px auto 40px; padding: 0 24px; }
+    .mod-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .mod-header h1 { font-size: 24px; font-weight: 800; color: var(--text-dark); }
+    .mod-stats { display: flex; gap: 16px; margin-bottom: 28px; }
+    .mod-stat { background: #fff; border-radius: 14px; padding: 18px 24px; flex: 1; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .mod-stat__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #a0b0a0; margin-bottom: 4px; }
+    .mod-stat__val { font-size: 28px; font-weight: 800; color: var(--text-dark); }
+    .mod-stat--danger .mod-stat__val { color: #e53e3e; }
+    .mod-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .mod-tab { padding: 8px 20px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer; font-weight: 600; font-size: 14px; color: #4a5568; transition: all 0.2s; }
+    .mod-tab.active { border-color: var(--green-primary); color: var(--green-primary); background: rgba(52,199,89,0.06); }
+    .mod-card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-left: 4px solid #e2e8f0; }
+    .mod-card--crisis { border-left-color: #e53e3e; background: #fff5f5; }
+    .mod-card--pending { border-left-color: #ecc94b; }
+    .mod-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .mod-card__type { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 8px; }
+    .mod-card__type--thread { background: rgba(52,199,89,0.1); color: var(--green-primary); }
+    .mod-card__type--article { background: rgba(66,153,225,0.1); color: #4299e1; }
+    .mod-card__type--flag { background: rgba(229,62,62,0.1); color: #e53e3e; }
+    .mod-card__title { font-weight: 700; font-size: 15px; color: var(--text-dark); margin-bottom: 6px; }
+    .mod-card__meta { font-size: 12px; color: #a0b0a0; margin-bottom: 10px; }
+    .mod-card__content { font-size: 13px; color: var(--text-body); line-height: 1.6; margin-bottom: 14px; padding: 12px; background: #f8faf8; border-radius: 8px; }
+    .mod-card__actions { display: flex; gap: 8px; }
+    .btn-mod { padding: 7px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; }
+    .btn-mod--approve { background: #34c759; color: #fff; }
+    .btn-mod--approve:hover { background: #2da44e; }
+    .btn-mod--reject { background: #e53e3e; color: #fff; }
+    .btn-mod--reject:hover { background: #c53030; }
+    .btn-mod--dismiss { background: #e2e8f0; color: #4a5568; }
+    .btn-mod--dismiss:hover { background: #cbd5e0; }
+    .empty-mod { text-align: center; padding: 60px 20px; color: #a0b0a0; }
+    .empty-mod svg { width: 48px; height: 48px; fill: #c6d6c6; margin-bottom: 12px; }
+  </style>
+</head>
+<body class="logged-in">
+  <nav class="navbar"><a href="landingpage.html" class="navbar__brand"><div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse Psychological Services</span></a>
+    <div class="navbar__right"><ul class="navbar__links"><li><a href="admin-dashboard.html">Dashboard</a></li><li><a href="articles.html">Articles</a></li><li><a href="community.html">Community</a></li><li><a href="moderation.html" style="color:var(--green-primary)">Moderation</a></li></ul><a href="profile.html" class="navbar__profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg></a></div>
+  </nav>
+
+  <div class="mod-container">
+    <div class="mod-header">
+      <h1><svg viewBox="0 0 24 24" width="24" height="24" style="fill:currentColor;vertical-align:middle;margin-right:6px;"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Moderation Dashboard</h1>
+    </div>
+
+    <div class="mod-stats">
+      <div class="mod-stat mod-stat--danger"><div class="mod-stat__label">Pending Flags</div><div class="mod-stat__val" id="stat-flags">0</div></div>
+      <div class="mod-stat"><div class="mod-stat__label">Pending Threads</div><div class="mod-stat__val" id="stat-threads">0</div></div>
+      <div class="mod-stat"><div class="mod-stat__label">Pending Articles</div><div class="mod-stat__val" id="stat-articles">0</div></div>
+    </div>
+
+    <div class="mod-tabs">
+      <button class="mod-tab active" onclick="switchModTab('threads', this)">Pending Threads</button>
+      <button class="mod-tab" onclick="switchModTab('flags', this)">Flagged Content</button>
+      <button class="mod-tab" onclick="switchModTab('articles', this)">Pending Articles</button>
+    </div>
+
+    <div id="mod-list"></div>
+  </div>
+
+  <script src="session.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+    if (!user.role || user.role === 'client') window.location.href = 'community.html';
+
+    let currentModTab = 'threads';
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers } });
+      if (res.status === 401) window.location.href = 'login.html';
+      return res.json();
+    }
+
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    function switchModTab(tab, btn) {
+      currentModTab = tab;
+      document.querySelectorAll('.mod-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadModContent();
+    }
+
+    async function loadStats() {
+      try {
+        const json = await apiFetch('/moderation/stats');
+        if (json.success) {
+          document.getElementById('stat-flags').textContent = json.data.totalFlags;
+          document.getElementById('stat-threads').textContent = json.data.pendingThreads;
+          document.getElementById('stat-articles').textContent = json.data.pendingArticles;
+        }
+      } catch (err) { console.error('Stats failed:', err); }
+    }
+
+    function getThreadBadge(t) {
+      if (t.status === 'flagged') return '<span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> CRISIS / FLAGGED</span>';
+      return '<span class="mod-card__type mod-card__type--thread"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg> PENDING REVIEW</span>';
+    }
+
+    function getThreadClass(t) {
+      if (t.status === 'flagged') return 'mod-card--crisis';
+      return 'mod-card--pending';
+    }
+
+    async function loadModContent() {
+      const list = document.getElementById('mod-list');
+      if (currentModTab === 'threads') {
+        const json = await apiFetch('/forums/queue/pending');
+        if (!json.success || !json.data.length) { list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending threads. All clear!</p></div>'; return; }
+        list.innerHTML = json.data.map(t => `
+          <div class="mod-card mod-card--pending">
+            <div class="mod-card__header">
+              <span class="mod-card__type mod-card__type--thread"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg> PENDING REVIEW</span>
+              <span style="font-size:12px;color:#a0b0a0;">${timeAgo(t.created_at)}</span>
+            </div>
+            <div class="mod-card__title">${esc(t.title)}</div>
+            <div class="mod-card__meta">By ${esc(t.author_name || 'Unknown')} ${t.is_anonymous ? '(posted anonymously)' : ''} · Status: <strong>${esc(t.status)}</strong></div>
+            <div class="mod-card__content">${esc((t.content || '').substring(0, 400))}${(t.content?.length || 0) > 400 ? '...' : ''}</div>
+            <div class="mod-card__actions">
+              <button class="btn-mod btn-mod--approve" onclick="approveThread(${t.id})">✓ Approve</button>
+              <button class="btn-mod btn-mod--reject" onclick="rejectThread(${t.id})">✕ Reject</button>
+            </div>
+          </div>
+        `).join('');
+      } else if (currentModTab === 'flags') {
+        // Load both user-reported flags AND crisis/flagged threads
+        let flagsHtml = '';
+        let totalItems = 0;
+
+        // 1. Load flagged/crisis threads
+        try {
+          const flaggedJson = await apiFetch('/forums/queue/flagged');
+          if (flaggedJson.success && flaggedJson.data.length) {
+            totalItems += flaggedJson.data.length;
+            flagsHtml += flaggedJson.data.map(t => `
+              <div class="mod-card mod-card--crisis">
+                <div class="mod-card__header">
+                  <span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> CRISIS / FLAGGED THREAD</span>
+                  <span style="font-size:12px;color:#a0b0a0;">${timeAgo(t.created_at)}</span>
+                </div>
+                <div class="mod-card__title">${esc(t.title)}</div>
+                <div class="mod-card__meta">By ${esc(t.author_name || 'Unknown')} ${t.is_anonymous ? '(posted anonymously)' : ''} · Auto-flagged by system</div>
+                <div class="mod-card__content">${esc((t.content || '').substring(0, 400))}${(t.content?.length || 0) > 400 ? '...' : ''}</div>
+                <div class="mod-card__actions">
+                  <button class="btn-mod btn-mod--approve" onclick="approveThread(${t.id})">✓ Approve (Safe)</button>
+                  <button class="btn-mod btn-mod--reject" onclick="rejectThread(${t.id})">✕ Reject & Remove</button>
+                </div>
+              </div>
+            `).join('');
+          }
+        } catch (err) { console.error('Flagged threads failed:', err); }
+
+        // 2. Load user-reported flags
+        try {
+          const flagsJson = await apiFetch('/moderation/flags');
+          if (flagsJson.success && flagsJson.data.length) {
+            totalItems += flagsJson.data.length;
+            flagsHtml += flagsJson.data.map(f => `
+              <div class="mod-card ${f.reason === 'crisis_content' ? 'mod-card--crisis' : ''}">
+                <div class="mod-card__header">
+                  <span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg> FLAG: ${esc(f.reason.replace(/_/g, ' ').toUpperCase())}</span>
+                  <span style="font-size:12px;color:#a0b0a0;">${timeAgo(f.created_at)}</span>
+                </div>
+                <div class="mod-card__title">${esc(f.content_type)} #${f.content_id}</div>
+                <div class="mod-card__meta">Reported by ${esc(f.reporter_name || 'Anonymous')}${f.details ? ` — "${esc(f.details)}"` : ''}</div>
+                <div class="mod-card__content">${esc(f.content_preview || 'Content not available')}</div>
+                <div class="mod-card__actions">
+                  <button class="btn-mod btn-mod--reject" onclick="actionFlag(${f.id})"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:#fff;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/></svg> Remove Content</button>
+                  <button class="btn-mod btn-mod--dismiss" onclick="dismissFlag(${f.id})">Dismiss</button>
+                </div>
+              </div>
+            `).join('');
+          }
+        } catch (err) { console.error('Content flags failed:', err); }
+
+        if (!totalItems) {
+          list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending flags. All clear!</p></div>';
+        } else {
+          list.innerHTML = flagsHtml;
+        }
+      } else if (currentModTab === 'articles') {
+        const json = await apiFetch('/articles/pending');
+        if (!json.success || !json.data.length) { list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending articles. All clear!</p></div>'; return; }
+        list.innerHTML = json.data.map(a => `
+          <div class="mod-card mod-card--pending">
+            <div class="mod-card__header">
+              <span class="mod-card__type mod-card__type--article"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg> ARTICLE</span>
+              <span style="font-size:12px;color:#a0b0a0;">${timeAgo(a.created_at)}</span>
+            </div>
+            <div class="mod-card__title">${esc(a.title)}</div>
+            <div class="mod-card__meta">By ${esc(a.author_name || 'Unknown')}</div>
+            <div class="mod-card__content">${esc((a.content || '').substring(0, 300))}${(a.content?.length || 0) > 300 ? '...' : ''}</div>
+            <div class="mod-card__actions">
+              <button class="btn-mod btn-mod--approve" onclick="approveArticle(${a.id})">✓ Approve</button>
+              <button class="btn-mod btn-mod--reject" onclick="rejectArticle(${a.id})">✕ Reject</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function approveThread(id) {
+      await apiFetch(`/forums/${id}/approve`, { method: 'PUT' });
+      loadStats(); loadModContent();
+    }
+    async function rejectThread(id) {
+      if (!confirm('Reject this thread?')) return;
+      await apiFetch(`/forums/${id}/reject`, { method: 'PUT' });
+      loadStats(); loadModContent();
+    }
+    async function approveArticle(id) {
+      await apiFetch(`/articles/${id}/approve`, { method: 'PUT' });
+      loadStats(); loadModContent();
+    }
+    async function rejectArticle(id) {
+      if (!confirm('Reject this article?')) return;
+      await apiFetch(`/articles/${id}/reject`, { method: 'PUT' });
+      loadStats(); loadModContent();
+    }
+    async function actionFlag(id) {
+      if (!confirm('Remove the flagged content?')) return;
+      await apiFetch(`/moderation/flags/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'actioned', review_note: 'Content removed by moderator.' }) });
+      loadStats(); loadModContent();
+    }
+    async function dismissFlag(id) {
+      await apiFetch(`/moderation/flags/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'dismissed', review_note: 'Flag dismissed.' }) });
+      loadStats(); loadModContent();
+    }
+
+    loadStats();
+    loadModContent();
+  </script>
+</body>
+</html>

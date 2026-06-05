@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | Barcarse Psychological Services</title>
+  <meta name="description" content="View and update your profile at Barcarse Psychological Services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="profile.css">
+  <link rel="stylesheet" href="toast.css">
+</head>
+<body class="profile-page logged-in">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links">
+        <li><a href="meetings.html">Teleconference</a></li>
+        <li><a href="community.html">Community</a></li>
+        <li><a href="intakeform.html">Intake Form</a></li>
+      </ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ===== PROFILE LAYOUT ===== -->
+  <div class="profile-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__avatar">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </div>
+      <div class="sidebar__name" id="sidebar-name">Nickname</div>
+      <div class="sidebar__nickname" id="sidebar-fullname"></div>
+      <a href="mailto:" class="sidebar__email" id="sidebar-email">user@email.com</a>
+
+      <nav class="sidebar__nav">
+        <a href="#" class="active" data-section="profile-info">Profile Information</a>
+        <a href="#" data-section="health-bg">Health Background</a>
+        <a href="#" data-section="privacy">Privacy and Data Controls</a>
+        <a href="#" data-section="reports">Generated Reports</a>
+        <a href="#" id="logout-link" style="color:#e53935;margin-top:12px;">Log Out</a>
+        <a href="#" id="delete-account-link" style="color:#b71c1c;margin-top:4px;">Delete Account</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="profile-main">
+
+      <!-- ===== Toast notification ===== -->
+      <div class="toast" id="toast"></div>
+
+      <!-- ===== Loading overlay ===== -->
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <span>Loading profile…</span>
+      </div>
+
+      <!-- ■■■ SECTION: Profile Information ■■■ -->
+      <section id="section-profile-info" class="profile-section active">
+        <h1 class="profile-main__title">Profile Information</h1>
+        <p class="profile-main__subtitle">View and update your personal details</p>
+
+        <form id="profile-form">
+          <!-- Profile Details -->
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Profile Details</h2>
+            <p class="profile-card__subheading">Your basic personal information</p>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="nickname">Nickname <span style="color:#e53e3e;">*</span></label>
+                <input type="text" id="nickname" placeholder="Your nickname" required>
+                <small class="field-hint">This is your primary display name across the system.</small>
+              </div>
+              <div class="form-field">
+                <label for="fullName">Full Name <span style="color:#a0aec0; font-weight:400;">(optional)</span></label>
+                <input type="text" id="fullName" placeholder="Full legal name">
+                <small class="field-hint">Only shown if you choose to provide it.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Contact Information</h2>
+            <p class="profile-card__subheading">How can we reach you</p>
+
+            <div class="form-row form-row--2col">
+              <div class="form-field">
+                <label for="profileEmail">Email Address</label>
+                <input type="email" id="profileEmail" placeholder="your@email.com">
+                <small class="field-hint" id="email-hint" style="display:none;">Changing your email will require re-verification.</small>
+              </div>
+              <div class="form-field">
+                <label for="profileContact">Contact Number</label>
+                <input type="tel" id="profileContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX">
+                <small class="field-hint">Philippine format: +639XXXXXXXXX or 09XXXXXXXXX</small>
+              </div>
+            </div>
+
+            <!-- Inline OTP Verification (shown after email change) -->
+            <div class="otp-verify-card" id="otp-verify-section" style="display:none;">
+              <div class="otp-verify-card__header">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="#e65100"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span>A verification code has been sent to your new email. Enter it below to confirm the change.</span>
+              </div>
+              <div class="otp-verify-card__body">
+                <div class="otp-input-group">
+                  <input type="text" id="otpInput" maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric">
+                  <button type="button" class="btn-verify-otp" id="verify-otp-btn" disabled>Verify</button>
+                </div>
+                <div class="otp-verify-card__status" id="otp-status"></div>
+                <button type="button" class="btn-resend-otp" id="resend-otp-btn">Resend Code</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Information -->
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Additional Information</h2>
+            <p class="profile-card__subheading">Optional personal details</p>
+
+            <div class="form-row form-row--2col">
+              <div class="form-field">
+                <label for="gender">Gender</label>
+                <select id="gender">
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="dob">Date of Birth</label>
+                <input type="date" id="dob">
+              </div>
+            </div>
+
+            <div class="form-row form-row--2col">
+              <div class="form-field">
+                <label for="civilStatus">Civil Status</label>
+                <select id="civilStatus">
+                  <option value="">Select status</option>
+                  <option value="single">Single</option>
+                  <option value="married">Married</option>
+                  <option value="widowed">Widowed</option>
+                  <option value="separated">Separated</option>
+                  <option value="divorced">Divorced</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="address">Complete Address</label>
+                <input type="text" id="address" placeholder="Street, Barangay, City, Province">
+              </div>
+            </div>
+          </div>
+
+          <!-- Validation Error Display -->
+          <div class="validation-errors" id="validation-errors" style="display:none;"></div>
+
+          <!-- Save -->
+          <div class="profile-save">
+            <button type="submit" class="btn-save" id="save-btn">Save Changes</button>
+          </div>
+        </form>
+
+        <!-- Security -->
+        <div class="profile-card" style="margin-top:32px;">
+          <h2 class="profile-card__heading">Security</h2>
+          <p class="profile-card__subheading">Manage your account password</p>
+          <p style="font-size:13px;color:var(--text-body);margin-bottom:16px;">Click below to receive a password reset link at your registered email address.</p>
+          <button type="button" class="btn-change" id="change-password-btn" >Change Password</button>
+        </div>
+
+        <!-- Delete Account Danger Zone -->
+        <div class="profile-card" id="danger-zone" style="border:1.5px solid rgba(229,57,53,0.25);margin-top:24px;">
+          <h2 class="profile-card__heading" style="color:#e53935;">Danger Zone</h2>
+          <p class="profile-card__subheading">Permanently delete your account and all associated data. This action cannot be undone.</p>
+          <button type="button" class="btn-delete" id="delete-account-btn">Delete My Account</button>
+        </div>
+      </section>
+
+      <!-- ■■■ SECTION: Health Background ■■■ -->
+      <section id="section-health-bg" class="profile-section">
+        <h1 class="profile-main__title">Health Background</h1>
+        <p class="profile-main__subtitle">Optional health-related information for your therapist</p>
+
+        <form id="health-form">
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Medical History</h2>
+            <p class="profile-card__subheading">Any past or ongoing medical conditions</p>
+            <div class="form-row form-row--1col">
+              <div class="form-field">
+                <textarea id="medicalHistory" placeholder="e.g., Diagnosed with anxiety disorder in 2022…" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Current Medications</h2>
+            <p class="profile-card__subheading">Medications you are currently taking</p>
+            <div class="form-row form-row--1col">
+              <div class="form-field">
+                <textarea id="currentMedications" placeholder="e.g., Sertraline 50mg daily…" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Previous Treatments</h2>
+            <p class="profile-card__subheading">Any past therapy or treatment sessions</p>
+            <div class="form-row form-row--1col">
+              <div class="form-field">
+                <textarea id="previousTreatments" placeholder="e.g., CBT sessions from January to June 2023…" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-save">
+            <button type="submit" class="btn-save" id="save-health-btn">Save Health Info</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ■■■ SECTION: Privacy and Data Controls ■■■ -->
+      <section id="section-privacy" class="profile-section">
+        <h1 class="profile-main__title">Privacy and Data Controls</h1>
+        <p class="profile-main__subtitle">Control who can see your sensitive information</p>
+
+        <form id="privacy-form">
+          <div class="profile-card">
+            <h2 class="profile-card__heading">Visibility Settings</h2>
+            <p class="profile-card__subheading">Toggle which fields are visible to other users</p>
+
+            <div class="toggle-list">
+              <div class="toggle-item">
+                <div class="toggle-item__info">
+                  <span class="toggle-item__label">Medical History</span>
+                  <span class="toggle-item__desc">Allow your therapist to view medical history</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="privacyMedical">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-item__info">
+                  <span class="toggle-item__label">Current Medications</span>
+                  <span class="toggle-item__desc">Allow your therapist to view current medications</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="privacyMedications">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-item__info">
+                  <span class="toggle-item__label">Previous Treatments</span>
+                  <span class="toggle-item__desc">Allow your therapist to view treatment history</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="privacyTreatments">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-save">
+            <button type="submit" class="btn-save" id="save-privacy-btn">Save Privacy Settings</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ■■■ SECTION: Generated Reports ■■■ -->
+      <section id="section-reports" class="profile-section">
+        <h1 class="profile-main__title">Generated Reports</h1>
+        <p class="profile-main__subtitle">Your session reports and assessments</p>
+
+        <div class="profile-card">
+          <h2 class="profile-card__heading">Coming Soon</h2>
+          <p class="profile-card__subheading">Report generation will be available once you complete sessions with your therapist.</p>
+        </div>
+      </section>
+
+      <!-- Password Prompt Modal (for email change) -->
+      <div class="modal-overlay" id="password-modal">
+        <div class="modal-card">
+          <div class="modal-card__icon">
+            <svg viewBox="0 0 24 24" width="40" height="40"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" fill="#2b6cb0"/></svg>
+          </div>
+          <h3 class="modal-card__title">Confirm Your Password</h3>
+          <p class="modal-card__text">Please enter your password to verify this email change.</p>
+          <div class="modal-password-field">
+            <input type="password" id="email-password-input" class="modal-card__input" placeholder="Enter your password" autocomplete="current-password">
+            <div class="modal-password-error" id="email-password-error"></div>
+          </div>
+          <div class="modal-card__actions">
+            <button type="button" class="modal-btn modal-btn--cancel" id="password-modal-cancel">Cancel</button>
+            <button type="button" class="modal-btn modal-btn--primary" id="password-modal-confirm">Verify & Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal (password required) -->
+      <div class="modal-overlay" id="delete-modal">
+        <div class="modal-card">
+          <div class="modal-card__icon">
+            <svg viewBox="0 0 24 24" width="40" height="40"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#e53935"/></svg>
+          </div>
+          <h3 class="modal-card__title">Delete Account?</h3>
+          <p class="modal-card__text">This will permanently delete your account, profile data, and all records. This action <strong>cannot be undone</strong>.</p>
+          <p class="modal-card__text" style="font-size:13px;margin-top:12px;">Enter your password to confirm:</p>
+          <div class="modal-password-field">
+            <input type="password" id="delete-password-input" class="modal-card__input" placeholder="Enter your password" autocomplete="current-password">
+            <div class="modal-password-error" id="delete-password-error"></div>
+          </div>
+          <div class="modal-card__actions">
+            <button type="button" class="modal-btn modal-btn--cancel" id="delete-cancel">Cancel</button>
+            <button type="button" class="modal-btn modal-btn--danger" id="delete-confirm">Delete Account</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    // ── Config ────────────────────────────────────────────
+    const API_BASE = 'http://localhost:5000/api';
+    const TOKEN = BPSSession.getToken();
+
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`,
+    };
+
+    // ── DOM References ───────────────────────────────────
+    const toast         = document.getElementById('toast');
+    const loadingOverlay= document.getElementById('loading-overlay');
+    const profileForm   = document.getElementById('profile-form');
+    const healthForm    = document.getElementById('health-form');
+    const privacyForm   = document.getElementById('privacy-form');
+    const validationBox = document.getElementById('validation-errors');
+    const emailHint     = document.getElementById('email-hint');
+
+    // Store the original email to detect changes
+    let originalEmail = '';
+
+    // ── Toast helper ─────────────────────────────────────
+    function showToast(msg, type = 'success') {
+      if (type === 'error') BPSToast.error(msg);
+      else BPSToast.success(msg);
+    }
+
+    // ── Loading helpers ──────────────────────────────────
+    function showLoading() { loadingOverlay.classList.add('active'); }
+    function hideLoading() { loadingOverlay.classList.remove('active'); }
+
+    // ── Validation display ───────────────────────────────
+    function showValidationErrors(errors) {
+      validationBox.innerHTML = errors.map(e =>
+        `<div class="val-error">• <strong>${e.field}:</strong> ${e.message}</div>`
+      ).join('');
+      validationBox.style.display = 'block';
+    }
+    function hideValidationErrors() {
+      validationBox.style.display = 'none';
+      validationBox.innerHTML = '';
+    }
+
+    // ── Section switching ────────────────────────────────
+    document.querySelectorAll('.sidebar__nav a[data-section]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sectionId = link.getAttribute('data-section');
+
+        // Update sidebar active state
+        document.querySelectorAll('.sidebar__nav a').forEach(a => a.classList.remove('active'));
+        link.classList.add('active');
+
+        // Show / hide sections
+        document.querySelectorAll('.profile-section').forEach(sec => sec.classList.remove('active'));
+        const target = document.getElementById(`section-${sectionId}`);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    // ── Sidebar updater ──────────────────────────────────
+    function updateSidebar() {
+      const nick  = document.getElementById('nickname').value || 'User';
+      const full  = document.getElementById('fullName').value || '';
+      const email = document.getElementById('profileEmail').value || '';
+
+      document.getElementById('sidebar-name').textContent = nick;
+      document.getElementById('sidebar-fullname').textContent = full || '';
+      document.getElementById('sidebar-email').textContent = email;
+      document.getElementById('sidebar-email').href = 'mailto:' + email;
+    }
+
+    ['nickname', 'fullName', 'profileEmail'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateSidebar);
+    });
+
+    // ── Email change hint ────────────────────────────────
+    document.getElementById('profileEmail').addEventListener('input', () => {
+      const current = document.getElementById('profileEmail').value.trim();
+      emailHint.style.display = (current !== originalEmail && originalEmail) ? 'block' : 'none';
+    });
+
+    // ── LOAD PROFILE FROM API (GET /api/profile) ────────
+    async function loadProfile() {
+      showLoading();
+      try {
+        const res = await fetch(`${API_BASE}/profile`, { headers: authHeaders });
+
+        if (res.status === 401) {
+          sessionStorage.removeItem('bps_logged_in');
+          sessionStorage.removeItem('bps_token');
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          // Profile not found — normal for new users, just populate from user data
+          const userData = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
+          document.getElementById('nickname').value = userData.full_name || userData.fullname || userData.nickname || '';
+          document.getElementById('profileEmail').value = userData.email || '';
+          document.getElementById('profileContact').value = userData.contact_number || userData.contact || '';
+          originalEmail = userData.email || '';
+          updateSidebar();
+          hideLoading();
+          return;
+        }
+
+        const d = json.data;
+
+        // Profile fields
+        document.getElementById('nickname').value        = d.full_name || '';
+        document.getElementById('profileEmail').value    = d.email || '';
+        document.getElementById('profileContact').value  = d.contact_number || '';
+        document.getElementById('gender').value          = d.gender || '';
+        document.getElementById('dob').value             = d.date_of_birth ? d.date_of_birth.split('T')[0] : '';
+        document.getElementById('civilStatus').value     = d.civil_status || '';
+        document.getElementById('address').value         = d.address || '';
+
+        // Health fields
+        document.getElementById('medicalHistory').value      = d.medical_history || '';
+        document.getElementById('currentMedications').value  = d.current_medications || '';
+        document.getElementById('previousTreatments').value  = d.previous_treatments || '';
+
+        // Privacy toggles
+        if (d.privacy) {
+          document.getElementById('privacyMedical').checked     = d.privacy.show_medical_history || false;
+          document.getElementById('privacyMedications').checked = d.privacy.show_current_medications || false;
+          document.getElementById('privacyTreatments').checked  = d.privacy.show_previous_treatments || false;
+        }
+
+        originalEmail = d.email || '';
+        updateSidebar();
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+        showToast('Failed to load profile. Please try again.', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    loadProfile();
+
+    // ── SAVE PROFILE (PUT /api/profile) ─────────────────
+    // Intercept: if email changed, show password modal first
+    const passwordModal     = document.getElementById('password-modal');
+    const emailPwdInput     = document.getElementById('email-password-input');
+    const emailPwdError     = document.getElementById('email-password-error');
+    const pwdModalConfirm   = document.getElementById('password-modal-confirm');
+    const pwdModalCancel    = document.getElementById('password-modal-cancel');
+
+    let pendingSaveBody = null; // stores the profile body when waiting for password
+
+    function openPasswordModal() {
+      passwordModal.classList.add('active');
+      emailPwdInput.value = '';
+      emailPwdError.textContent = '';
+      emailPwdError.style.display = 'none';
+      pwdModalConfirm.disabled = false;
+      pwdModalConfirm.textContent = 'Verify & Save';
+      setTimeout(() => emailPwdInput.focus(), 100);
+    }
+
+    function closePasswordModal() {
+      passwordModal.classList.remove('active');
+      pendingSaveBody = null;
+    }
+
+    pwdModalCancel.addEventListener('click', closePasswordModal);
+    passwordModal.addEventListener('click', (e) => { if (e.target === passwordModal) closePasswordModal(); });
+
+    // Allow pressing Enter in the password field
+    emailPwdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); pwdModalConfirm.click(); }
+    });
+
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideValidationErrors();
+
+      const body = {
+        full_name:      document.getElementById('nickname').value.trim(),
+        email:          document.getElementById('profileEmail').value.trim(),
+        contact_number: document.getElementById('profileContact').value.trim(),
+        gender:         document.getElementById('gender').value || undefined,
+        date_of_birth:  document.getElementById('dob').value || undefined,
+        civil_status:   document.getElementById('civilStatus').value || undefined,
+        address:        document.getElementById('address').value.trim() || undefined,
+      };
+
+      // Remove undefined keys
+      Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
+
+      // If email has changed, prompt for password first
+      const emailChanged = body.email !== originalEmail && originalEmail;
+      if (emailChanged) {
+        pendingSaveBody = body;
+        openPasswordModal();
+        return;
+      }
+
+      // No email change — save directly
+      await saveProfile(body);
+    });
+
+    // When user confirms password in the email-change modal
+    pwdModalConfirm.addEventListener('click', async () => {
+      const password = emailPwdInput.value;
+      if (!password) {
+        emailPwdError.textContent = 'Please enter your password.';
+        emailPwdError.style.display = 'block';
+        return;
+      }
+
+      pwdModalConfirm.disabled = true;
+      pwdModalConfirm.textContent = 'Verifying…';
+      emailPwdError.style.display = 'none';
+
+      // Include password in the save body
+      const body = { ...pendingSaveBody, password };
+      closePasswordModal();
+      await saveProfile(body);
+    });
+
+    // Core save function
+    async function saveProfile(body) {
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      try {
+        const res = await fetch(`${API_BASE}/profile`, {
+          method: 'PUT',
+          headers: authHeaders,
+          body: JSON.stringify(body),
+        });
+
+        const json = await res.json();
+
+        if (res.status === 400 && json.errors) {
+          showValidationErrors(json.errors);
+          showToast('Please fix the validation errors.', 'error');
+          return;
+        }
+
+        if (res.status === 401) {
+          // Could be incorrect password or expired token
+          if (json.message && json.message.toLowerCase().includes('password')) {
+            showToast(json.message, 'error');
+          } else {
+            sessionStorage.removeItem('bps_logged_in');
+            sessionStorage.removeItem('bps_token');
+            window.location.href = 'login.html';
+          }
+          return;
+        }
+
+        if (res.status === 409) {
+          showToast(json.message || 'Email already in use.', 'error');
+          return;
+        }
+
+        if (res.ok && json.success) {
+          const emailWasChanged = json.message && json.message.toLowerCase().includes('verification');
+
+          showToast(json.message || 'Profile updated successfully!');
+          emailHint.style.display = 'none';
+
+          if (emailWasChanged) {
+            pendingVerifyEmail = body.email;
+            showOtpSection();
+          } else {
+            originalEmail = document.getElementById('profileEmail').value.trim();
+          }
+
+          // Refresh local user cache
+          const userData = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
+          userData.full_name = body.full_name;
+          userData.email = body.email;
+          userData.contact_number = body.contact_number;
+          sessionStorage.setItem('bps_user', JSON.stringify(userData));
+        } else {
+          showToast(json.message || 'Failed to update profile.', 'error');
+        }
+      } catch (err) {
+        console.error('Save error:', err);
+        showToast('Network error. Please try again.', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+      }
+    }
+
+    // ── OTP VERIFICATION (inline) ────────────────────────
+    const otpSection   = document.getElementById('otp-verify-section');
+    const otpInput     = document.getElementById('otpInput');
+    const verifyOtpBtn = document.getElementById('verify-otp-btn');
+    const resendOtpBtn = document.getElementById('resend-otp-btn');
+    const otpStatus    = document.getElementById('otp-status');
+    let pendingVerifyEmail = '';
+
+    function showOtpSection() {
+      otpSection.style.display = 'block';
+      otpInput.value = '';
+      otpInput.focus();
+      verifyOtpBtn.disabled = true;
+      otpStatus.textContent = '';
+      otpStatus.className = 'otp-verify-card__status';
+    }
+
+    function hideOtpSection() {
+      otpSection.style.display = 'none';
+      pendingVerifyEmail = '';
+    }
+
+    otpInput.addEventListener('input', () => {
+      otpInput.value = otpInput.value.replace(/[^0-9]/g, '');
+      verifyOtpBtn.disabled = otpInput.value.length !== 6;
+    });
+
+    verifyOtpBtn.addEventListener('click', async () => {
+      if (!pendingVerifyEmail || otpInput.value.length !== 6) return;
+
+      verifyOtpBtn.disabled = true;
+      verifyOtpBtn.textContent = 'Verifying…';
+      otpStatus.textContent = '';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail, otp: otpInput.value }),
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          otpStatus.textContent = '✓ Email verified successfully!';
+          otpStatus.className = 'otp-verify-card__status otp-verify-card__status--success';
+          showToast('Email verified successfully!');
+          originalEmail = pendingVerifyEmail;
+          setTimeout(() => hideOtpSection(), 2000);
+        } else {
+          otpStatus.textContent = json.message || 'Invalid verification code.';
+          otpStatus.className = 'otp-verify-card__status otp-verify-card__status--error';
+        }
+      } catch (err) {
+        otpStatus.textContent = 'Network error. Please try again.';
+        otpStatus.className = 'otp-verify-card__status otp-verify-card__status--error';
+      } finally {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.textContent = 'Verify';
+      }
+    });
+
+    resendOtpBtn.addEventListener('click', async () => {
+      if (!pendingVerifyEmail) return;
+
+      resendOtpBtn.disabled = true;
+      resendOtpBtn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/resend-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail }),
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showToast('New verification code sent!');
+          otpInput.value = '';
+          otpInput.focus();
+        } else {
+          showToast(json.message || 'Failed to resend code.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+      } finally {
+        resendOtpBtn.disabled = false;
+        resendOtpBtn.textContent = 'Resend Code';
+      }
+    });
+
+    // ── SAVE HEALTH INFO (PUT /api/profile) ─────────────
+    healthForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('save-health-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const body = {
+        medical_history:     document.getElementById('medicalHistory').value.trim() || undefined,
+        current_medications: document.getElementById('currentMedications').value.trim() || undefined,
+        previous_treatments: document.getElementById('previousTreatments').value.trim() || undefined,
+      };
+
+      Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
+
+      try {
+        const res = await fetch(`${API_BASE}/profile`, {
+          method: 'PUT',
+          headers: authHeaders,
+          body: JSON.stringify(body),
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showToast('Health information saved successfully!');
+        } else {
+          showToast(json.message || 'Failed to save health info.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Health Info';
+      }
+    });
+
+    // ── SAVE PRIVACY (PUT /api/profile) ─────────────────
+    privacyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('save-privacy-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const body = {
+        privacy: {
+          show_medical_history:     document.getElementById('privacyMedical').checked,
+          show_current_medications: document.getElementById('privacyMedications').checked,
+          show_previous_treatments: document.getElementById('privacyTreatments').checked,
+        },
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/profile`, {
+          method: 'PUT',
+          headers: authHeaders,
+          body: JSON.stringify(body),
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showToast('Privacy settings saved successfully!');
+        } else {
+          showToast(json.message || 'Failed to save privacy settings.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Privacy Settings';
+      }
+    });
+
+    // ── CHANGE PASSWORD ─────────────────────────────────
+    document.getElementById('change-password-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('change-password-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch(`${API_BASE}/profile/change-password`, {
+          method: 'POST',
+          headers: authHeaders,
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showToast(json.message || 'Password reset link sent to your email!');
+        } else {
+          showToast(json.message || 'Failed to send reset link.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Change Password';
+      }
+    });
+
+    // ── LOGOUT ───────────────────────────────────────────
+    document.getElementById('logout-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      BPSSession.logout();
+    });
+
+    // ── DELETE ACCOUNT (with password) ───────────────────
+    const deleteModal      = document.getElementById('delete-modal');
+    const deletePwdInput   = document.getElementById('delete-password-input');
+    const deletePwdError   = document.getElementById('delete-password-error');
+    const deleteConfirmBtn = document.getElementById('delete-confirm');
+
+    function openDeleteModal() {
+      deleteModal.classList.add('active');
+      deletePwdInput.value = '';
+      deletePwdError.textContent = '';
+      deletePwdError.style.display = 'none';
+      deleteConfirmBtn.disabled = false;
+      deleteConfirmBtn.textContent = 'Delete Account';
+      setTimeout(() => deletePwdInput.focus(), 100);
+    }
+
+    document.getElementById('delete-account-btn').addEventListener('click', openDeleteModal);
+    document.getElementById('delete-account-link').addEventListener('click', (e) => { e.preventDefault(); openDeleteModal(); });
+    document.getElementById('delete-cancel').addEventListener('click', () => deleteModal.classList.remove('active'));
+    deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) deleteModal.classList.remove('active'); });
+
+    // Allow pressing Enter in the password field
+    deletePwdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); deleteConfirmBtn.click(); }
+    });
+
+    deleteConfirmBtn.addEventListener('click', async () => {
+      const password = deletePwdInput.value;
+      if (!password) {
+        deletePwdError.textContent = 'Please enter your password.';
+        deletePwdError.style.display = 'block';
+        return;
+      }
+
+      deleteConfirmBtn.disabled = true;
+      deleteConfirmBtn.textContent = 'Deleting…';
+      deletePwdError.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/profile`, {
+          method: 'DELETE',
+          headers: authHeaders,
+          body: JSON.stringify({ password }),
+        });
+
+        const json = await res.json();
+
+        if (res.status === 401) {
+          deletePwdError.textContent = json.message || 'Incorrect password.';
+          deletePwdError.style.display = 'block';
+          deleteConfirmBtn.disabled = false;
+          deleteConfirmBtn.textContent = 'Delete Account';
+          return;
+        }
+
+        if (res.ok && json.success) {
+          BPSSession.clearSession();
+          localStorage.removeItem('bps_profile');
+          localStorage.removeItem('bps_intake');
+          BPSToast.success('Your account has been permanently deleted.', { title: 'Account Deleted', duration: 3000 });
+          setTimeout(() => window.location.replace('landingpage.html'), 1500);
+        } else {
+          showToast(json.message || 'Failed to delete account.', 'error');
+          deleteModal.classList.remove('active');
+        }
+      } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+        deleteModal.classList.remove('active');
+      } finally {
+        deleteConfirmBtn.disabled = false;
+        deleteConfirmBtn.textContent = 'Delete Account';
+      }
+    });
+  </script>
+</body>
+</html>

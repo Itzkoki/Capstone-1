@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teleconference | Barcarse Psychological Services</title>
+  <meta name="description" content="Secure teleconference consultation sessions for Barcarse Psychological Services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="meetings.css">
+  <link rel="stylesheet" href="toast.css">
+  <script src="//sdk.twilio.com/js/video/releases/2.28.1/twilio-video.min.js"></script>
+</head>
+<body class="meetings-page logged-in">
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="meetings-container">
+
+    <!-- SESSION LIST VIEW (default) -->
+    <div id="sessions-list-view">
+      <div class="meetings-header">
+        <h1 class="meetings-header__title">
+          <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:var(--green-primary);vertical-align:middle;margin-right:8px;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          Teleconference
+        </h1>
+        <button class="btn-create" id="btn-new-session" onclick="toggleCreateForm()" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
+          New Session
+        </button>
+      </div>
+
+      <!-- Create Session Form -->
+      <div class="create-meeting-form" id="create-form">
+        <h3 class="form-title">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:var(--green-primary);"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          Start a New Consultation Session
+        </h3>
+        <input type="text" id="session-title" placeholder="Session title (e.g. Initial Assessment, Follow-up Session)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="client-select">Assign Client <span style="color:#e53e3e;">*</span></label>
+            <select id="client-select" required>
+              <option value="">-- Select a client --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="staff-select">Assign Additional Staff <span style="font-size:11px;color:#a0aec0;">(optional, up to 3)</span></label>
+            <select id="staff-select" multiple style="min-height:80px;">
+            </select>
+            <p style="font-size:11px;color:#a0aec0;margin-top:4px;">Hold Ctrl/Cmd to select multiple staff. Session supports up to 5 participants total.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-modal btn-modal--cancel" onclick="toggleCreateForm()">Cancel</button>
+          <button class="btn-modal btn-modal--primary" onclick="createSession()">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff;margin-right:4px;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            Create Session
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="meetings-tabs">
+        <button class="tab-btn active" onclick="filterSessions('', this)">All</button>
+        <button class="tab-btn" onclick="filterSessions('scheduled', this)">Scheduled</button>
+        <button class="tab-btn" onclick="filterSessions('active', this)">Active</button>
+        <button class="tab-btn" onclick="filterSessions('ended', this)">Ended</button>
+      </div>
+
+      <!-- Session Cards -->
+      <div id="sessions-list"></div>
+    </div>
+
+    <!-- SESSION DETAIL / VIDEO VIEW -->
+    <div id="session-detail-view" style="display:none;">
+      <button class="back-btn" onclick="leaveSession()">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
+        Back to Sessions
+      </button>
+
+      <div class="session-detail-layout">
+        <!-- Video Area -->
+        <div class="video-container">
+          <div class="video-header">
+            <h2 class="video-header__title" id="session-title-display">Consultation Session</h2>
+            <span class="meeting-status" id="session-status-badge">scheduled</span>
+          </div>
+
+          <div class="video-grid" id="video-grid">
+            <div class="video-placeholder">
+              <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"/></svg>
+              <p>Click <strong>Join Session</strong> to start the video consultation</p>
+              <p style="font-size:11px;margin-top:6px;opacity:0.5;">Supports up to 5 participants</p>
+            </div>
+          </div>
+
+          <!-- Video Controls -->
+          <div class="video-controls" id="video-controls" style="display:none;">
+            <button class="ctrl-btn" id="btn-toggle-audio" onclick="toggleAudio()" title="Toggle Microphone">
+              <svg viewBox="0 0 24 24" id="mic-icon"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/></svg>
+            </button>
+            <button class="ctrl-btn" id="btn-toggle-video" onclick="toggleVideo()" title="Toggle Camera">
+              <svg viewBox="0 0 24 24" id="cam-icon"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"/></svg>
+            </button>
+            <button class="ctrl-btn ctrl-btn--danger" onclick="leaveSession()" title="Leave Session">
+              <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" fill="currentColor"/></svg>
+            </button>
+          </div>
+
+          <!-- Join/End Buttons (pre-join state) -->
+          <div class="session-actions" id="session-actions">
+            <button class="btn-join" id="btn-join" onclick="joinSession()">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#fff;margin-right:6px;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+              Join Session
+            </button>
+            <button class="btn-end" id="btn-end" onclick="endSessionAction()" style="display:none;">End Session</button>
+          </div>
+
+          <!-- Recording Banner -->
+          <div class="recording-banner" id="recording-banner" style="display:none;">
+            <div class="recording-banner__indicator"></div>
+            <span id="recording-status-text">Recording requested — awaiting client consent</span>
+            <div id="recording-consent-btns" style="display:none;">
+              <button class="btn-consent btn-consent--yes" onclick="giveRecordingConsent(true)">Allow Recording</button>
+              <button class="btn-consent btn-consent--no" onclick="giveRecordingConsent(false)">Deny</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="session-sidebar">
+          <!-- Participants -->
+          <div class="sidebar-panel">
+            <div class="sidebar-panel__title">
+              <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/></svg>
+              Participants
+            </div>
+            <div id="participants-list">
+              <div class="participant-placeholder">No participants yet</div>
+            </div>
+          </div>
+
+          <!-- Session Info -->
+          <div class="sidebar-panel">
+            <div class="sidebar-panel__title">
+              <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z" fill="currentColor"/></svg>
+              Session Info
+            </div>
+            <div class="session-info" id="session-info">
+              <div class="info-row"><span class="info-label">Meeting ID</span><span class="info-val" id="info-meeting-id">—</span></div>
+              <div class="info-row"><span class="info-label">Psychologist</span><span class="info-val" id="info-psychologist">—</span></div>
+              <div class="info-row"><span class="info-label">Client</span><span class="info-val" id="info-client">—</span></div>
+              <div class="info-row"><span class="info-label">Started</span><span class="info-val" id="info-started">—</span></div>
+              <div class="info-row"><span class="info-label">Recording</span><span class="info-val" id="info-recording">Off</span></div>
+            </div>
+          </div>
+
+          <!-- Controls (psychologist only) -->
+          <div class="sidebar-panel" id="psych-controls" style="display:none;">
+            <div class="sidebar-panel__title">
+              <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/></svg>
+              Session Controls
+            </div>
+            <div class="controls-list">
+              <button class="control-btn" id="btn-start-recording" onclick="requestRecording()">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="currentColor"/></svg>
+                Start Recording
+              </button>
+              <button class="control-btn control-btn--warning" id="btn-stop-recording" onclick="stopRecording()" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" fill="currentColor"/></svg>
+                Stop Recording
+              </button>
+              <button class="control-btn control-btn--danger" onclick="endSessionAction()">
+                <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" fill="currentColor"/></svg>
+                End Session
+              </button>
+            </div>
+          </div>
+
+          <!-- Session Logs (staff only) -->
+          <div class="sidebar-panel" id="logs-panel" style="display:none;">
+            <div class="sidebar-panel__title">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="currentColor"/></svg>
+              Session Logs
+            </div>
+            <div class="logs-list" id="session-logs-list">
+              <div class="log-empty">No logs yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast (legacy element hidden — using BPSToast) -->
+  <div class="flag-toast" id="toast" style="display:none;"></div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+    const isStaffUser = user.role && user.role !== 'client';
+
+    let currentFilter = '';
+    let currentSession = null;
+    let twilioRoom = null;
+    let localTracks = [];
+
+    // ===== HELPERS =====
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, {
+        ...opts,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers },
+      });
+      if (res.status === 401) window.location.href = 'login.html';
+      return res.json();
+    }
+
+    function showToast(msg) {
+      BPSToast.success(msg);
+    }
+
+    function timeAgo(d) {
+      if (!d) return '—';
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function formatDateTime(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    // ===== NAVBAR =====
+    (function() {
+      const navLinks = document.getElementById('nav-links');
+      if (user.role === 'client') {
+        navLinks.innerHTML = `<li><a href="landingpage.html">Home</a></li><li><a href="intakeform.html">Intake Form</a></li><li><a href="meetings.html" style="color:var(--green-primary)">Meetings</a></li><li><a href="community.html">Community</a></li>`;
+      } else {
+        navLinks.innerHTML = `<li><a href="admin-dashboard.html">Dashboard</a></li><li><a href="articles.html">Articles</a></li><li><a href="meetings.html" style="color:var(--green-primary)">Meetings</a></li><li><a href="intake-submissions.html">Intake Forms</a></li><li><a href="community.html">Community</a></li>`;
+        document.getElementById('btn-new-session').style.display = 'inline-flex';
+      }
+    })();
+
+    // ===== CREATE FORM =====
+    function toggleCreateForm() {
+      document.getElementById('create-form').classList.toggle('active');
+    }
+
+    async function loadClients() {
+      try {
+        const json = await apiFetch('/teleconference/clients');
+        if (json.success && json.data.length) {
+          const select = document.getElementById('client-select');
+          json.data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.full_name} (${c.email})`;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) { console.error('Failed to load clients:', e); }
+    }
+
+    async function loadStaff() {
+      try {
+        const staffJson = await apiFetch('/teleconference/staff');
+        const staffSelect = document.getElementById('staff-select');
+        if (staffJson.success && staffJson.data && staffJson.data.length) {
+          staffJson.data.forEach(s => {
+            if (s.id !== user.id) { // exclude current user (session creator)
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              opt.textContent = `${s.full_name} (${s.role})`;
+              staffSelect.appendChild(opt);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load staff:', e);
+      }
+    }
+
+    async function createSession() {
+      const title = document.getElementById('session-title').value.trim();
+      if (!title) { BPSToast.warning('Session title is required.', { title: 'Missing Title' }); return; }
+
+      const clientId = document.getElementById('client-select').value || null;
+      if (!clientId) { BPSToast.warning('Please assign a client to this session.', { title: 'No Client Selected' }); return; }
+
+      const staffSelect = document.getElementById('staff-select');
+      const selectedStaff = Array.from(staffSelect.selectedOptions).map(o => parseInt(o.value));
+      if (selectedStaff.length > 3) { BPSToast.warning('You can select up to 3 additional staff members.', { title: 'Staff Limit' }); return; }
+
+      const data = await apiFetch('/teleconference', {
+        method: 'POST',
+        body: JSON.stringify({ title, client_id: parseInt(clientId), additional_staff: selectedStaff }),
+      });
+
+      if (data.success) {
+        document.getElementById('session-title').value = '';
+        toggleCreateForm();
+        showToast('Session created successfully!');
+        loadSessions();
+      } else {
+        showToast(data.message || 'Failed to create session.');
+      }
+    }
+
+    // ===== SESSION LIST =====
+    function filterSessions(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadSessions();
+    }
+
+    async function loadSessions() {
+      const url = currentFilter ? `/teleconference?status=${currentFilter}` : '/teleconference';
+      const data = await apiFetch(url);
+      const list = document.getElementById('sessions-list');
+
+      if (!data.success || !data.data.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"/></svg>
+            <div class="empty-state__title">No sessions found</div>
+            <div class="empty-state__text">${isStaffUser ? 'Create a new consultation session to get started.' : 'You have no consultation sessions scheduled.'}</div>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = data.data.map(s => {
+        const statusClass = `meeting-status--${s.session_status}`;
+        const showJoin = s.session_status === 'scheduled' || s.session_status === 'active';
+        return `
+          <div class="meeting-card" onclick="openSession(${s.id})">
+            <div class="meeting-card__header">
+              <h3 class="meeting-card__title">
+                <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:var(--green-primary);margin-right:6px;vertical-align:middle;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                ${escHtml(s.meeting_title || 'Consultation Session')}
+              </h3>
+              <span class="meeting-status ${statusClass}">${s.session_status}</span>
+            </div>
+            <div class="meeting-card__details">
+              <div class="detail-chip">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/></svg>
+                ${escHtml(s.psychologist_name || 'Unassigned')}
+              </div>
+              <div class="detail-chip">
+                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3z" fill="currentColor"/></svg>
+                Client: ${escHtml(s.client_name || 'Not assigned')}
+              </div>
+              <div class="detail-chip">
+                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="currentColor"/><path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/></svg>
+                ${timeAgo(s.created_at)}
+              </div>
+              ${s.recording_enabled ? '<div class="detail-chip detail-chip--rec"><span class="rec-dot"></span>Recording</div>' : ''}
+            </div>
+            <div class="meeting-card__actions" onclick="event.stopPropagation()">
+              ${showJoin ? `<button class="btn-sm btn-sm--primary" onclick="openSession(${s.id})">Join</button>` : ''}
+              ${isStaffUser && s.session_status !== 'ended' ? `<button class="btn-sm btn-sm--danger" onclick="endSessionDirect(${s.id})">End</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ===== SESSION DETAIL =====
+    async function openSession(sessionId) {
+      const data = await apiFetch(`/teleconference/${sessionId}`);
+      if (!data.success) { BPSToast.error(data.message || 'Failed to load session.', { title: 'Session Error' }); return; }
+
+      currentSession = data.data;
+
+      // Update UI
+      document.getElementById('sessions-list-view').style.display = 'none';
+      document.getElementById('session-detail-view').style.display = 'block';
+
+      document.getElementById('session-title-display').textContent = currentSession.meeting_title || 'Consultation Session';
+      const badge = document.getElementById('session-status-badge');
+      badge.textContent = currentSession.session_status;
+      badge.className = `meeting-status meeting-status--${currentSession.session_status}`;
+
+      // Session info
+      document.getElementById('info-meeting-id').textContent = `#${currentSession.id}`;
+      document.getElementById('info-psychologist').textContent = currentSession.psychologist_name || '—';
+      document.getElementById('info-client').textContent = currentSession.client_name || 'Not assigned';
+      document.getElementById('info-started').textContent = currentSession.started_at ? formatDateTime(currentSession.started_at) : 'Not started';
+      document.getElementById('info-recording').textContent = currentSession.recording_enabled
+        ? (currentSession.recording_consent_given ? 'Active (Consented)' : 'Requested')
+        : 'Off';
+
+      // Show controls based on role
+      if (isStaffUser && currentSession.session_status !== 'ended') {
+        document.getElementById('psych-controls').style.display = 'block';
+        document.getElementById('btn-end').style.display = 'inline-flex';
+      }
+
+      // Show logs panel for staff
+      if (isStaffUser) {
+        document.getElementById('logs-panel').style.display = 'block';
+        loadSessionLogs(sessionId);
+      }
+
+      // Recording banner
+      updateRecordingBanner();
+
+      // Disable join if ended
+      if (currentSession.session_status === 'ended' || currentSession.session_status === 'cancelled') {
+        document.getElementById('btn-join').disabled = true;
+        document.getElementById('btn-join').textContent = 'Session Ended';
+      }
+    }
+
+    function updateRecordingBanner() {
+      const banner = document.getElementById('recording-banner');
+      if (!currentSession) return;
+
+      if (currentSession.recording_enabled) {
+        banner.style.display = 'flex';
+        if (currentSession.recording_consent_given) {
+          document.getElementById('recording-status-text').innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#e53e3e;vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="8"/></svg> Session is being recorded';
+          document.getElementById('recording-consent-btns').style.display = 'none';
+          banner.classList.add('recording-banner--active');
+        } else {
+          document.getElementById('recording-status-text').textContent = 'Recording requested — awaiting consent';
+          // Show consent buttons for client
+          if (user.id === currentSession.client_id) {
+            document.getElementById('recording-consent-btns').style.display = 'flex';
+          }
+          banner.classList.remove('recording-banner--active');
+        }
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // ===== VIDEO (Twilio) =====
+    async function joinSession() {
+      if (!currentSession) return;
+      const btn = document.getElementById('btn-join');
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+
+      try {
+        const data = await apiFetch(`/teleconference/${currentSession.id}/join`, { method: 'POST' });
+        if (!data.success) { BPSToast.error(data.message || 'Failed to join session.', { title: 'Join Error' }); btn.disabled = false; btn.textContent = 'Join Session'; return; }
+
+        const { token: videoToken, roomName, identity } = data.data;
+
+        // Connect to Twilio Video
+        twilioRoom = await Twilio.Video.connect(videoToken, {
+          name: roomName,
+          audio: true,
+          video: { width: 640, height: 480 },
+        });
+
+        // Show controls
+        document.getElementById('video-controls').style.display = 'flex';
+        document.getElementById('session-actions').style.display = 'none';
+
+        // Render local tracks
+        const videoGrid = document.getElementById('video-grid');
+        videoGrid.innerHTML = '';
+
+        const localDiv = createParticipantDiv(identity + ' (You)', true);
+        videoGrid.appendChild(localDiv);
+
+        twilioRoom.localParticipant.tracks.forEach(pub => {
+          if (pub.track) {
+            localDiv.querySelector('.video-track').appendChild(pub.track.attach());
+            localTracks.push(pub.track);
+          }
+        });
+
+        // Handle remote participants
+        twilioRoom.participants.forEach(p => handleParticipantConnected(p));
+        twilioRoom.on('participantConnected', handleParticipantConnected);
+        twilioRoom.on('participantDisconnected', handleParticipantDisconnected);
+
+        // Update participants list
+        updateParticipantsList();
+
+        // Update session status
+        const badge = document.getElementById('session-status-badge');
+        badge.textContent = 'active';
+        badge.className = 'meeting-status meeting-status--active';
+
+        BPSToast.success('Connected to session successfully!', { title: 'Session Active' });
+      } catch (err) {
+        console.error('Failed to join video:', err);
+        BPSToast.error('Failed to connect to video. Please check camera/mic permissions.', { title: 'Connection Failed' });
+        btn.disabled = false;
+        btn.textContent = 'Join Session';
+      }
+    }
+
+    function createParticipantDiv(name, isLocal = false) {
+      const div = document.createElement('div');
+      div.className = `video-participant ${isLocal ? 'video-participant--local' : ''}`;
+      div.innerHTML = `
+        <div class="video-track"></div>
+        <div class="video-participant__name">${escHtml(name)}</div>
+      `;
+      return div;
+    }
+
+    function handleParticipantConnected(participant) {
+      const videoGrid = document.getElementById('video-grid');
+      const div = createParticipantDiv(participant.identity);
+      div.id = `participant-${participant.sid}`;
+      videoGrid.appendChild(div);
+
+      participant.tracks.forEach(pub => {
+        if (pub.isSubscribed) div.querySelector('.video-track').appendChild(pub.track.attach());
+      });
+      participant.on('trackSubscribed', track => {
+        div.querySelector('.video-track').appendChild(track.attach());
+      });
+      participant.on('trackUnsubscribed', track => {
+        track.detach().forEach(el => el.remove());
+      });
+
+      updateParticipantsList();
+    }
+
+    function handleParticipantDisconnected(participant) {
+      const el = document.getElementById(`participant-${participant.sid}`);
+      if (el) el.remove();
+      updateParticipantsList();
+    }
+
+    function updateParticipantsList() {
+      const list = document.getElementById('participants-list');
+      if (!twilioRoom) { list.innerHTML = '<div class="participant-placeholder">No participants yet</div>'; return; }
+
+      let html = `<div class="participant-item participant-item--you">
+        <div class="participant-avatar">${(twilioRoom.localParticipant.identity || 'Y')[0]}</div>
+        <span>${escHtml(twilioRoom.localParticipant.identity)} (You)</span>
+      </div>`;
+
+      twilioRoom.participants.forEach(p => {
+        html += `<div class="participant-item">
+          <div class="participant-avatar">${(p.identity || 'P')[0]}</div>
+          <span>${escHtml(p.identity)}</span>
+        </div>`;
+      });
+
+      list.innerHTML = html;
+    }
+
+    function toggleAudio() {
+      if (!twilioRoom) return;
+      twilioRoom.localParticipant.audioTracks.forEach(pub => {
+        if (pub.track.isEnabled) { pub.track.disable(); } else { pub.track.enable(); }
+        document.getElementById('btn-toggle-audio').classList.toggle('ctrl-btn--muted', !pub.track.isEnabled);
+      });
+    }
+
+    function toggleVideo() {
+      if (!twilioRoom) return;
+      twilioRoom.localParticipant.videoTracks.forEach(pub => {
+        if (pub.track.isEnabled) { pub.track.disable(); } else { pub.track.enable(); }
+        document.getElementById('btn-toggle-video').classList.toggle('ctrl-btn--muted', !pub.track.isEnabled);
+      });
+    }
+
+    function leaveSession() {
+      if (twilioRoom) {
+        twilioRoom.disconnect();
+        twilioRoom = null;
+      }
+      localTracks.forEach(t => { t.stop(); t.detach().forEach(el => el.remove()); });
+      localTracks = [];
+
+      currentSession = null;
+      document.getElementById('session-detail-view').style.display = 'none';
+      document.getElementById('sessions-list-view').style.display = 'block';
+      document.getElementById('video-controls').style.display = 'none';
+      document.getElementById('session-actions').style.display = 'flex';
+      document.getElementById('video-grid').innerHTML = `
+        <div class="video-placeholder">
+          <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"/></svg>
+          <p>Click <strong>Join Session</strong> to start the video consultation</p>
+        </div>`;
+      document.getElementById('btn-join').disabled = false;
+      document.getElementById('btn-join').innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#fff;margin-right:6px;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg> Join Session';
+
+      loadSessions();
+    }
+
+    // ===== RECORDING =====
+    async function requestRecording() {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/start-recording`, { method: 'PUT' });
+      if (data.success) {
+        currentSession.recording_enabled = true;
+        updateRecordingBanner();
+        BPSToast.info('Recording requested. Waiting for client consent.', { title: 'Recording' });
+        document.getElementById('btn-start-recording').style.display = 'none';
+        document.getElementById('btn-stop-recording').style.display = 'inline-flex';
+      } else {
+        BPSToast.error(data.message || 'Failed to start recording.', { title: 'Recording Error' });
+      }
+    }
+
+    async function giveRecordingConsent(consent) {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/consent-recording`, {
+        method: 'PUT',
+        body: JSON.stringify({ consent }),
+      });
+      if (data.success) {
+        currentSession.recording_consent_given = consent;
+        updateRecordingBanner();
+        BPSToast.success(consent ? 'Recording consent granted.' : 'Recording denied.', { title: consent ? 'Recording Active' : 'Recording Denied' });
+      }
+    }
+
+    // ===== END SESSION =====
+    async function endSessionAction() {
+      if (!currentSession) return;
+      if (!confirm('Are you sure you want to end this session?')) return;
+
+      const data = await apiFetch(`/teleconference/${currentSession.id}/end`, { method: 'PUT' });
+      if (data.success) {
+        BPSToast.success('Session ended successfully.', { title: 'Session Ended' });
+        leaveSession();
+      } else {
+        BPSToast.error(data.message || 'Failed to end session.', { title: 'Error' });
+      }
+    }
+
+    async function stopRecording() {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/stop-recording`, { method: 'PUT' });
+      if (data.success) {
+        currentSession.recording_enabled = false;
+        currentSession.recording_consent_given = false;
+        updateRecordingBanner();
+        document.getElementById('btn-start-recording').style.display = 'inline-flex';
+        document.getElementById('btn-stop-recording').style.display = 'none';
+        BPSToast.info('Recording stopped.', { title: 'Recording' });
+      } else {
+        BPSToast.error(data.message || 'Failed to stop recording.', { title: 'Recording Error' });
+      }
+    }
+
+    async function endSessionDirect(sessionId) {
+      if (!confirm('End this session?')) return;
+      const data = await apiFetch(`/teleconference/${sessionId}/end`, { method: 'PUT' });
+      if (data.success) { BPSToast.success('Session ended.', { title: 'Session Ended' }); loadSessions(); }
+      else BPSToast.error(data.message || 'Failed.', { title: 'Error' });
+    }
+
+    // ===== SESSION LOGS =====
+    async function loadSessionLogs(sessionId) {
+      const data = await apiFetch(`/teleconference/${sessionId}/logs`);
+      const list = document.getElementById('session-logs-list');
+
+      if (!data.success || !data.data.length) {
+        list.innerHTML = '<div class="log-empty">No logs yet</div>';
+        return;
+      }
+
+      list.innerHTML = data.data.map(log => `
+        <div class="log-item">
+          <div class="log-item__event">${escHtml(log.event_type.replace(/_/g, ' '))}</div>
+          <div class="log-item__detail">${escHtml(log.participant_name || 'System')} — ${escHtml(log.details || '')}</div>
+          <div class="log-item__time">${formatDateTime(log.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    // ===== INIT =====
+    loadSessions();
+    if (isStaffUser) { loadClients(); loadStaff(); }
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+    });
+  </script>
+</body>
+</html>

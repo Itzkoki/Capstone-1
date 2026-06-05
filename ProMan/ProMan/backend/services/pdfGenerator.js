@@ -5,6 +5,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const { PDFDocument } = require('pdf-lib');
 
 const PDF_API_KEY = process.env.PDF_GENERATOR_API_KEY || '';
 const PDF_API_URL = 'https://us1.pdfgeneratorapi.com/api/v4/documents/generate';
@@ -76,6 +77,69 @@ const PdfGenerator = {
     }
 
     return this._generateWithPdfKit(report, sections, testScores, assessmentData, approvals);
+  },
+
+  /**
+   * Stamp one or more signature images onto an existing PDF buffer.
+   * Positions/sizes are stored as 0..1 fractions of the page so they are
+   * independent of the actual paper size (Letter, A4, etc.).
+   *
+   * @param {Buffer} pdfBuffer - the generated report PDF
+   * @param {Array}  signatures - rows from report_signatures
+   *                 { image_data, pos_x, pos_y, width, height, page_number }
+   * @returns {Promise<Buffer>} a new PDF buffer with signatures embedded
+   */
+  async embedSignatures(pdfBuffer, signatures) {
+    if (!signatures || signatures.length === 0) return pdfBuffer;
+
+    try {
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const pages = pdfDoc.getPages();
+
+      for (const sig of signatures) {
+        const dataUrl = sig.image_data || '';
+        const match = /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(dataUrl);
+        if (!match) continue;
+
+        const fmt = match[1].toLowerCase();
+        const bytes = Buffer.from(match[2], 'base64');
+
+        let img;
+        try {
+          img = fmt === 'png'
+            ? await pdfDoc.embedPng(bytes)
+            : await pdfDoc.embedJpg(bytes);
+        } catch (e) {
+          console.warn('Skipping unembeddable signature image:', e.message);
+          continue;
+        }
+
+        // Clamp the page index into range (1-indexed in the DB)
+        let pageIdx = (parseInt(sig.page_number, 10) || 1) - 1;
+        if (pageIdx < 0) pageIdx = 0;
+        if (pageIdx >= pages.length) pageIdx = pages.length - 1;
+        const page = pages[pageIdx];
+
+        const pw = page.getWidth();
+        const ph = page.getHeight();
+
+        const w = Number(sig.width) * pw;
+        const h = Number(sig.height) * ph;
+        const x = Number(sig.pos_x) * pw;
+        // DB stores top-left origin (like the browser); pdf-lib uses
+        // bottom-left origin, so convert the Y coordinate.
+        const yTop = Number(sig.pos_y) * ph;
+        const y = ph - yTop - h;
+
+        page.drawImage(img, { x, y, width: w, height: h });
+      }
+
+      const out = await pdfDoc.save();
+      return Buffer.from(out);
+    } catch (err) {
+      console.error('Failed to embed signatures:', err.message);
+      return pdfBuffer; // fall back to the unsigned PDF rather than failing the request
+    }
   },
 
   // ─── HTML Builder ────────────────────────────────────────────

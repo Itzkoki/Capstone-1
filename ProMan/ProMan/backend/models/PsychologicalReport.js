@@ -238,6 +238,36 @@ const PsychologicalReport = {
     );
     return r.rows;
   },
+
+  // ── E-Signatures ────────────────────────────────────────────
+  async addSignature(reportId, signerId, { image, x, y, width, height, page }) {
+    const r = await db.query(
+      `INSERT INTO report_signatures
+         (report_id, signer_id, image_data, pos_x, pos_y, width, height, page_number)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [reportId, signerId, image, x, y, width, height, page]
+    );
+    return r.rows[0];
+  },
+
+  async getSignatures(reportId) {
+    const r = await db.query(
+      `SELECT * FROM report_signatures WHERE report_id = $1 ORDER BY created_at ASC`,
+      [reportId]
+    );
+    return r.rows;
+  },
+
+  async deleteSignature(reportId, signatureId) {
+    await db.query(
+      `DELETE FROM report_signatures WHERE id = $1 AND report_id = $2`,
+      [signatureId, reportId]
+    );
+  },
+
+  async clearSignatures(reportId) {
+    await db.query(`DELETE FROM report_signatures WHERE report_id = $1`, [reportId]);
+  },
 };
 
 module.exports = PsychologicalReport;

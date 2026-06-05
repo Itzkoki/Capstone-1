@@ -580,16 +580,25 @@
     </div>
     <div class="pdf-preview-body" id="pdfPreviewContainer">
       <iframe id="pdfPreviewFrame" class="pdf-preview-frame"></iframe>
-    </div>
-    <div class="pdf-preview-body hidden" id="esignContainer">
-      <div class="esign-header">
-        <button class="btn-pdf-action" onclick="backToPdfPreview()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-          Back to Preview
-        </button>
-        <span class="esign-label">✍️ Sign the document below</span>
+
+      <!-- Signature placement overlay (drag to position, drag corner to resize) -->
+      <div class="sig-placement-layer hidden" id="sigPlacementLayer">
+        <div class="sig-placement-box" id="sigPlacementBox">
+          <img id="sigPlacementImg" alt="Signature">
+          <span class="sig-resize-handle" data-handle="se"></span>
+        </div>
       </div>
-      <iframe id="esignFrame" class="pdf-preview-frame" allow="camera"></iframe>
+      <div class="sig-placement-toolbar hidden" id="sigPlacementToolbar">
+        <span class="sig-toolbar-hint">✍️ Drag to position • drag the green corner to resize</span>
+        <label class="sig-toolbar-page">Page
+          <input type="number" id="sigPageInput" min="1" value="1">
+        </label>
+        <button class="btn btn-outline btn-sm" onclick="cancelSignaturePlacement()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmSignaturePlacement()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Embed Signature
+        </button>
+      </div>
     </div>
   </div>
 

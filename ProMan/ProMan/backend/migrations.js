@@ -664,6 +664,27 @@ async function runMigrations() {
     await db.query(`CREATE INDEX IF NOT EXISTS idx_report_perms_report ON report_permissions (report_id)`);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_report_perms_user ON report_permissions (user_id)`);
 
+    // 28. Report signatures (e-signature placement, embedded into the PDF on export)
+    //   image_data  → the signature image as a base64 data URL (PNG/JPEG)
+    //   pos_x/pos_y → top-left position of the signature as a 0..1 fraction of the page
+    //   width/height→ signature size as a 0..1 fraction of the page
+    //   page_number → 1-indexed page the signature is stamped on
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS report_signatures (
+        id              SERIAL PRIMARY KEY,
+        report_id       INTEGER NOT NULL REFERENCES psychological_reports(id) ON DELETE CASCADE,
+        signer_id       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        image_data      TEXT NOT NULL,
+        pos_x           NUMERIC NOT NULL DEFAULT 0.6,
+        pos_y           NUMERIC NOT NULL DEFAULT 0.85,
+        width           NUMERIC NOT NULL DEFAULT 0.25,
+        height          NUMERIC NOT NULL DEFAULT 0.08,
+        page_number     INTEGER NOT NULL DEFAULT 1,
+        created_at      TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_report_signatures_report ON report_signatures (report_id)`);
+
     console.log('✅ Database migrations complete.');
   } catch (err) {
     console.error('❌ Migration error (non-fatal):', err.message);

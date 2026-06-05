@@ -2,7 +2,6 @@ const PsychologicalReport = require('../models/PsychologicalReport');
 const ReportTemplate       = require('../models/ReportTemplate');
 const RuleEngine           = require('../services/ruleEngine');
 const PdfGenerator         = require('../services/pdfGenerator');
-const DocuSealService      = require('../services/docusealService');
 const ReportAudit          = require('../services/reportAuditService');
 const db                   = require('../config/db');
 
@@ -322,7 +321,13 @@ exports.generatePdf = async (req, res) => {
     const assessmentData = await PsychologicalReport.getAssessmentData(report.id);
     const approvals = await PsychologicalReport.getApprovals(report.id);
 
-    const pdfBuffer = await PdfGenerator.generate(report, sections, testScores, assessmentData, approvals);
+    let pdfBuffer = await PdfGenerator.generate(report, sections, testScores, assessmentData, approvals);
+
+    // Stamp any saved e-signatures onto the PDF so they persist across downloads.
+    const signatures = await PsychologicalReport.getSignatures(report.id);
+    if (signatures.length) {
+      pdfBuffer = await PdfGenerator.embedSignatures(pdfBuffer, signatures);
+    }
 
     await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'downloaded', details: 'PDF generated and downloaded', req });
 
@@ -416,78 +421,82 @@ exports.getIntakeClients = async (req, res) => {
   }
 };
 
-// ── E-Signature (DocuSeal) ──────────────────────────────────────
+// ── E-Signature (in-app placement, embedded into the PDF) ───────
+// Saves a drawn/uploaded signature plus its position & size. The signature is
+// stamped onto the PDF whenever it is generated (see generatePdf + embedSignatures),
+// so the placement persists and the signed PDF can be re-downloaded at any time.
 exports.requestEsign = async (req, res) => {
   try {
     const report = await PsychologicalReport.findById(req.params.id);
     if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
 
-    const { signature_image } = req.body;
-
-    // Generate PDF
-    const sections = await PsychologicalReport.getSections(report.id);
-    const testScores = await PsychologicalReport.getTestScores(report.id);
-    const assessmentData = await PsychologicalReport.getAssessmentData(report.id);
-    const approvals = await PsychologicalReport.getApprovals(report.id);
-    const pdfBuffer = await PdfGenerator.generate(report, sections, testScores, assessmentData, approvals);
-
-    // If DocuSeal is configured, send to DocuSeal for e-signature
-    const DOCUSEAL_API_KEY = process.env.DOCUSEAL_API_KEY || '';
-    if (DOCUSEAL_API_KEY) {
-      const signerEmail = req.user.email || req.body.email;
-      const signerName = req.user.full_name || req.body.name || 'Signer';
-      const reportTitle = `PsychReport_${(report.client_name || 'Report').replace(/\s+/g, '_')}_${report.id}`;
-
-      const submission = await DocuSealService.createSubmissionBase64(
-        pdfBuffer, signerEmail, signerName, reportTitle
-      );
-
-      // Extract signing URL from the response
-      let signingUrl = '';
-      if (Array.isArray(submission)) {
-        const submitter = submission[0];
-        signingUrl = submitter?.embed_src || `https://docuseal.com/s/${submitter?.slug}` || '';
-      } else if (submission.submitters) {
-        const submitter = submission.submitters[0];
-        signingUrl = submitter?.embed_src || `https://docuseal.com/s/${submitter?.slug}` || '';
-      } else if (submission.slug) {
-        signingUrl = `https://docuseal.com/s/${submission.slug}`;
-      }
-
-      await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: 'E-signature requested via DocuSeal', req });
-
-      return res.json({
-        success: true,
-        signing_url: signingUrl,
-        submission: Array.isArray(submission) ? submission[0] : submission,
-      });
+    // Access control: psychologists can only sign their own reports
+    if (req.user.role === 'psychologist' && report.psychologist_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    // No DocuSeal configured — signature was captured locally
-    if (signature_image) {
-      await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: 'E-signature captured locally (draw/upload)', req });
+    const { signature_image, x, y, width, height, page } = req.body;
 
-      return res.json({
-        success: true,
-        message: 'Signature captured successfully.',
-        signature_applied: true,
-      });
+    // Validate the signature image (must be a PNG/JPEG data URL)
+    if (!signature_image || !/^data:image\/(png|jpe?g);base64,/i.test(signature_image)) {
+      return res.status(400).json({ success: false, message: 'A valid signature image is required.' });
     }
 
-    // No DocuSeal and no signature image
-    return res.status(400).json({ success: false, message: 'DocuSeal API key not configured and no signature image provided.' });
+    // Clamp placement to sane 0..1 fractions of the page (defaults = bottom-right block)
+    const clamp01 = (v, d) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : d;
+    };
+    const placement = {
+      image:  signature_image,
+      x:      clamp01(x, 0.6),
+      y:      clamp01(y, 0.85),
+      width:  clamp01(width, 0.25),
+      height: clamp01(height, 0.08),
+      page:   Math.max(1, parseInt(page, 10) || 1),
+    };
+
+    const saved = await PsychologicalReport.addSignature(report.id, req.user.id, placement);
+
+    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: 'E-signature applied to report', req });
+
+    return res.json({
+      success: true,
+      signature_applied: true,
+      signature: saved,
+      message: 'Signature applied successfully.',
+    });
   } catch (err) {
     console.error('E-signature request error:', err);
-    res.status(500).json({ success: false, message: err.message || 'Failed to create e-signature request.' });
+    res.status(500).json({ success: false, message: err.message || 'Failed to apply signature.' });
   }
 };
 
-exports.getEsignStatus = async (req, res) => {
+// ── List saved signatures for a report ──────────────────────────
+exports.listSignatures = async (req, res) => {
   try {
-    const data = await DocuSealService.getSubmission(req.params.submissionId);
-    res.json({ success: true, submission: data });
+    const signatures = await PsychologicalReport.getSignatures(req.params.id);
+    res.json({ success: true, signatures });
   } catch (err) {
-    console.error('E-sign status error:', err);
-    res.status(500).json({ success: false, message: 'Failed to check e-signature status.' });
+    console.error('List signatures error:', err);
+    res.status(500).json({ success: false, message: 'Failed to list signatures.' });
+  }
+};
+
+// ── Remove a saved signature ────────────────────────────────────
+exports.deleteSignature = async (req, res) => {
+  try {
+    const report = await PsychologicalReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+    if (req.user.role === 'psychologist' && report.psychologist_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    await PsychologicalReport.deleteSignature(report.id, req.params.signatureId);
+    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: 'E-signature removed from report', req });
+    res.json({ success: true, message: 'Signature removed.' });
+  } catch (err) {
+    console.error('Delete signature error:', err);
+    res.status(500).json({ success: false, message: 'Failed to remove signature.' });
   }
 };

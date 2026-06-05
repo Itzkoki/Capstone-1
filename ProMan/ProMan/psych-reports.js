@@ -538,9 +538,8 @@ function closePdfPreview() {
   modal.classList.remove('active');
   const iframe = document.getElementById('pdfPreviewFrame');
   iframe.src = '';
-  // Hide e-sign frame if visible
-  document.getElementById('esignContainer').classList.add('hidden');
-  document.getElementById('pdfPreviewContainer').classList.remove('hidden');
+  // Cancel any in-progress signature placement
+  cancelSignaturePlacement();
 }
 
 function doDownloadPdf() {
@@ -765,12 +764,16 @@ function removeEsignUpload() {
   document.getElementById('esignUploadZone').classList.remove('hidden');
 }
 
-// ── Apply Signature ─────────────────────────────────────────
-async function applySignature() {
+// ── Apply Signature → Place on PDF (drag & resize) ──────────
+// Captures the drawn/uploaded signature, then shows it as a draggable,
+// resizable overlay on the PDF preview. The user positions it and clicks
+// "Embed Signature" to stamp it into the PDF (handled server-side).
+let placementAspect = 3; // width/height ratio of the signature image
+
+function applySignature() {
   let signatureDataUrl = null;
 
   if (esignActiveTab === 'draw') {
-    // Check if canvas has content
     if (signatureStrokes.length === 0) {
       toast('Please draw your signature first', 'error');
       return;
@@ -785,60 +788,159 @@ async function applySignature() {
   }
 
   closeEsignModal();
-  showLoading();
+  startSignaturePlacement(signatureDataUrl);
 
-  try {
-    // Send signature to backend to embed in PDF
-    const res = await fetch(API + '/reports/' + currentPdfReportId + '/esign', {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ signature_image: signatureDataUrl })
-    });
-
-    const d = await res.json();
-    if (!res.ok) throw new Error(d.message || 'Failed to apply signature');
-
-    if (d.signing_url) {
-      // DocuSeal flow — show embedded signing
-      document.getElementById('pdfPreviewContainer').classList.add('hidden');
-      const esignContainer = document.getElementById('esignContainer');
-      esignContainer.classList.remove('hidden');
-      const esignFrame = document.getElementById('esignFrame');
-      esignFrame.src = d.signing_url;
-      toast('E-signature form loaded! Sign the document below.');
-    } else {
-      // Signature was embedded — refresh the PDF preview
-      toast('Signature applied successfully!');
-      // Re-download and show updated PDF
-      try {
-        const pdfRes = await fetch(API + '/reports/' + currentPdfReportId + '/pdf', {
-          headers: { 'Authorization': 'Bearer ' + TOKEN }
-        });
-        if (pdfRes.ok) {
-          currentPdfBlob = await pdfRes.blob();
-          if (currentPdfUrl) URL.revokeObjectURL(currentPdfUrl);
-          currentPdfUrl = URL.createObjectURL(currentPdfBlob);
-          document.getElementById('pdfPreviewFrame').src = currentPdfUrl;
-        }
-      } catch (refreshErr) {
-        console.warn('PDF refresh failed:', refreshErr);
-      }
-    }
-  } catch (e) {
-    toast(e.message || 'Failed to apply signature', 'error');
-  }
-
-  hideLoading();
-
-  // Reset state
+  // Reset capture state (the data URL now lives on the placement box)
   signatureStrokes = [];
   currentStroke = [];
   uploadedSignatureData = null;
 }
 
-function backToPdfPreview() {
-  document.getElementById('esignContainer').classList.add('hidden');
-  document.getElementById('pdfPreviewContainer').classList.remove('hidden');
+function startSignaturePlacement(dataUrl) {
+  const layer   = document.getElementById('sigPlacementLayer');
+  const box     = document.getElementById('sigPlacementBox');
+  const img     = document.getElementById('sigPlacementImg');
+  const toolbar = document.getElementById('sigPlacementToolbar');
+  const frame   = document.getElementById('pdfPreviewFrame');
+  if (!layer || !box || !img) return;
+
+  img.src = dataUrl;
+  box.dataset.signature = dataUrl;
+
+  // Disable the iframe so drag gestures land on the overlay, not the PDF viewer
+  frame.style.pointerEvents = 'none';
+  layer.classList.remove('hidden');
+  toolbar.classList.remove('hidden');
+
+  // Size the box once the image dimensions are known (keep aspect ratio)
+  const place = () => {
+    const lw = layer.clientWidth;
+    const lh = layer.clientHeight;
+    placementAspect = (img.naturalWidth && img.naturalHeight)
+      ? img.naturalWidth / img.naturalHeight
+      : 3;
+    let w = lw * 0.28;
+    let h = w / placementAspect;
+    if (h > lh * 0.25) { h = lh * 0.25; w = h * placementAspect; }
+    box.style.width  = w + 'px';
+    box.style.height = h + 'px';
+    box.style.left   = (lw - w - lw * 0.08) + 'px'; // default: bottom-right
+    box.style.top    = (lh - h - lh * 0.08) + 'px';
+  };
+  if (img.complete && img.naturalWidth) place();
+  else img.onload = place;
+
+  initSignaturePlacementDrag();
+}
+
+function initSignaturePlacementDrag() {
+  const layer  = document.getElementById('sigPlacementLayer');
+  const box    = document.getElementById('sigPlacementBox');
+  const handle = box.querySelector('.sig-resize-handle');
+  if (box.dataset.dragInit) return;
+  box.dataset.dragInit = '1';
+
+  let mode = null;          // 'move' | 'resize'
+  let startX, startY, origLeft, origTop, origW, origH;
+
+  const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+  const onMove = (e) => {
+    if (!mode) return;
+    e.preventDefault();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const lw = layer.clientWidth;
+    const lh = layer.clientHeight;
+
+    if (mode === 'move') {
+      box.style.left = clamp(origLeft + dx, 0, lw - origW) + 'px';
+      box.style.top  = clamp(origTop + dy, 0, lh - origH) + 'px';
+    } else { // resize — keep aspect ratio, anchored at top-left
+      let w = clamp(origW + dx, 40, lw - origLeft);
+      let h = w / placementAspect;
+      if (origTop + h > lh) { h = lh - origTop; w = h * placementAspect; }
+      box.style.width  = w + 'px';
+      box.style.height = h + 'px';
+    }
+  };
+
+  const onUp = () => {
+    mode = null;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+  };
+
+  const startGesture = (e, m) => {
+    e.preventDefault();
+    e.stopPropagation();
+    mode = m;
+    startX = e.clientX; startY = e.clientY;
+    origLeft = box.offsetLeft; origTop = box.offsetTop;
+    origW = box.offsetWidth;  origH = box.offsetHeight;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  box.addEventListener('pointerdown', (e) => startGesture(e, 'move'));
+  handle.addEventListener('pointerdown', (e) => startGesture(e, 'resize'));
+}
+
+function cancelSignaturePlacement() {
+  document.getElementById('sigPlacementLayer').classList.add('hidden');
+  document.getElementById('sigPlacementToolbar').classList.add('hidden');
+  document.getElementById('pdfPreviewFrame').style.pointerEvents = '';
+}
+
+async function confirmSignaturePlacement() {
+  const layer = document.getElementById('sigPlacementLayer');
+  const box   = document.getElementById('sigPlacementBox');
+  const dataUrl = box.dataset.signature;
+  if (!dataUrl || !currentPdfReportId) { cancelSignaturePlacement(); return; }
+
+  // Convert pixel placement into 0..1 fractions of the page
+  const lw = layer.clientWidth || 1;
+  const lh = layer.clientHeight || 1;
+  const payload = {
+    signature_image: dataUrl,
+    x:      box.offsetLeft / lw,
+    y:      box.offsetTop / lh,
+    width:  box.offsetWidth / lw,
+    height: box.offsetHeight / lh,
+    page:   parseInt(document.getElementById('sigPageInput').value, 10) || 1,
+  };
+
+  cancelSignaturePlacement();
+  showLoading();
+  try {
+    const res = await fetch(API + '/reports/' + currentPdfReportId + '/esign', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(payload),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.message || 'Failed to apply signature');
+
+    toast('Signature applied successfully!');
+
+    // Refresh the preview so the embedded signature is visible
+    try {
+      const pdfRes = await fetch(API + '/reports/' + currentPdfReportId + '/pdf', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN }
+      });
+      if (pdfRes.ok) {
+        currentPdfBlob = await pdfRes.blob();
+        if (currentPdfUrl) URL.revokeObjectURL(currentPdfUrl);
+        currentPdfUrl = URL.createObjectURL(currentPdfBlob);
+        document.getElementById('pdfPreviewFrame').src = currentPdfUrl;
+      }
+    } catch (refreshErr) {
+      console.warn('PDF refresh failed:', refreshErr);
+    }
+  } catch (e) {
+    toast(e.message || 'Failed to apply signature', 'error');
+  }
+  hideLoading();
 }
 
 // ── Approval ────────────────────────────────────────────────

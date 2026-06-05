@@ -40,8 +40,9 @@ router.get('/:id/pdf',                  authorizeMinRole('psychologist'), ctrl.g
 router.get('/:id/versions',             authorizeMinRole('psychologist'), ctrl.getVersions);
 router.post('/:id/versions/:versionId/restore', authorizeMinRole('psychologist'), ctrl.restoreVersion);
 
-// ── E-Signature (DocuSeal) ─────────────────────────────────────
-router.post('/:id/esign',                    authorizeMinRole('psychologist'), ctrl.requestEsign);
-router.get('/:id/esign/:submissionId',       authorizeMinRole('psychologist'), ctrl.getEsignStatus);
+// ── E-Signature (in-app placement, embedded into the PDF) ──────
+router.post('/:id/esign',                     authorizeMinRole('psychologist'), ctrl.requestEsign);
+router.get('/:id/signatures',                 authorizeMinRole('psychologist'), ctrl.listSignatures);
+router.delete('/:id/signatures/:signatureId', authorizeMinRole('psychologist'), ctrl.deleteSignature);
 
 module.exports = router;

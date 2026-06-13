@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requests &amp; Concerns | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .req-wrap{max-width:920px;margin:110px auto 60px;padding:0 20px;font-family:'Inter',sans-serif}
+    .req-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;color:#1a202c}
+    .req-sub{font-size:13.5px;color:#718096;margin:4px 0 8px}
+    .req-card{background:#fff;border:1px solid #e6eaf1;border-radius:16px;padding:26px 28px;margin-bottom:26px;box-shadow:0 6px 24px rgba(20,30,60,.06)}
+    .req-card h2{font-size:17px;font-weight:700;color:#1a202c;margin-bottom:14px}
+    .f-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .f-grid--3{grid-template-columns:2fr 2fr 1fr}
+    .f-field{display:flex;flex-direction:column;gap:5px}
+    .f-field--full{grid-column:1/-1}
+    .f-field label{font-size:12px;font-weight:700;color:#2d3748}
+    .f-field input,.f-field select,.f-field textarea{padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13.5px;font-family:'Inter',sans-serif;background:#fff}
+    .f-field textarea{min-height:96px;resize:vertical}
+    .nature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 4px}
+    .nature-card{border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;cursor:pointer;background:#fff;text-align:left;font-family:'Inter',sans-serif}
+    .nature-card--sel{border-color:#1E3A8A;background:#EEF1FA}
+    .nature-card__name{font-size:13.5px;font-weight:700;color:#1a202c}
+    .nature-card__desc{font-size:11.5px;color:#718096;margin-top:3px}
+    .chk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:4px}
+    .chk-grid label{display:flex;align-items:center;gap:8px;font-size:13px;color:#2d3748;cursor:pointer;font-weight:500}
+    .req-btn{padding:12px 26px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:13.5px;font-family:'Inter',sans-serif;text-decoration:none;display:inline-block}
+    .req-btn--primary{background:linear-gradient(135deg,#1E3A8A,#15306E);color:#fff}
+    .req-btn--outline{background:#fff;color:#1E3A8A;border:1.5px solid #1E3A8A}
+    .req-btn:disabled{opacity:.55;cursor:not-allowed}
+    .tickets-link{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#15306E;font-weight:600;text-decoration:none;padding:8px 14px;background:#EEF1FA;border-radius:9px;margin-bottom:18px}
+    .tickets-link:hover{background:#dce3f7}
+    @media(max-width:640px){.f-grid,.f-grid--3,.nature-grid,.chk-grid{grid-template-columns:1fr}.req-wrap{margin-top:90px}}
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="Barcarse logo" class="hero__illustration"></div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="login.html" class="navbar__cta" id="navbar-cta">Get Started <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg></a>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="navbar__notif-badge" id="notif-badge">0</span>
+      </a>
+      <a href="profile.html" class="navbar__profile" id="navbar-profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+  <div class="req-wrap">
+    <div class="req-title">Requests &amp; Concerns</div>
+    <div class="req-sub">Formally submit requests or concerns about your released psychological assessment reports.</div>
+
+    <div class="req-card">
+      <h2>Submit a Request / Concern</h2>
+      <div class="f-grid f-grid--3">
+        <div class="f-field"><label>Client Family Name *</label><input id="familyName" maxlength="120"></div>
+        <div class="f-field"><label>Given Name *</label><input id="givenName" maxlength="120"></div>
+        <div class="f-field"><label>M.I.</label><input id="mi" maxlength="5"></div>
+      </div>
+      <div class="f-grid" style="margin-top:14px;">
+        <div class="f-field"><label>Name of Parent / Guardian</label><input id="guardianName" maxlength="200"></div>
+        <div class="f-field"><label>Date of Assessment</label><input id="assessmentDate" type="date"></div>
+        <div class="f-field"><label>Contact Number</label><input id="contactNumber" maxlength="40"></div>
+        <div class="f-field"><label>Name of Center and Branch</label><input id="centerBranch" maxlength="200"></div>
+      </div>
+      <div style="margin-top:18px;">
+        <label style="font-size:12px;font-weight:700;color:#2d3748;">Nature of Request *</label>
+        <div class="nature-grid">
+          <button type="button" class="nature-card" id="nat-copies" onclick="setNature('additional_copies')">
+            <div class="nature-card__name">Request for additional copies of reports</div>
+            <div class="nature-card__desc">A processing fee applies; you will be notified to proceed to payment.</div>
+          </button>
+          <button type="button" class="nature-card" id="nat-concern" onclick="setNature('report_concern')">
+            <div class="nature-card__name">Concerns about the report</div>
+            <div class="nature-card__desc">Corrections or clarifications — no payment required.</div>
+          </button>
+        </div>
+      </div>
+      <div id="concern-box" style="display:none;margin-top:14px;">
+        <label style="font-size:12px;font-weight:700;color:#2d3748;">Concerns Encountered on the Report</label>
+        <div class="chk-grid">
+          <label><input type="checkbox" value="Misspelled name"> Misspelled name</label>
+          <label><input type="checkbox" value="Wrong birthday/age"> Wrong birthday/age</label>
+          <label><input type="checkbox" value="Wrong address"> Wrong address</label>
+          <label><input type="checkbox" value="Concern regarding findings/diagnosis"> Concern regarding findings/diagnosis</label>
+          <label><input type="checkbox" value="Concern regarding recommendations"> Concern regarding recommendations</label>
+          <label><input type="checkbox" value="Missing pages/documents"> Missing pages/documents</label>
+        </div>
+        <div class="f-field" style="margin-top:10px;"><label>Other</label><input id="concernOther" maxlength="300" placeholder="Describe any other concern"></div>
+      </div>
+      <div class="f-field f-field--full" style="margin-top:14px;">
+        <label>Brief Description of Concern *</label>
+        <textarea id="description" maxlength="3000" placeholder="Please elaborate on your request or concern…"></textarea>
+      </div>
+      <div class="f-field f-field--full" style="margin-top:12px;">
+        <label>Supporting Document (optional — JPG, PNG, or PDF, max 5 MB)</label>
+        <input type="file" id="attachment" accept="image/jpeg,image/png,application/pdf">
+      </div>
+      <div style="margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="req-btn req-btn--primary" id="submit-btn" onclick="submitRequest()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const authHeaders = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};
+    let nature = null;
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+    function setNature(n){
+      nature=n;
+      document.getElementById('nat-copies').classList.toggle('nature-card--sel',n==='additional_copies');
+      document.getElementById('nat-concern').classList.toggle('nature-card--sel',n==='report_concern');
+      document.getElementById('concern-box').style.display=n==='report_concern'?'block':'none';
+    }
+    function readFileAsDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);})}
+    async function submitRequest(){
+      const familyName=document.getElementById('familyName').value.trim();
+      const givenName=document.getElementById('givenName').value.trim();
+      const description=document.getElementById('description').value.trim();
+      if(!nature){BPSToast.warning('Please choose the nature of your request.',{title:'Missing Field'});return;}
+      if(!familyName||!givenName){BPSToast.warning('Client family name and given name are required.',{title:'Missing Field'});return;}
+      if(!description){BPSToast.warning('Please provide a brief description of your concern.',{title:'Missing Field'});return;}
+      const payload={nature,familyName,givenName,
+        mi:document.getElementById('mi').value.trim(),
+        guardianName:document.getElementById('guardianName').value.trim(),
+        assessmentDate:document.getElementById('assessmentDate').value||null,
+        contactNumber:document.getElementById('contactNumber').value.trim(),
+        centerBranch:document.getElementById('centerBranch').value.trim(),
+        concerns:Array.from(document.querySelectorAll('#concern-box input[type=checkbox]:checked')).map(c=>c.value),
+        concernOther:document.getElementById('concernOther').value.trim(),
+        description};
+      const fileInput=document.getElementById('attachment');
+      if(fileInput.files&&fileInput.files[0]){
+        const file=fileInput.files[0];
+        if(!['image/jpeg','image/png','application/pdf'].includes(file.type)){BPSToast.error('Attachment must be a JPG, PNG, or PDF.',{title:'Invalid File'});return;}
+        if(file.size>5*1024*1024){BPSToast.error('Attachment must be under 5 MB.',{title:'File Too Large'});return;}
+        payload.attachment=await readFileAsDataUrl(file);payload.attachmentName=file.name;
+      }
+      const btn=document.getElementById('submit-btn');
+      btn.disabled=true;btn.textContent='Submitting…';
+      try{
+        const res=await fetch(API+'/requests',{method:'POST',headers:authHeaders,body:JSON.stringify(payload)});
+        if(res.status===401){window.location.href='login.html';return;}
+        let json=null;try{json=await res.json();}catch(_){}
+        if(json&&json.success){
+          BPSToast.success('Submitted! Ticket: '+json.data.ticket_number+'. Track it in My Tickets.',{title:'Request Received',duration:5000});
+          ['familyName','givenName','mi','guardianName','assessmentDate','contactNumber','centerBranch','concernOther','description'].forEach(id=>document.getElementById(id).value='');
+          document.querySelectorAll('#concern-box input[type=checkbox]').forEach(c=>c.checked=false);
+          fileInput.value='';setNature(null);nature=null;
+          document.querySelectorAll('.nature-card').forEach(c=>c.classList.remove('nature-card--sel'));
+        }else if(json){BPSToast.error(json.message||'Could not submit your request.',{title:'Submission Error',duration:6000});}
+        else{BPSToast.error('Unexpected server response (HTTP '+res.status+').',{title:'Submission Error',duration:6000});}
+      }catch(e){BPSToast.error('Network error. Please try again.',{title:'Connection Error'});}
+      finally{btn.disabled=false;btn.textContent='Submit Request';}
+    }
+    if(new URLSearchParams(location.search).get('resubmit')){
+      document.addEventListener('DOMContentLoaded',()=>{document.getElementById('familyName')?.focus();});
+    }
+  </script>
+  <script>if(sessionStorage.getItem('bps_logged_in')==='true')document.body.classList.add('logged-in');</script>
+  <script src="navbar.js"></script>
+</body>
+</html>

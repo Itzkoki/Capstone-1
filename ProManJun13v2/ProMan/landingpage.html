@@ -1,0 +1,720 @@
+~~<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcarse Psychological Services | Mental Health Clinic in Sampaloc, Manila</title>
+  <meta name="description"
+    content="Barcarse Psychological Services (BPS) is a professional mental health clinic in Sampaloc, Manila, Philippines providing psychological assessment, counseling, psychotherapy, and mental health programs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="landingpage.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="landing-redesign.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="Meditative figure with lantern" class="hero__illustration">
+        <!-- <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg> -->
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <!-- Get Started (shown when logged out) -->
+      <a href="login.html" class="navbar__cta" id="navbar-cta">
+        Get Started
+        <svg viewBox="0 0 24 24">
+          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+        </svg>
+      </a>
+      <!-- Notification Bell (shown when logged in, BEFORE profile) -->
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+        </svg>
+        <span class="navbar__notif-badge" id="notif-badge">0</span>
+      </a>
+      <!-- Profile Icon (shown when logged in, AFTER bell) -->
+      <a href="profile.html" class="navbar__profile" id="navbar-profile" title="My Profile">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+        </svg>
+      </a>
+    </div>
+  </nav>
+
+  ===== HERO SECTION =====
+  <section class="hero" id="hero" data-ls="hero">
+    <div class="hero__bg-pattern"></div>
+    
+
+    <div class="hero__content">
+
+      <h1 class="hero__headline">BARCARSE<br>PSYCHOLOGICAL<br>SERVICES</h1>
+
+      <p class="hero__description">
+        Barcarse Psychological Services (BPS) is a professional mental health clinic in Sampaloc, Manila, Philippines
+        that provides psychological assessment, counseling, psychotherapy, and mental health programs for individuals,
+        organizations, and communities.
+      </p>
+
+      <div class="hero__ctas">
+        <a href="#cta" class="btn btn--primary" id="btn-inquire">Inquire</a>
+        <a href="intakeform.html" class="btn btn--secondary" id="btn-book">Book now</a>
+        <a href="community.html" class="btn btn--accent" id="btn-community">Community</a>
+      </div>
+    </div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-indicator__mouse"></div>
+    </div>
+  </section>
+
+  <!-- ===== SERVICES SECTION ===== -->
+  <section class="services" id="services" data-ls="services">
+    <div class="container">
+      <span class="section-label reveal">What We Offer</span>
+      <h2 class="section-heading reveal">Our Core Services</h2>
+      <p class="section-subheading reveal">Evidence-based mental health services tailored to your unique needs,
+        delivered with compassion and clinical excellence.</p>
+
+      <div class="services__grid">
+        <div class="service-card reveal">
+          <div class="service-card__icon">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2v14H3v3c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3V2l-1.5 1.5zM19 19c0 .55-.45 1-1 1s-1-.45-1-1v-3h-8V5h10v14zM9 7h6v2H9V7zm0 4h6v2H9v-2z" />
+            </svg>
+          </div>
+          <h3 class="service-card__title">Psychological Assessment</h3>
+          <p class="service-card__text">Comprehensive evaluations using standardized tools to understand cognitive,
+            emotional, and behavioral functioning.</p>
+        </div>
+        <div class="service-card reveal">
+          <div class="service-card__icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+            </svg>
+          </div>
+          <h3 class="service-card__title">Counseling</h3>
+          <p class="service-card__text">Supportive therapeutic conversations to help you navigate life challenges,
+            relationships, and personal growth.</p>
+        </div>
+        <div class="service-card reveal">
+          <div class="service-card__icon">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </div>
+          <h3 class="service-card__title">Psychotherapy</h3>
+          <p class="service-card__text">Evidence-based therapeutic interventions including CBT, DBT, and other
+            modalities for lasting mental wellness.</p>
+        </div>
+        <div class="service-card reveal">
+          <div class="service-card__icon">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+            </svg>
+          </div>
+          <h3 class="service-card__title">Mental Health Programs</h3>
+          <p class="service-card__text">Group workshops, community outreach, and organizational mental health programs
+            for collective well-being.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEAM CAROUSEL SECTION ===== -->
+  <section class="team-section" id="team" data-ls="team">
+    <div class="container">
+      <div class="team-head">
+        <span class="section-label reveal">Meet the Team</span>
+        <h2 class="section-heading reveal">Specialists Dedicated to Your Well-being</h2>
+        <p class="section-subheading reveal" style="margin-left:auto;margin-right:auto;">
+          Our licensed psychologists and mental health professionals bring compassion,
+          expertise, and evidence-based care to every session.
+        </p>
+      </div>
+
+      <div class="carousel" id="team-carousel">
+        <button class="carousel__btn carousel__btn--prev" id="team-prev" aria-label="Previous staff">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <div class="carousel__viewport">
+          <div class="carousel__track" id="team-track">
+            <!-- Slides are generated by JS from the staff[] array below.
+                 Replace the array (or swap in <img> photos) anytime. -->
+          </div>
+        </div>
+
+        <button class="carousel__btn carousel__btn--next" id="team-next" aria-label="Next staff">
+          <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <div class="carousel__dots" id="team-dots"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== EXPANDED TEAM PHOTO MODAL ===== -->
+  <!-- Shows only the expanded photo (at its natural aspect ratio) — no text. -->
+  <div class="staff-modal" id="staff-modal" role="dialog" aria-modal="true"
+       aria-label="Expanded team photo" aria-hidden="true">
+    <div class="staff-modal__backdrop" data-staff-close></div>
+    <div class="staff-modal__dialog" role="document">
+      <button type="button" class="staff-modal__close" data-staff-close aria-label="Close photo">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <!-- The expanded photo (fully shown, original aspect ratio) -->
+      <div class="staff-modal__media" id="staff-modal-media"></div>
+    </div>
+  </div>
+
+
+  <!-- ===== MISSION & VISION SECTION ===== -->
+  <section class="mission-vision" id="mission-vision" data-ls="mission_vision">
+    <div class="container">
+      <span class="section-label reveal">Who We Are</span>
+      <h2 class="section-heading reveal">Our Vision &amp; Mission</h2>
+      <p class="section-subheading reveal" style="margin-left:auto;margin-right:auto;text-align:center;">Guided by our
+        commitment to quality and humane mental health care among Filipinos in workplaces, schools, and community
+        settings.</p>
+    </div>
+
+    <div class="mv-grid">
+      <div class="mv-card reveal">
+        <div class="mv-card__badge">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+          </svg>
+          Vision
+        </div>
+        <h3 class="mv-card__title">Vision</h3>
+        <p class="mv-card__text">Envisioned to provide quality and humane mental health care among Filipinos — both
+          people in the workplaces, school and community settings — through extension and development projects and
+          programs. Through our professional services in counseling, psychotherapy, interventions, psychological
+          assessments, and lifelong learning workshops, BPS dreams of helping and reaching more people with
+          psychological problems cope with the demands of life through our different approaches bounded by western
+          approaches and culture-based techniques.</p>
+        <h4 style="font-weight:700;font-size:15px;color:var(--text-dark);margin-bottom:12px;">BPS would like to promote:
+        </h4>
+        <div class="mv-values">
+          <span class="mv-values__pill">Oneness</span>
+          <span class="mv-values__pill">Individual Responsibility</span>
+          <span class="mv-values__pill">Genuine Care</span>
+          <span class="mv-values__pill">Inclusivity</span>
+          <span class="mv-values__pill">Diversity</span>
+          <span class="mv-values__pill">Equality</span>
+          <span class="mv-values__pill">Helping</span>
+          <span class="mv-values__pill">Creativity</span>
+          <span class="mv-values__pill">Self-Fulfillment</span>
+          <span class="mv-values__pill">Individual Freedom</span>
+          <span class="mv-values__pill">Commitment</span>
+          <span class="mv-values__pill">Openness</span>
+          <span class="mv-values__pill">Acceptance</span>
+        </div>
+      </div>
+
+      <div class="mv-card reveal">
+        <div class="mv-card__badge">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+          </svg>
+          Mission
+        </div>
+        <h3 class="mv-card__title">Mission</h3>
+        <p class="mv-card__text">The BPS existence is to cater professional services for people in need of psychological
+          help in a scientific, research, and experienced based in dealing with clients on their diverse dilemma,
+          psychological problems and needs to become fully functioning person.</p>
+        <ul class="mv-card__goals">
+          <li>Promote community awareness on the relevance of providing professional help.</li>
+          <li>Provide appropriate psychological assessment according to purpose.</li>
+          <li>Apply western and culture-based counseling approaches based on need.</li>
+          <li>Utilize expertise of BPS Psychologist, Psychometricians and Counselors.</li>
+          <li>Create lifelong learning in helping the helping professionals.</li>
+          <li>Collaborate in schools, universities, corporations and communities in persuading people to address mental
+            health needs to be catered by licensed and registered professional as required by law.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mv-history reveal">
+      <h4 class="mv-history__title">Brief History</h4>
+      <p class="mv-history__text">Barcarse Psychological Services was founded last March 8, 2023 and blessed the first
+        Clinic located at the 4th Floor, Arizona Tower, 838 P. Campa Street, Sampaloc, Manila. The BS Psychology of
+        Colegio De San Juan De Letran, Intramuros, Manila were the first Undergraduate Clinical Interns followed by the
+        PhD in Clinical Psychology from the Polytechnic University of the Philippines, Manila as its first graduate
+        level intern followed by Centro Escolar University Manila, Pamantasan ng Lungsod ng Maynila, University of Santo
+        Tomas Manila, Adamson University, Manuel S. Enverga University Foundation Candelaria, Quezon, Batangas State
+        University, De La Salle University Dasmarinas, CAP Colleges Foundation Makati City and San Beda University
+        Manila and BSMA Psychology and Counseling of Philippine Normal University Manila. Clinic services in different
+        cases of both online and face to face were opened.</p>
+      <div class="mv-contact">
+        <div class="mv-contact__item">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+          </svg>
+          bpsychserv2023@gmail.com
+        </div>
+        <div class="mv-contact__item">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+          </svg>
+          0966-263-3964 / 0915-871-9886 / 0905-255-2098
+        </div>
+        <div class="mv-contact__item">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+          </svg>
+          0285534483
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT / WHY CHOOSE US ===== -->
+  <section class="about" id="about" data-ls="about">
+    <div class="container">
+      <div class="about__grid">
+        <div>
+          <span class="section-label reveal">Why Choose Us</span>
+          <h2 class="section-heading reveal">Trusted by Individuals &amp; Organizations</h2>
+          <p class="section-subheading reveal">We combine clinical expertise with genuine compassion to provide holistic
+            mental health care in a safe, welcoming environment.</p>
+          <div class="about__stats reveal">
+            <div class="stat-card">
+              <div class="stat-card__number">500+</div>
+              <div class="stat-card__label">Clients Served</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__number">10+</div>
+              <div class="stat-card__label">Licensed Specialists</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__number">98%</div>
+              <div class="stat-card__label">Client Satisfaction</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__number">5+</div>
+              <div class="stat-card__label">Years of Service</div>
+            </div>
+          </div>
+        </div>
+        <div class="about__features reveal">
+          <div class="feature-item">
+            <div class="feature-item__icon"><svg viewBox="0 0 24 24">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+              </svg></div>
+            <div>
+              <div class="feature-item__title">Confidential &amp; Secure</div>
+              <div class="feature-item__text">HIPAA-compliant practices with AES-256 encryption for all your data and
+                sessions.</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-item__icon"><svg viewBox="0 0 24 24">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg></div>
+            <div>
+              <div class="feature-item__title">Evidence-Based Approaches</div>
+              <div class="feature-item__text">Our team uses proven therapeutic modalities backed by scientific research
+                and clinical evidence.</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-item__icon"><svg viewBox="0 0 24 24">
+                <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z" />
+              </svg></div>
+            <div>
+              <div class="feature-item__title">Holistic Care</div>
+              <div class="feature-item__text">We address mind, body, and social well-being for comprehensive mental
+                health support.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== CTA SECTION ===== -->
+  <section class="cta-section" id="cta" data-ls="cta">
+    <div class="container">
+      <span class="section-label reveal" style="color: var(--green-primary);">Take the First Step</span>
+      <h2 class="section-heading reveal">Your Mental Health Matters</h2>
+      <p class="section-subheading reveal">Whether you're seeking support for yourself, your family, or your
+        organization — we're here to help. Book a consultation today.</p>
+      <div class="cta-buttons reveal">
+        <a href="intakeform.html" class="btn btn--white" id="cta-book">Book a Consultation</a>
+        <a href="#footer" class="btn btn--outline" id="cta-contact">Contact Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <a href="landingpage.html" class="navbar__brand" style="color:#fff;margin-bottom:4px;">
+            <div class="navbar__logo">
+              <img src="barcarse logo.jpg" alt="BPS Logo">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+              </svg>
+            </div>
+            <span class="navbar__title">Barcarse Psychological Services</span>
+          </a>
+          <p class="footer__brand-desc">Professional mental health services in Sampaloc, Manila, Philippines. Providing
+            compassionate care since 2023.</p>
+        </div>
+        <div>
+          <h4 class="footer__heading">Services</h4>
+          <ul class="footer__links">
+            <li><a href="#services">Psychological Assessment</a></li>
+            <li><a href="#services">Counseling</a></li>
+            <li><a href="#services">Psychotherapy</a></li>
+            <li><a href="#services">Mental Health Programs</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Company</h4>
+          <ul class="footer__links">
+            <li><a href="#mission-vision">About Us</a></li>
+            <li><a href="#team">Our Team</a></li>
+            <li><a href="#cta">Community</a></li>
+            <li><a href="login.html">Get Started</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Contact</h4>
+          <ul class="footer__links">
+            <li><a href="mailto:bpsychserv2023@gmail.com">bpsychserv2023@gmail.com</a></li>
+            <li><a href="tel:+639662633964">0966-263-3964</a></li>
+            <li><a href="#">Sampaloc, Manila</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span class="footer__copyright">&copy; 2026 Barcarse Psychological Services. All rights reserved.</span>
+        <div class="footer__legal">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Check login state and build role-aware navbar
+    if (sessionStorage.getItem('bps_logged_in') === 'true') {
+      document.body.classList.add('logged-in');
+      // Navbar links are rendered by the shared navbar.js (role-aware).
+
+      // Validate token in background — clear stale session if expired
+      (async function () {
+        try {
+          const token = sessionStorage.getItem('bps_token');
+          if (!token) return;
+          const res = await fetch('http://localhost:5000/api/auth/verify-token', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (!res.ok) {
+            sessionStorage.removeItem('bps_token');
+            sessionStorage.removeItem('bps_user');
+            sessionStorage.removeItem('bps_logged_in');
+            window.location.reload();
+          }
+        } catch { /* network error — keep session */ }
+      })();
+    }
+
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Reveal animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Stat counter animation
+    const statsObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const text = el.textContent;
+          const num = parseInt(text);
+          const suffix = text.replace(/[0-9]/g, '');
+          let cur = 0;
+          const step = Math.ceil(num / 40);
+          const iv = setInterval(() => { cur += step; if (cur >= num) { cur = num; clearInterval(iv); } el.textContent = cur + suffix; }, 30);
+          statsObs.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.stat-card__number').forEach(el => statsObs.observe(el));
+  </script>
+
+  <!-- ===== STAFF CAROUSEL SCRIPT ===== -->
+  <script>
+  (function () {
+    /* ---------------------------------------------------------
+       The team line-up is managed by the Clinical Director via
+       Website Management. landing-content.js fetches the saved
+       members and calls window.BPSCarousel.build(members).
+       The DEFAULTS below are only a fallback if the API is down.
+       --------------------------------------------------------- */
+    const DEFAULTS = [
+      { name: 'Dr. Maria Barcarse', role: 'Clinical Psychologist',     bio: 'Founder · Assessment & Therapy' },
+      { name: 'Dr. James Tan',       role: 'Counseling Psychologist',   bio: 'CBT · Anxiety & Mood' },
+      { name: 'Dr. Amara Okafor',    role: 'Child Psychologist',        bio: 'Pediatric Evaluation' },
+      { name: 'Dr. Rohan Kapoor',    role: 'Psychotherapist',           bio: 'Trauma-Informed Care' },
+      { name: 'Sofia Williams, RPm', role: 'Psychometrician',           bio: 'Testing & Scoring' },
+      { name: 'Elena Marquez, RGC',  role: 'Guidance Counselor',        bio: 'Career & Family' },
+      { name: 'Dr. Liam Cruz',       role: 'Neuropsychologist',         bio: 'Cognitive Assessment' },
+      { name: 'Nadia Reyes, RPsy',   role: 'Community Programs Lead',    bio: 'Outreach & Workshops' }
+    ];
+
+    let teardown = null;
+
+    function initials(name) {
+      return name.replace(/,.*$/, '').split(' ')
+        .filter(w => /^[A-Za-z]/.test(w)).slice(0, 2)
+        .map(w => w[0]).join('').toUpperCase();
+    }
+
+    /* ---- Expanded staff profile modal ------------------------------ */
+    let lastFocused = null;
+
+    function openStaffModal(member) {
+      if (!member) return;
+      const modal = document.getElementById('staff-modal');
+      if (!modal) return;
+
+      const mediaWrap = document.getElementById('staff-modal-media');
+      // Show ONLY the expanded photo (no name/role/bio text). Prefer the
+      // full/expanded photo, fall back to the carousel crop, and finally to an
+      // initials placeholder. The image is displayed at its natural aspect
+      // ratio and fully shown (see .staff-modal__img CSS).
+      const big = member.photo_full || member.photo_thumbnail || '';
+      if (big) {
+        mediaWrap.innerHTML =
+          `<img class="staff-modal__img" src="${big}" alt="${member.name || ''}">`;
+      } else {
+        mediaWrap.innerHTML =
+          `<div class="staff-modal__img staff-modal__img--ph">${initials(member.name || '')}</div>`;
+      }
+
+      lastFocused = document.activeElement;
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('staff-modal-lock');
+      modal.querySelector('.staff-modal__dialog').scrollTop = 0;
+      // Focus the close button for keyboard users.
+      const closeBtn = modal.querySelector('.staff-modal__close');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeStaffModal() {
+      const modal = document.getElementById('staff-modal');
+      if (!modal || !modal.classList.contains('is-open')) return;
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('staff-modal-lock');
+      if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+      lastFocused = null;
+    }
+
+    // Wire the modal's close affordances once (the modal markup is static).
+    (function bindStaffModal() {
+      const modal = document.getElementById('staff-modal');
+      if (!modal) return;
+      modal.addEventListener('click', (e) => {
+        if (e.target.closest('[data-staff-close]')) closeStaffModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeStaffModal();
+      });
+    })();
+
+    function build(staff) {
+      staff = (Array.isArray(staff) && staff.length) ? staff : DEFAULTS;
+      window.__bpsTeamBuilt = true;
+
+      const track = document.getElementById('team-track');
+      const dotsWrap = document.getElementById('team-dots');
+      const prevBtn = document.getElementById('team-prev');
+      const nextBtn = document.getElementById('team-next');
+      if (!track) return;
+
+      // Tear down any previous instance (timers/listeners) before rebuilding.
+      if (teardown) teardown();
+
+      track.innerHTML = staff.map((p, i) => `
+        <div class="team-card" data-idx="${i}" role="button" tabindex="0"
+             aria-label="View ${p.name}'s full profile">
+          <div class="team-card__media">
+            ${p.photo_thumbnail
+              ? `<img class="team-card__photo" src="${p.photo_thumbnail}" alt="${p.name}">`
+              : `<div class="team-card__photo team-card__photo--ph">${initials(p.name)}</div>`}
+            <span class="team-card__expand" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <div class="team-card__body">
+            <div class="team-card__name">${p.name}</div>
+            <div class="team-card__role">${p.role || ''}</div>
+            <div class="team-card__bio">${p.bio || ''}</div>
+          </div>
+        </div>`).join('');
+
+      // Clicking (or pressing Enter/Space on) a card opens the expanded profile.
+      Array.from(track.querySelectorAll('.team-card')).forEach((card) => {
+        const idx = parseInt(card.getAttribute('data-idx'), 10);
+        const open = () => openStaffModal(staff[idx]);
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+        });
+      });
+
+      const cards = Array.from(track.children);
+
+      function perView() {
+        if (window.matchMedia('(max-width:640px)').matches) return 1;
+        if (window.matchMedia('(max-width:1024px)').matches) return 2;
+        return 4;
+      }
+
+      let index = 0;
+      let pv = perView();
+      let pages = Math.max(1, Math.ceil(staff.length / pv));
+
+      function buildDots() {
+        dotsWrap.innerHTML = '';
+        for (let i = 0; i < pages; i++) {
+          const b = document.createElement('button');
+          b.className = 'carousel__dot' + (i === index ? ' is-active' : '');
+          b.setAttribute('aria-label', 'Go to slide group ' + (i + 1));
+          b.addEventListener('click', () => { index = i; update(); restart(); });
+          dotsWrap.appendChild(b);
+        }
+      }
+
+      function update() {
+        pv = perView();
+        pages = Math.max(1, Math.ceil(staff.length / pv));
+        if (index > pages - 1) index = pages - 1;
+        const cardW = cards[0].getBoundingClientRect().width;
+        const gap = 24;
+        const step = (cardW + gap) * pv;
+        const maxShift = track.scrollWidth - track.parentElement.clientWidth;
+        let shift = Math.min(index * step, Math.max(0, maxShift));
+        track.style.transform = `translateX(-${shift}px)`;
+        Array.from(dotsWrap.children).forEach((d, i) =>
+          d.classList.toggle('is-active', i === index));
+        prevBtn.disabled = index === 0;
+        nextBtn.disabled = index >= pages - 1;
+      }
+
+      function next() { index = (index + 1) % pages; update(); }
+      function prev() { index = (index - 1 + pages) % pages; update(); }
+
+      const onNext = () => { next(); restart(); };
+      const onPrev = () => { prev(); restart(); };
+      nextBtn.addEventListener('click', onNext);
+      prevBtn.addEventListener('click', onPrev);
+
+      let timer = null;
+      function start() { timer = setInterval(() => { index = (index + 1) % pages; update(); }, 4500); }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+      function restart() { stop(); start(); }
+
+      const root = document.getElementById('team-carousel');
+      root.addEventListener('mouseenter', stop);
+      root.addEventListener('mouseleave', start);
+      const onVis = () => document.hidden ? stop() : start();
+      document.addEventListener('visibilitychange', onVis);
+
+      let x0 = null;
+      const onTouchStart = e => { x0 = e.touches[0].clientX; stop(); };
+      const onTouchEnd = e => {
+        if (x0 === null) return;
+        const dx = e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 40) (dx < 0 ? next() : prev());
+        x0 = null; start();
+      };
+      track.addEventListener('touchstart', onTouchStart, { passive: true });
+      track.addEventListener('touchend', onTouchEnd);
+
+      let rt;
+      const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { buildDots(); update(); }, 150); };
+      window.addEventListener('resize', onResize);
+
+      teardown = () => {
+        stop();
+        nextBtn.removeEventListener('click', onNext);
+        prevBtn.removeEventListener('click', onPrev);
+        root.removeEventListener('mouseenter', stop);
+        root.removeEventListener('mouseleave', start);
+        document.removeEventListener('visibilitychange', onVis);
+        track.removeEventListener('touchstart', onTouchStart);
+        track.removeEventListener('touchend', onTouchEnd);
+        window.removeEventListener('resize', onResize);
+      };
+
+      buildDots();
+      update();
+      start();
+    }
+
+    window.BPSCarousel = { build, DEFAULTS };
+
+    // Fallback: if the CMS hydrator never ran, show defaults so the
+    // section is never empty.
+    window.addEventListener('load', () => {
+      setTimeout(() => { if (!window.__bpsTeamBuilt) build(DEFAULTS); }, 600);
+    });
+  })();
+  </script>
+  <script src="landing-content.js"></script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

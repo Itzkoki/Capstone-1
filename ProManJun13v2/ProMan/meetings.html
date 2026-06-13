@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teleconference | Barcarse Psychological Services</title>
+  <meta name="description" content="Secure teleconference consultation sessions for Barcarse Psychological Services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="meetings.css">
+  <link rel="stylesheet" href="toast.css">
+  <script src="//sdk.twilio.com/js/video/releases/2.28.1/twilio-video.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+<body class="meetings-page logged-in">
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="meetings-container">
+
+    <!-- SESSION LIST VIEW (default) -->
+    <div id="sessions-list-view">
+      <div class="meetings-header">
+        <h1 class="meetings-header__title">
+          <i data-lucide="video" style="width:30px;height:30px;color:var(--green-primary);margin-right:10px;"></i>
+          Teleconference
+        </h1>
+        <button class="btn-create" id="btn-new-session" onclick="toggleCreateForm()" style="display:none;">
+          <i data-lucide="plus" style="width:16px;height:16px;"></i>
+          New Session
+        </button>
+      </div>
+
+      <!-- Create Session Form -->
+      <div class="create-meeting-form" id="create-form">
+        <h3 class="form-title">
+          <i data-lucide="video" style="width:18px;height:18px;color:var(--green-primary);"></i>
+          Start a New Consultation Session
+        </h3>
+        <input type="text" id="session-title" placeholder="Session title (e.g. Initial Assessment, Follow-up Session)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="client-select">Assign Client <span style="color:#e53e3e;">*</span></label>
+            <select id="client-select" required>
+              <option value="">-- Select a client --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="staff-select">Assign Additional Staff <span style="font-size:11px;color:#a0aec0;">(optional, up to 3)</span></label>
+            <div class="staff-picker-row">
+              <select id="staff-select">
+                <option value="">-- Select a staff member --</option>
+              </select>
+              <button type="button" class="btn-add-staff" onclick="addStaff()">Add</button>
+            </div>
+            <div id="selected-staff-list" class="selected-staff-list"></div>
+            <p style="font-size:11px;color:#a0aec0;margin-top:4px;">Pick a staff member and press Add (up to 3). Session supports up to 5 participants total.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-modal btn-modal--cancel" onclick="toggleCreateForm()">Cancel</button>
+          <button class="btn-modal btn-modal--primary" onclick="createSession()">
+            <i data-lucide="video" style="width:14px;height:14px;margin-right:4px;"></i>
+            Create Session
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="meetings-tabs">
+        <button class="tab-btn active" onclick="filterSessions('', this)">All</button>
+        <button class="tab-btn" onclick="filterSessions('scheduled', this)">Scheduled</button>
+        <button class="tab-btn" onclick="filterSessions('active', this)">Active</button>
+        <button class="tab-btn" onclick="filterSessions('ended', this)">Ended</button>
+      </div>
+
+      <!-- Session Cards -->
+      <div id="sessions-list"></div>
+    </div>
+
+    <!-- SESSION DETAIL / VIDEO VIEW -->
+    <div id="session-detail-view" style="display:none;">
+      <button class="back-btn" onclick="leaveSession()">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+        Back to Sessions
+      </button>
+
+      <!-- Header: meeting title + subtitle + status -->
+      <div class="video-header">
+        <div class="video-header__meta">
+          <h2 class="video-header__title" id="session-title-display">Consultation Session</h2>
+          <p class="video-header__sub" id="session-subtitle">Teleconference · Room: Virtual</p>
+        </div>
+        <span class="meeting-status" id="session-status-badge">scheduled</span>
+      </div>
+
+      <div class="session-stage" id="session-stage">
+        <!-- Video / stage area -->
+        <div class="video-container" id="video-container">
+          <div class="video-stage">
+
+            <!-- In-call toolbar (hidden until connected) -->
+            <div class="meeting-toolbar" id="meeting-toolbar" style="display:none;">
+              <div class="meeting-toolbar__status">
+                <span class="mt-timer" id="toolbar-timer">
+                  <i data-lucide="clock"></i><span id="timer-text">00:00</span>
+                </span>
+                <span class="mt-rec" id="toolbar-rec" style="display:none;">
+                  <span class="mt-rec__dot"></span>REC
+                </span>
+              </div>
+              <div class="meeting-toolbar__controls" id="toolbar-controls"></div>
+            </div>
+
+            <!-- Video grid -->
+            <div class="video-grid" id="video-grid">
+              <div class="video-placeholder">
+                <i data-lucide="video" style="width:60px;height:60px;"></i>
+                <p>Click <strong>Join Session</strong> to start the video consultation</p>
+                <p style="font-size:11px;margin-top:6px;opacity:0.5;">Supports up to 5 participants</p>
+              </div>
+            </div>
+
+            <!-- Self indicator (in-call) -->
+            <div class="video-self" id="video-self" style="display:none;">
+              <span class="video-self__icon" id="self-mic-icon-wrap"><i data-lucide="mic-off"></i></span>
+              <span id="self-label">You · muted</span>
+            </div>
+          </div>
+
+          <!-- Join action (pre-join state) -->
+          <div class="session-actions" id="session-actions">
+            <button class="btn-join" id="btn-join" onclick="joinSession()">
+              <i data-lucide="video" style="width:18px;height:18px;margin-right:8px;"></i>
+              Join Session
+            </button>
+          </div>
+
+          <!-- Recording consent banner (request / awaiting / rejected) -->
+          <div class="recording-banner" id="recording-banner" style="display:none;">
+            <div class="recording-banner__indicator"></div>
+            <span id="recording-status-text">Recording requested — awaiting client consent</span>
+            <div id="recording-consent-btns" style="display:none;">
+              <button class="btn-consent btn-consent--yes" onclick="giveRecordingConsent(true)">Allow Recording</button>
+              <button class="btn-consent btn-consent--no" onclick="giveRecordingConsent(false)">Deny</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right drawer (toggled by toolbar buttons) -->
+        <aside class="meeting-drawer" id="meeting-drawer" aria-hidden="true">
+
+          <!-- People -->
+          <section class="drawer-panel" id="people-drawer">
+            <div class="drawer-head">
+              <h3 class="drawer-title"><i data-lucide="users"></i> Participants</h3>
+              <button class="drawer-close" onclick="closeDrawer()" title="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="drawer-body">
+              <div class="people-search">
+                <i data-lucide="search"></i>
+                <input type="text" id="people-search-input" placeholder="Type a name" oninput="filterPeople(this.value)">
+              </div>
+              <div class="people-section">
+                <div class="people-section__label">In this meeting (<span id="inmeeting-count">0</span>)</div>
+                <div id="participants-list">
+                  <div class="participant-placeholder">No participants yet</div>
+                </div>
+              </div>
+              <div class="people-section" id="people-invited" style="display:none;">
+                <div class="people-section__label">Not in the Meeting (<span id="invited-count">0</span>)</div>
+                <div id="invited-list">
+                  <div class="participant-placeholder">No invited participants</div>
+                </div>
+              </div>
+              <div class="people-section" id="people-waiting" style="display:none;">
+                <div class="people-section__label">Waiting <span id="waiting-count-badge" class="waiting-count-badge" style="display:none;">0</span></div>
+                <div id="waiting-room-list">
+                  <div class="participant-placeholder">No one is waiting</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Chat -->
+          <section class="drawer-panel" id="chat-drawer">
+            <div class="drawer-head">
+              <h3 class="drawer-title"><i data-lucide="message-square"></i> Meeting chat</h3>
+              <button class="drawer-close" onclick="closeDrawer()" title="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="drawer-body drawer-body--chat">
+              <div class="chat-messages" id="chat-messages">
+                <div class="chat-empty">No messages yet</div>
+              </div>
+              <div class="chat-input-row">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Type a message…" maxlength="2000"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMessage();}">
+                <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" title="Send">
+                  <i data-lucide="send-horizontal"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Session info -->
+          <section class="drawer-panel" id="info-drawer">
+            <div class="drawer-head">
+              <h3 class="drawer-title"><i data-lucide="info"></i> Session info</h3>
+              <button class="drawer-close" onclick="closeDrawer()" title="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="drawer-body">
+              <div class="session-info" id="session-info">
+                <div class="info-row"><span class="info-label">Meeting ID</span><span class="info-val" id="info-meeting-id">—</span></div>
+                <div class="info-row"><span class="info-label">Psychologist</span><span class="info-val" id="info-psychologist">—</span></div>
+                <div class="info-row"><span class="info-label">Client</span><span class="info-val" id="info-client">—</span></div>
+                <div class="info-row"><span class="info-label">Started</span><span class="info-val" id="info-started">—</span></div>
+                <div class="info-row"><span class="info-label">Recording</span><span class="info-val" id="info-recording">Off</span></div>
+              </div>
+
+              <!-- Host-only controls -->
+              <div class="host-controls" id="psych-controls" style="display:none;">
+                <div class="drawer-subhead"><i data-lucide="settings"></i> Host controls</div>
+                <button class="control-btn" id="btn-start-recording" onclick="requestRecording()">
+                  <i data-lucide="circle"></i> Start Recording
+                </button>
+                <button class="control-btn control-btn--warning" id="btn-stop-recording" onclick="stopRecording()" style="display:none;">
+                  <i data-lucide="square"></i> Stop Recording
+                </button>
+                <button class="control-btn control-btn--danger" id="btn-end" onclick="endSessionAction()">
+                  <i data-lucide="phone-off"></i> End Session
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Session logs (host only) -->
+          <section class="drawer-panel" id="logs-drawer">
+            <div class="drawer-head">
+              <h3 class="drawer-title"><i data-lucide="scroll-text"></i> Session logs</h3>
+              <button class="drawer-close" onclick="closeDrawer()" title="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="drawer-body">
+              <div class="logs-list" id="session-logs-list">
+                <div class="log-empty">No logs yet</div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recording Consent Popup (client) -->
+  <div class="tc-modal-overlay" id="recording-consent-modal" style="display:none;">
+    <div class="tc-modal">
+      <h3 class="tc-modal__title">
+        <i data-lucide="circle-dot" style="width:18px;height:18px;color:#e53e3e;vertical-align:middle;margin-right:6px;"></i>
+        Recording Request
+      </h3>
+      <p class="tc-modal__text">The host has requested to record this consultation session.</p>
+      <div class="tc-modal__note">
+        Any recording is kept <strong>strictly confidential</strong>, stored securely, and used only for legitimate clinical and professional purposes. You may decline without affecting your session.
+      </div>
+      <p class="tc-modal__text" style="margin-top:14px;">Do you approve recording this session?</p>
+      <div class="tc-modal__actions">
+        <button class="btn-consent btn-consent--no" onclick="respondRecording(false)">Reject Recording</button>
+        <button class="btn-consent btn-consent--yes" onclick="respondRecording(true)">Approve Recording</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast (legacy element hidden — using BPSToast) -->
+  <div class="flag-toast" id="toast" style="display:none;"></div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+    const isStaffUser = user.role && user.role !== 'client';
+
+    let currentFilter = '';
+    let currentSession = null;
+    let twilioRoom = null;
+    let localTracks = [];
+
+    // Per-participant camera/mic state, keyed by Twilio identity (the user's full name).
+    // { [identity]: { cam: boolean, mic: boolean } }
+    let mediaState = {};
+
+    // Per-participant speaking state for voice-activity detection, keyed by identity.
+    let speakingState = {};
+
+    let selectedStaff = [];          // [{id, label}] chosen additional staff (max 3)
+    let pollTimer = null;            // interval handle for real-time polling
+    let awaitingAdmission = false;   // true while sitting in the waiting room
+    let recordingPromptOpen = false; // guard so the consent popup shows once per request
+    let recordingResponded = false;  // whether the client already answered the current request
+    let lastMessageId = 0;           // highest chat message id rendered so far
+
+    // ===== HELPERS =====
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, {
+        ...opts,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers },
+      });
+      if (res.status === 401) window.location.href = 'login.html';
+      return res.json();
+    }
+
+    function showToast(msg) {
+      BPSToast.success(msg);
+    }
+
+    // If the user closes/reloads the tab while in a call, tell the backend they
+    // left so they drop from the roster (keepalive lets the request outlive unload).
+    window.addEventListener('beforeunload', () => {
+      if (currentSession && twilioRoom) {
+        try {
+          fetch(`${API}/teleconference/${currentSession.id}/leave`, {
+            method: 'POST', keepalive: true,
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          }).catch(() => {});
+        } catch (e) { /* best-effort */ }
+      }
+    });
+
+    function timeAgo(d) {
+      if (!d) return '—';
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function formatDateTime(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    // ===== NAVBAR ===== (rendered by shared navbar.js — role-aware dropdowns)
+    (function() {
+      if (user.role !== 'client') {
+        const b = document.getElementById('btn-new-session');
+        if (b) b.style.display = 'inline-flex';
+      }
+    })();
+
+    // ===== CREATE FORM =====
+    function toggleCreateForm() {
+      const form = document.getElementById('create-form');
+      form.classList.toggle('active');
+      // reset chosen staff each time the form opens/closes
+      selectedStaff = [];
+      renderSelectedStaff();
+      const sel = document.getElementById('staff-select');
+      if (sel) sel.value = '';
+    }
+
+    async function loadClients() {
+      try {
+        const json = await apiFetch('/teleconference/clients');
+        if (json.success && json.data.length) {
+          const select = document.getElementById('client-select');
+          json.data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            // Only verified clients may be assigned to a teleconference.
+            const verified = c.is_verified === true || c.is_verified === 'true';
+            opt.textContent = `${c.full_name} (${c.email})${verified ? '' : ' — Unverified'}`;
+            if (!verified) {
+              opt.disabled = true;
+              opt.title = 'This user must verify their account before they can be assigned.';
+            }
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) { console.error('Failed to load clients:', e); }
+    }
+
+    async function loadStaff() {
+      try {
+        const staffJson = await apiFetch('/teleconference/staff');
+        const staffSelect = document.getElementById('staff-select');
+        if (staffJson.success && staffJson.data && staffJson.data.length) {
+          staffJson.data.forEach(s => {
+            if (s.id !== user.id) { // exclude current user (session creator/host)
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              opt.textContent = `${s.full_name} (${s.role})`;
+              staffSelect.appendChild(opt);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load staff:', e);
+      }
+    }
+
+    // ===== STAFF PICKER (dropdown + add/remove, max 3) =====
+    function addStaff() {
+      const sel = document.getElementById('staff-select');
+      const id = parseInt(sel.value, 10);
+      if (!sel.value || isNaN(id)) {
+        BPSToast.warning('Please choose a staff member first.', { title: 'No Staff Selected' });
+        return;
+      }
+      if (selectedStaff.length >= 3) {
+        BPSToast.warning('You can add up to 3 staff members.', { title: 'Staff Limit' });
+        return;
+      }
+      if (selectedStaff.some(s => s.id === id)) {
+        BPSToast.warning('That staff member is already added.', { title: 'Already Added' });
+        return;
+      }
+      const label = sel.options[sel.selectedIndex].textContent;
+      selectedStaff.push({ id, label });
+      sel.value = '';
+      renderSelectedStaff();
+    }
+
+    function removeStaff(id) {
+      selectedStaff = selectedStaff.filter(s => s.id !== id);
+      renderSelectedStaff();
+    }
+
+    function renderSelectedStaff() {
+      const list = document.getElementById('selected-staff-list');
+      if (!list) return;
+      if (!selectedStaff.length) {
+        list.innerHTML = '';
+        return;
+      }
+      list.innerHTML = selectedStaff.map(s => `
+        <div class="staff-chip">
+          <span class="staff-chip__name">${escHtml(s.label)}</span>
+          <button type="button" class="staff-chip__remove" onclick="removeStaff(${s.id})" title="Remove">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    async function createSession() {
+      const title = document.getElementById('session-title').value.trim();
+      if (!title) { BPSToast.warning('Session title is required.', { title: 'Missing Title' }); return; }
+
+      const clientId = document.getElementById('client-select').value || null;
+      if (!clientId) { BPSToast.warning('Please assign a client to this session.', { title: 'No Client Selected' }); return; }
+
+      const staffIds = selectedStaff.map(s => s.id);
+      if (staffIds.length > 3) { BPSToast.warning('You can add up to 3 additional staff members.', { title: 'Staff Limit' }); return; }
+
+      const data = await apiFetch('/teleconference', {
+        method: 'POST',
+        body: JSON.stringify({ title, client_id: parseInt(clientId), additional_staff: staffIds }),
+      });
+
+      if (data.success) {
+        document.getElementById('session-title').value = '';
+        document.getElementById('client-select').value = '';
+        toggleCreateForm();
+        showToast('Session created successfully!');
+        loadSessions();
+      } else {
+        showToast(data.message || 'Failed to create session.');
+      }
+    }
+
+    // ===== SESSION LIST =====
+    function filterSessions(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadSessions();
+    }
+
+    async function loadSessions() {
+      const url = currentFilter ? `/teleconference?status=${currentFilter}` : '/teleconference';
+      const data = await apiFetch(url);
+      const list = document.getElementById('sessions-list');
+
+      if (!data.success || !data.data.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <i data-lucide="video-off" style="width:54px;height:54px;color:#cbd3e1;"></i>
+            <div class="empty-state__title">No sessions found</div>
+            <div class="empty-state__text">${isStaffUser ? 'Create a new consultation session to get started.' : 'You have no consultation sessions scheduled.'}</div>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      list.innerHTML = data.data.map(s => {
+        const statusClass = `meeting-status--${s.session_status}`;
+        const showJoin = s.session_status === 'scheduled' || s.session_status === 'active';
+        return `
+          <div class="meeting-card" onclick="openSession(${s.id})">
+            <div class="meeting-card__header">
+              <h3 class="meeting-card__title">
+                <i data-lucide="video" style="width:18px;height:18px;color:var(--green-primary);margin-right:6px;"></i>
+                ${escHtml(s.meeting_title || 'Consultation Session')}
+              </h3>
+              <span class="meeting-status ${statusClass}">${s.session_status}</span>
+            </div>
+            <div class="meeting-card__details">
+              <div class="detail-chip">
+                <i data-lucide="user-round"></i>
+                ${escHtml(s.psychologist_name || 'Unassigned')}
+              </div>
+              <div class="detail-chip">
+                <i data-lucide="users"></i>
+                Client: ${escHtml(s.client_name || 'Not assigned')}
+              </div>
+              <div class="detail-chip">
+                <i data-lucide="clock"></i>
+                ${timeAgo(s.created_at)}
+              </div>
+              ${s.recording_enabled ? '<div class="detail-chip detail-chip--rec"><span class="rec-dot"></span>Recording</div>' : ''}
+            </div>
+            <div class="meeting-card__actions" onclick="event.stopPropagation()">
+              ${showJoin ? `<button class="btn-sm btn-sm--primary" onclick="openSession(${s.id})">Join</button>` : ''}
+              ${s.psychologist_id === user.id && s.session_status !== 'ended' ? `<button class="btn-sm btn-sm--danger" onclick="endSessionDirect(${s.id})">End</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // ===== SESSION DETAIL =====
+    async function openSession(sessionId) {
+      const data = await apiFetch(`/teleconference/${sessionId}`);
+      if (!data.success) { BPSToast.error(data.message || 'Failed to load session.', { title: 'Session Error' }); return; }
+
+      currentSession = data.data;
+      const amHost = currentSession.am_i_host;
+
+      // reset per-open state
+      awaitingAdmission = false;
+      recordingPromptOpen = false;
+      recordingResponded = (currentSession.recording_response !== null && currentSession.recording_response !== undefined);
+      lastMessageId = 0;
+
+      // Update UI
+      document.getElementById('sessions-list-view').style.display = 'none';
+      document.getElementById('session-detail-view').style.display = 'block';
+
+      document.getElementById('session-title-display').textContent = currentSession.meeting_title || 'Consultation Session';
+      document.getElementById('session-subtitle').textContent =
+        `Teleconference · ${currentSession.client_name ? 'Client: ' + currentSession.client_name : 'Room: Virtual'}`;
+      const badge = document.getElementById('session-status-badge');
+      badge.textContent = currentSession.session_status;
+      badge.className = `meeting-status meeting-status--${currentSession.session_status}`;
+
+      // Build the in-call toolbar for this user's role (host gets Session logs)
+      buildToolbar(amHost);
+
+      // Pre-join chrome: toolbar + self indicator hidden, Join button shown, drawer closed
+      document.getElementById('meeting-toolbar').style.display = 'none';
+      document.getElementById('video-self').style.display = 'none';
+      document.getElementById('session-actions').style.display = 'flex';
+      closeDrawer();
+      stopMeetingTimer();
+
+      // Session info (visible to everyone, including clients)
+      document.getElementById('info-meeting-id').textContent = currentSession.meeting_code || `#${currentSession.id}`;
+      document.getElementById('info-psychologist').textContent = currentSession.psychologist_name || '—';
+      document.getElementById('info-client').textContent = currentSession.client_name || 'Not assigned';
+      document.getElementById('info-started').textContent = currentSession.started_at ? formatDateTime(currentSession.started_at) : 'Not started';
+      document.getElementById('info-recording').textContent = currentSession.recording_enabled
+        ? (currentSession.recording_response === 1 ? 'Active (Approved)' : currentSession.recording_response === 0 ? 'Rejected' : 'Requested')
+        : 'Off';
+
+      // Host-only controls live inside the Session info drawer
+      document.getElementById('psych-controls').style.display =
+        (amHost && currentSession.session_status !== 'ended') ? 'flex' : 'none';
+
+      // Session logs content (HOST only — button is also host-only)
+      if (amHost) loadSessionLogs(sessionId);
+
+      // Waiting room section lives inside the People drawer (HOST only)
+      document.getElementById('people-waiting').style.display = amHost ? 'block' : 'none';
+      renderWaitingRoom(currentSession.participants || []);
+
+      // Participants roster (with role labels) — visible before joining too
+      renderParticipantsPanel(currentSession.participants || []);
+
+      // Recording banner + toolbar indicator
+      updateRecordingBanner();
+
+      resetChat();
+
+      // Disable join if ended
+      const joinBtn = document.getElementById('btn-join');
+      joinBtn.disabled = false;
+      if (currentSession.session_status === 'ended' || currentSession.session_status === 'cancelled') {
+        joinBtn.disabled = true;
+        joinBtn.innerHTML = 'Session Ended';
+      }
+
+      lucide.createIcons();
+
+      // Start real-time polling (waiting room, recording requests, status, chat)
+      startPolling();
+    }
+
+    // ===== IN-CALL TOOLBAR =====
+    let currentDrawer = null;
+
+    function buildToolbar(amHost) {
+      const buttons = [
+        { id: 'tb-camera', icon: 'video', label: 'Camera', onclick: 'toggleVideo()' },
+        { id: 'tb-mic', icon: 'mic', label: 'Mic', onclick: 'toggleAudio()' },
+        { sep: true },
+        { id: 'tb-chat', icon: 'message-square', label: 'Chat', onclick: "openDrawer('chat')" },
+        { id: 'tb-people', icon: 'users', label: 'People', onclick: "openDrawer('people')" },
+        { id: 'tb-info', icon: 'info', label: 'Session info', onclick: "openDrawer('info')" },
+      ];
+      if (amHost) buttons.push({ id: 'tb-logs', icon: 'scroll-text', label: 'Session logs', onclick: "openDrawer('logs')" });
+      buttons.push({ sep: true });
+      buttons.push({ id: 'tb-leave', icon: 'phone-off', label: 'Leave', onclick: 'leaveSession()', danger: true });
+
+      document.getElementById('toolbar-controls').innerHTML = buttons.map(b => {
+        if (b.sep) return '<span class="mt-sep"></span>';
+        return `<button class="mt-btn ${b.danger ? 'mt-btn--leave' : ''}" id="${b.id}" onclick="${b.onclick}">
+            <span class="mt-btn__icon"><i data-lucide="${b.icon}"></i></span>
+            <span class="mt-btn__label">${b.label}</span>
+          </button>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function openDrawer(name) {
+      const drawer = document.getElementById('meeting-drawer');
+      const stage = document.getElementById('session-stage');
+      const panels = { people: 'people-drawer', chat: 'chat-drawer', info: 'info-drawer', logs: 'logs-drawer' };
+      const btnMap = { people: 'tb-people', chat: 'tb-chat', info: 'tb-info', logs: 'tb-logs' };
+
+      // Toggle off if the same panel is already open
+      if (stage.classList.contains('drawer-open') && currentDrawer === name) { closeDrawer(); return; }
+
+      currentDrawer = name;
+      stage.classList.add('drawer-open');
+      drawer.setAttribute('aria-hidden', 'false');
+      Object.values(panels).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      const panelEl = document.getElementById(panels[name]);
+      if (panelEl) panelEl.style.display = 'flex';
+
+      // Bound the drawer to the video container's height so inner lists
+      // (e.g. session logs) get their own scrollbar instead of stretching the page.
+      syncDrawerHeight();
+
+      document.querySelectorAll('.mt-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(btnMap[name]);
+      if (btn) btn.classList.add('active');
+
+      if (name === 'chat') {
+        const box = document.getElementById('chat-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+        setTimeout(() => { const ci = document.getElementById('chat-input'); if (ci) ci.focus(); }, 60);
+      }
+      lucide.createIcons();
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById('meeting-drawer');
+      const stage = document.getElementById('session-stage');
+      if (stage) stage.classList.remove('drawer-open');
+      if (drawer) drawer.setAttribute('aria-hidden', 'true');
+      document.querySelectorAll('.mt-btn').forEach(b => b.classList.remove('active'));
+      currentDrawer = null;
+    }
+
+    // Size the drawer to match the video container so its panels (esp. the
+    // session logs) scroll internally rather than stretching the layout.
+    function syncDrawerHeight() {
+      const vc = document.getElementById('video-container');
+      const drawer = document.getElementById('meeting-drawer');
+      if (!vc || !drawer) return;
+      const h = vc.offsetHeight;
+      if (h > 0) {
+        drawer.style.height = h + 'px';
+        drawer.style.alignSelf = 'flex-start';
+      } else {
+        drawer.style.height = '';
+        drawer.style.alignSelf = '';
+      }
+    }
+    window.addEventListener('resize', () => {
+      if (document.getElementById('session-stage')?.classList.contains('drawer-open')) syncDrawerHeight();
+    });
+
+    function filterPeople(q) {
+      const term = (q || '').trim().toLowerCase();
+      document.querySelectorAll('#participants-list .participant-item, #waiting-room-list .waiting-item').forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        row.style.display = (!term || name.includes(term)) ? '' : 'none';
+      });
+    }
+
+    // ===== MEETING TIMER =====
+    let meetingTimerInt = null, meetingTimerStart = 0;
+    function startMeetingTimer() {
+      meetingTimerStart = Date.now();
+      updateMeetingTimer();
+      meetingTimerInt = setInterval(updateMeetingTimer, 1000);
+    }
+    function updateMeetingTimer() {
+      const s = Math.floor((Date.now() - meetingTimerStart) / 1000);
+      const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+      const pad = n => String(n).padStart(2, '0');
+      const txt = (hh > 0 ? pad(hh) + ':' : '') + pad(mm) + ':' + pad(ss);
+      const el = document.getElementById('timer-text');
+      if (el) el.textContent = txt;
+    }
+    function stopMeetingTimer() {
+      if (meetingTimerInt) { clearInterval(meetingTimerInt); meetingTimerInt = null; }
+      const el = document.getElementById('timer-text');
+      if (el) el.textContent = '00:00';
+    }
+
+    // Swap a lucide icon inside a wrapper element
+    function setIcon(wrap, name) {
+      if (!wrap) return;
+      wrap.innerHTML = `<i data-lucide="${name}"></i>`;
+      lucide.createIcons();
+    }
+
+    function updateSelfIndicator() {
+      const wrap = document.getElementById('video-self');
+      if (!wrap || !twilioRoom) return;
+      let muted = false;
+      twilioRoom.localParticipant.audioTracks.forEach(pub => { muted = !pub.track.isEnabled; });
+      document.getElementById('self-label').textContent = muted ? 'You · muted' : 'You';
+      wrap.classList.toggle('video-self--muted', muted);
+      setIcon(document.getElementById('self-mic-icon-wrap'), muted ? 'mic-off' : 'mic');
+    }
+
+    function updateRecordingBanner() {
+      const banner = document.getElementById('recording-banner');
+      if (!currentSession) return;
+
+      const recActive = currentSession.recording_enabled && currentSession.recording_response === 1;
+
+      // Toolbar "REC" indicator sits beside the timer while actively recording
+      const recPill = document.getElementById('toolbar-rec');
+      if (recPill) recPill.style.display = recActive ? 'inline-flex' : 'none';
+
+      // Host record button state
+      const startBtn = document.getElementById('btn-start-recording');
+      const stopBtn = document.getElementById('btn-stop-recording');
+      if (startBtn && stopBtn) {
+        if (currentSession.recording_enabled) {
+          startBtn.style.display = 'none'; stopBtn.style.display = 'flex';
+        } else {
+          startBtn.style.display = 'flex'; stopBtn.style.display = 'none';
+        }
+      }
+
+      if (currentSession.recording_enabled) {
+        if (currentSession.recording_response === 1) {
+          // While actively recording, the toolbar pill carries the cue — hide the banner
+          banner.style.display = 'none';
+          banner.classList.add('recording-banner--active');
+          document.getElementById('recording-consent-btns').style.display = 'none';
+        } else if (currentSession.recording_response === 0) {
+          banner.style.display = 'flex';
+          document.getElementById('recording-status-text').textContent = 'Recording was rejected by the client';
+          document.getElementById('recording-consent-btns').style.display = 'none';
+          banner.classList.remove('recording-banner--active');
+        } else {
+          banner.style.display = 'flex';
+          document.getElementById('recording-status-text').textContent = 'Recording requested — awaiting client decision';
+          // Inline allow/deny still available to the client as a fallback to the popup
+          if (user.id === currentSession.client_id) {
+            document.getElementById('recording-consent-btns').style.display = 'flex';
+          }
+          banner.classList.remove('recording-banner--active');
+        }
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // ===== JOIN (waiting room, no password) =====
+    async function joinSession() {
+      if (!currentSession) return;
+      if (currentSession.session_status === 'ended' || currentSession.session_status === 'cancelled') {
+        BPSToast.error('This session has already ended.', { title: 'Session Ended' });
+        return;
+      }
+
+      const btn = document.getElementById('btn-join');
+      btn.disabled = true;
+      btn.textContent = 'Joining…';
+
+      try {
+        const data = await apiFetch(`/teleconference/${currentSession.id}/join`, { method: 'POST' });
+
+        if (!data.success) {
+          BPSToast.error(data.message || 'Failed to join session.', { title: 'Join Error' });
+          btn.disabled = false; btn.textContent = 'Join Session';
+          return;
+        }
+
+        if (data.waiting) {
+          // Placed in the waiting room — wait for the host to admit
+          awaitingAdmission = true;
+          showWaitingOverlay();
+          BPSToast.info('Waiting for the host to admit you.', { title: 'Waiting Room' });
+          btn.disabled = true; btn.textContent = 'Waiting for host…';
+          return;
+        }
+
+        // Admitted (or host) — connect to the room
+        await connectToRoom(data.data);
+      } catch (err) {
+        console.error('Join failed:', err);
+        BPSToast.error('Failed to join. Please try again.', { title: 'Join Error' });
+        btn.disabled = false; btn.textContent = 'Join Session';
+      }
+    }
+
+    function showWaitingOverlay() {
+      const grid = document.getElementById('video-grid');
+      grid.innerHTML = `
+        <div class="video-placeholder">
+          <i data-lucide="clock" style="width:56px;height:56px;"></i>
+          <p><strong>You're in the waiting room</strong></p>
+          <p style="font-size:12px;margin-top:6px;opacity:0.7;">Please wait — the host will admit you shortly.</p>
+        </div>`;
+      lucide.createIcons();
+    }
+
+    async function connectToRoom(joinData) {
+      const btn = document.getElementById('btn-join');
+      btn.textContent = 'Connecting...';
+      awaitingAdmission = false;
+
+      try {
+        const { token: videoToken, roomName, identity } = joinData;
+
+        // Connect to Twilio Video
+        twilioRoom = await Twilio.Video.connect(videoToken, {
+          name: roomName,
+          audio: true,
+          video: { width: 640, height: 480 },
+        });
+
+        // Enter in-call mode: show toolbar + self indicator, hide Join button
+        document.getElementById('meeting-toolbar').style.display = 'flex';
+        document.getElementById('video-self').style.display = 'inline-flex';
+        document.getElementById('session-actions').style.display = 'none';
+        startMeetingTimer();
+
+        // Render local tracks
+        const videoGrid = document.getElementById('video-grid');
+        videoGrid.innerHTML = '';
+        mediaState = {};
+
+        const localDiv = createParticipantDiv(identity + ' (You)', true);
+        videoGrid.appendChild(localDiv);
+
+        twilioRoom.localParticipant.tracks.forEach(pub => {
+          if (pub.track) {
+            localDiv.querySelector('.video-track').appendChild(pub.track.attach());
+            localTracks.push(pub.track);
+          }
+        });
+
+        // Default join state: camera OFF and microphone MUTED.
+        twilioRoom.localParticipant.audioTracks.forEach(pub => { try { pub.track.disable(); } catch (e) {} });
+        twilioRoom.localParticipant.videoTracks.forEach(pub => { try { pub.track.disable(); } catch (e) {} });
+        mediaState[identity] = { cam: false, mic: false };
+        localDiv.classList.add('video-participant--camoff');
+
+        // Voice-activity detection for the local mic (starts muted → not speaking).
+        speakingState = {};
+        localMicEnabled = false;
+        twilioRoom.localParticipant.audioTracks.forEach(pub => {
+          if (pub.track && pub.track.mediaStreamTrack) {
+            vadRegister(identity, pub.track.mediaStreamTrack, true);
+          }
+        });
+
+        // Reflect the default (off) state on the toolbar buttons
+        const camBtn = document.getElementById('tb-camera');
+        if (camBtn) { camBtn.classList.add('mt-btn--off'); setIcon(camBtn.querySelector('.mt-btn__icon'), 'video-off'); }
+        const micBtn = document.getElementById('tb-mic');
+        if (micBtn) { micBtn.classList.add('mt-btn--off'); setIcon(micBtn.querySelector('.mt-btn__icon'), 'mic-off'); }
+
+        // Handle remote participants
+        twilioRoom.participants.forEach(p => handleParticipantConnected(p));
+        twilioRoom.on('participantConnected', handleParticipantConnected);
+        twilioRoom.on('participantDisconnected', handleParticipantDisconnected);
+
+        // Update participants list + adapt the grid
+        renderParticipantsPanel(currentSession && currentSession.participants || []);
+        updateVideoGridLayout();
+
+        // Chat becomes available now that the user has joined
+        resetChat();
+        loadChatMessages();
+
+        // Reflect initial mic state in the toolbar + self indicator
+        updateSelfIndicator();
+
+        // Enter MS Teams-style meeting mode (left nav rail)
+        document.body.classList.add('meeting-mode');
+
+        // Update session status
+        const badge = document.getElementById('session-status-badge');
+        badge.textContent = 'active';
+        badge.className = 'meeting-status meeting-status--active';
+
+        lucide.createIcons();
+        BPSToast.success('Connected to session successfully!', { title: 'Session Active' });
+      } catch (err) {
+        console.error('Failed to join video:', err);
+        BPSToast.error('Failed to connect to video. Please check camera/mic permissions.', { title: 'Connection Failed' });
+        btn.disabled = false;
+        btn.textContent = 'Join Session';
+      }
+    }
+
+    function createParticipantDiv(name, isLocal = false) {
+      const div = document.createElement('div');
+      div.className = `video-participant ${isLocal ? 'video-participant--local' : ''}`;
+      const cleanName = (name || '').replace(/ \(You\)$/, '');
+      div.dataset.identity = cleanName;
+      const initial = escHtml(((cleanName || '?').trim().charAt(0) || '?').toUpperCase());
+      div.innerHTML = `
+        <div class="video-track"></div>
+        <div class="video-participant__avatar" aria-hidden="true"><span>${initial}</span></div>
+        <div class="video-participant__name">${escHtml(name)}</div>
+      `;
+      return div;
+    }
+
+    function handleParticipantConnected(participant) {
+      const videoGrid = document.getElementById('video-grid');
+      const div = createParticipantDiv(participant.identity);
+      div.id = `participant-${participant.sid}`;
+      videoGrid.appendChild(div);
+
+      // Read current camera/mic state from the participant's track publications.
+      function syncRemoteMedia() {
+        let cam = false, mic = false;
+        participant.tracks.forEach(pub => {
+          const en = (pub.isTrackEnabled !== undefined) ? pub.isTrackEnabled : (pub.track ? pub.track.isEnabled : false);
+          if (pub.kind === 'video') cam = en;
+          if (pub.kind === 'audio') mic = en;
+        });
+        mediaState[participant.identity] = { cam, mic };
+        div.classList.toggle('video-participant--camoff', !cam);
+        if (currentSession) renderParticipantsPanel(currentSession.participants || []);
+      }
+
+      participant.tracks.forEach(pub => {
+        if (pub.isSubscribed && pub.track) {
+          div.querySelector('.video-track').appendChild(pub.track.attach());
+          if (pub.track.kind === 'audio' && pub.track.mediaStreamTrack) {
+            vadRegister(participant.identity, pub.track.mediaStreamTrack, false);
+          }
+        }
+      });
+      participant.on('trackSubscribed', track => {
+        div.querySelector('.video-track').appendChild(track.attach());
+        if (track.kind === 'audio' && track.mediaStreamTrack) {
+          vadRegister(participant.identity, track.mediaStreamTrack, false);
+        }
+        syncRemoteMedia();
+      });
+      participant.on('trackUnsubscribed', track => {
+        track.detach().forEach(el => el.remove());
+        if (track.kind === 'audio') vadUnregister(participant.identity);
+        syncRemoteMedia();
+      });
+      participant.on('trackEnabled', syncRemoteMedia);
+      participant.on('trackDisabled', syncRemoteMedia);
+
+      syncRemoteMedia();
+      updateVideoGridLayout();
+    }
+
+    function handleParticipantDisconnected(participant) {
+      const el = document.getElementById(`participant-${participant.sid}`);
+      if (el) el.remove();
+      delete mediaState[participant.identity];
+      vadUnregister(participant.identity);
+      renderParticipantsPanel(currentSession && currentSession.participants || []);
+      updateVideoGridLayout();
+    }
+
+    // ===== VOICE ACTIVITY DETECTION =====
+    // Real-time speaking detection for every participant (local + remote). When a
+    // participant's mic input rises above a threshold, a green border is shown on
+    // their video tile and People-panel card; it clears when they go quiet.
+    let audioCtx = null;
+    const vadMap = {};            // identity -> { analyser, data, source, speaking, lastAbove, isLocal }
+    let vadRafId = null;
+    let localMicEnabled = false;  // local mic starts muted; only flag speaking when on
+    const VAD_ON = 0.045;         // RMS level to count as "speaking"
+    const VAD_OFF = 0.030;        // drop below this (for VAD_HOLD ms) to stop
+    const VAD_HOLD = 280;         // ms to keep the border after going quiet (anti-flicker)
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e) {} }
+      return audioCtx;
+    }
+
+    function vadRegister(identity, mediaStreamTrack, isLocal) {
+      try {
+        if (!identity || !mediaStreamTrack) return;
+        const ctx = ensureAudioCtx();
+        if (!ctx) return;
+        vadUnregister(identity); // replace any previous entry
+        const source = ctx.createMediaStreamSource(new MediaStream([mediaStreamTrack]));
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.6;
+        source.connect(analyser);
+        vadMap[identity] = {
+          analyser, source, isLocal: !!isLocal,
+          data: new Uint8Array(analyser.frequencyBinCount),
+          speaking: false, lastAbove: 0,
+        };
+        if (!vadRafId) vadRafId = requestAnimationFrame(vadTick);
+      } catch (e) { /* VAD is best-effort */ }
+    }
+
+    function vadUnregister(identity) {
+      const e = vadMap[identity];
+      if (!e) return;
+      try { e.source.disconnect(); } catch (_) {}
+      try { e.analyser.disconnect(); } catch (_) {}
+      setSpeaking(identity, false);
+      delete vadMap[identity];
+    }
+
+    function vadTeardownAll() {
+      Object.keys(vadMap).forEach(vadUnregister);
+      if (vadRafId) { cancelAnimationFrame(vadRafId); vadRafId = null; }
+      if (audioCtx) { try { audioCtx.close(); } catch (_) {} audioCtx = null; }
+    }
+
+    function vadTick() {
+      const now = performance.now();
+      Object.keys(vadMap).forEach(identity => {
+        const e = vadMap[identity];
+        if (!e) return;
+        e.analyser.getByteTimeDomainData(e.data);
+        // RMS of the waveform around the 128 midpoint, normalised to ~0..1.
+        let sum = 0;
+        for (let i = 0; i < e.data.length; i++) {
+          const v = (e.data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / e.data.length);
+
+        // The local mic may still feed audio while muted, so only treat the local
+        // participant as speaking when their mic is actually enabled.
+        const gated = e.isLocal && !localMicEnabled;
+
+        let speaking = e.speaking;
+        if (!gated && rms >= VAD_ON) { speaking = true; e.lastAbove = now; }
+        else if (rms >= VAD_OFF && !gated) { e.lastAbove = now; }
+        else if (now - e.lastAbove > VAD_HOLD || gated) { speaking = false; }
+
+        if (speaking !== e.speaking) {
+          e.speaking = speaking;
+          setSpeaking(identity, speaking);
+        }
+      });
+      vadRafId = Object.keys(vadMap).length ? requestAnimationFrame(vadTick) : null;
+    }
+
+    // Toggle the green "speaking" indicator on both the video tile and the
+    // People-panel card for the given identity (= the participant's full name).
+    function setSpeaking(identity, speaking) {
+      speakingState[identity] = speaking;
+      const tile = document.querySelector(`.video-participant[data-identity="${cssEsc(identity)}"]`);
+      if (tile) tile.classList.toggle('video-participant--speaking', speaking);
+      document.querySelectorAll(`.participant-item[data-name="${cssEsc(identity)}"]`).forEach(el => {
+        el.classList.toggle('participant-item--speaking', speaking);
+      });
+    }
+
+    // Re-apply speaking borders to People cards after they are re-rendered.
+    function reapplySpeaking() {
+      Object.keys(speakingState).forEach(identity => {
+        if (speakingState[identity]) {
+          document.querySelectorAll(`.participant-item[data-name="${cssEsc(identity)}"]`).forEach(el => {
+            el.classList.add('participant-item--speaking');
+          });
+        }
+      });
+    }
+
+    function cssEsc(s) {
+      if (window.CSS && CSS.escape) return CSS.escape(s);
+      return String(s).replace(/["\\]/g, '\\$&');
+    }
+
+    // Reusable: update the grid layout whenever the participant count changes.
+    // The CSS keys off [data-count] to produce the Discord/Meet/Teams arrangements.
+    function updateVideoGridLayout() {
+      const grid = document.getElementById('video-grid');
+      if (!grid) return;
+      const tiles = grid.querySelectorAll('.video-participant').length;
+      grid.setAttribute('data-count', String(Math.min(tiles, 6)));
+      grid.classList.toggle('in-call', tiles > 0);
+      // keep an open drawer matched to the (now possibly taller) video container
+      const stage = document.getElementById('session-stage');
+      if (stage && stage.classList.contains('drawer-open')) syncDrawerHeight();
+    }
+
+    function roleLabel(r) {
+      return r === 'host' ? 'Host' : r === 'client' ? 'Client' : 'Staff';
+    }
+
+    // Camera/mic icons for a participant, read from mediaState (keyed by identity = full name).
+    function mediaIcons(identity) {
+      const st = mediaState[identity] || { cam: false, mic: false };
+      return `<span class="participant-media">
+        <span class="pm-icon ${st.cam ? 'pm-on' : 'pm-off'}" title="Camera ${st.cam ? 'on' : 'off'}"><i data-lucide="${st.cam ? 'video' : 'video-off'}"></i></span>
+        <span class="pm-icon ${st.mic ? 'pm-on' : 'pm-off'}" title="Microphone ${st.mic ? 'on' : 'off'}"><i data-lucide="${st.mic ? 'mic' : 'mic-off'}"></i></span>
+      </span>`;
+    }
+
+    // "In this meeting" roster — ONLY participants who have actually joined the call
+    // (joined_at set). Camera/mic state is shown via icons; the host gets a Remove control.
+    function renderParticipantsPanel(participants) {
+      const list = document.getElementById('participants-list');
+      if (!list) return;
+      const amHost = currentSession && currentSession.am_i_host;
+      const inMeeting = (participants || []).filter(p => p.joined_at && p.admit_status === 'admitted');
+
+      const countEl = document.getElementById('inmeeting-count');
+      if (countEl) countEl.textContent = inMeeting.length;
+
+      if (!inMeeting.length) {
+        list.innerHTML = '<div class="participant-placeholder">No one has joined yet</div>';
+      } else {
+        list.innerHTML = inMeeting.map(p => {
+          const isSelf = p.user_id === user.id;
+          const you = isSelf ? ' (You)' : '';
+          const canRemove = amHost && !isSelf && p.participant_role !== 'host';
+          const safeName = escHtml((p.full_name || '').replace(/'/g, "\\'"));
+          const removeBtn = canRemove
+            ? `<button class="participant-remove" title="Remove from meeting" onclick="removeParticipant(${p.user_id}, '${safeName}')"><i data-lucide="user-x"></i></button>`
+            : '';
+          return `<div class="participant-item" data-name="${escHtml(p.full_name || '')}">
+            <div class="participant-avatar">${(p.full_name || '?')[0]}</div>
+            <div class="participant-meta">
+              <span class="participant-name">${escHtml(p.full_name || 'Participant')}${you}</span>
+              <span class="role-badge role-badge--${p.participant_role}">${roleLabel(p.participant_role)}</span>
+            </div>
+            ${mediaIcons(p.full_name)}
+            ${removeBtn}
+          </div>`;
+        }).join('');
+      }
+
+      renderInvited(participants);
+      if (window.lucide) lucide.createIcons();
+      reapplySpeaking();
+      const q = document.getElementById('people-search-input');
+      if (q && q.value) filterPeople(q.value);
+    }
+
+    // "Not in the Meeting" — provisioned participants who have NOT yet attempted
+    // to join (admit_status = 'invited'). Once they try to enter they move to the
+    // Waiting Room (admit_status = 'waiting'); once admitted + joined they appear
+    // under "In this meeting".
+    function renderInvited(participants) {
+      const sec = document.getElementById('people-invited');
+      const list = document.getElementById('invited-list');
+      if (!sec || !list) return;
+      const invited = (participants || []).filter(p =>
+        p.admit_status === 'invited' && !p.joined_at
+      );
+
+      const countEl = document.getElementById('invited-count');
+      if (countEl) countEl.textContent = invited.length;
+
+      if (!invited.length) { sec.style.display = 'none'; return; }
+      sec.style.display = 'block';
+      list.innerHTML = invited.map(p => {
+        const you = p.user_id === user.id ? ' (You)' : '';
+        return `<div class="participant-item participant-item--invited" data-name="${escHtml(p.full_name || '')}">
+          <div class="participant-avatar participant-avatar--muted">${(p.full_name || '?')[0]}</div>
+          <div class="participant-meta">
+            <span class="participant-name">${escHtml(p.full_name || 'Participant')}${you}</span>
+            <span class="role-badge role-badge--${p.participant_role}">${roleLabel(p.participant_role)}</span>
+          </div>
+          <span class="participant-invited-tag">Not joined</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Host removes a participant from the meeting.
+    async function removeParticipant(userId, name) {
+      if (!currentSession) return;
+      if (!confirm(`Remove ${name || 'this participant'} from the meeting?`)) return;
+      try {
+        const data = await apiFetch(`/teleconference/${currentSession.id}/remove`, {
+          method: 'PUT', body: JSON.stringify({ user_id: userId }),
+        });
+        if (data.success) {
+          BPSToast.success(`${name || 'Participant'} was removed from the meeting.`, { title: 'Participant Removed' });
+          pollLoop();
+        } else {
+          BPSToast.error(data.message || 'Failed to remove participant.', { title: 'Error' });
+        }
+      } catch (e) {
+        BPSToast.error('Failed to remove participant.', { title: 'Error' });
+      }
+    }
+
+    // Update the local user's media state and refresh the roster icons.
+    function setSelfMedia(patch) {
+      const id = (user && user.full_name) || 'You';
+      mediaState[id] = Object.assign({ cam: false, mic: false }, mediaState[id], patch);
+      if (currentSession) renderParticipantsPanel(currentSession.participants || []);
+    }
+
+    function toggleAudio() {
+      if (!twilioRoom) return;
+      let enabled = true;
+      twilioRoom.localParticipant.audioTracks.forEach(pub => {
+        if (pub.track.isEnabled) { pub.track.disable(); enabled = false; } else { pub.track.enable(); enabled = true; }
+      });
+      const btn = document.getElementById('tb-mic');
+      if (btn) {
+        btn.classList.toggle('mt-btn--off', !enabled);
+        setIcon(btn.querySelector('.mt-btn__icon'), enabled ? 'mic' : 'mic-off');
+      }
+      localMicEnabled = enabled;
+      if (!enabled) {
+        // Going muted should immediately clear the local speaking border.
+        const me = twilioRoom && twilioRoom.localParticipant ? twilioRoom.localParticipant.identity : null;
+        if (me) setSpeaking(me, false);
+      }
+      setSelfMedia({ mic: enabled });
+      updateSelfIndicator();
+    }
+
+    function toggleVideo() {
+      if (!twilioRoom) return;
+      let enabled = true;
+      twilioRoom.localParticipant.videoTracks.forEach(pub => {
+        if (pub.track.isEnabled) { pub.track.disable(); enabled = false; } else { pub.track.enable(); enabled = true; }
+      });
+      const btn = document.getElementById('tb-camera');
+      if (btn) {
+        btn.classList.toggle('mt-btn--off', !enabled);
+        setIcon(btn.querySelector('.mt-btn__icon'), enabled ? 'video' : 'video-off');
+      }
+      const localDiv = document.querySelector('.video-participant--local');
+      if (localDiv) localDiv.classList.toggle('video-participant--camoff', !enabled);
+      setSelfMedia({ cam: enabled });
+    }
+
+    function leaveSession() {
+      // Tell the backend we left so we drop out of the roster (keeps us admitted
+      // so a rejoin reinstates us as an active participant automatically).
+      if (currentSession && twilioRoom) {
+        try {
+          apiFetch(`/teleconference/${currentSession.id}/leave`, { method: 'POST' }).catch(() => {});
+        } catch (e) { /* best-effort */ }
+      }
+      stopPolling();
+      stopMeetingTimer();
+      closeDrawer();
+      awaitingAdmission = false;
+      recordingPromptOpen = false;
+      document.getElementById('recording-consent-modal').style.display = 'none';
+
+      vadTeardownAll();
+      speakingState = {};
+
+      if (twilioRoom) {
+        twilioRoom.disconnect();
+        twilioRoom = null;
+      }
+      localTracks.forEach(t => { t.stop(); t.detach().forEach(el => el.remove()); });
+      localTracks = [];
+      mediaState = {};
+
+      currentSession = null;
+      lastMessageId = 0;
+      document.getElementById('session-detail-view').style.display = 'none';
+      document.getElementById('sessions-list-view').style.display = 'block';
+      document.getElementById('meeting-toolbar').style.display = 'none';
+      document.getElementById('video-self').style.display = 'none';
+      document.getElementById('session-actions').style.display = 'flex';
+      document.getElementById('people-waiting').style.display = 'none';
+      const invSec = document.getElementById('people-invited');
+      if (invSec) invSec.style.display = 'none';
+      const recPill = document.getElementById('toolbar-rec');
+      if (recPill) recPill.style.display = 'none';
+      const partList = document.getElementById('participants-list');
+      if (partList) partList.innerHTML = '<div class="participant-placeholder">No participants yet</div>';
+      const chatBox = document.getElementById('chat-messages');
+      if (chatBox) chatBox.innerHTML = '<div class="chat-empty">No messages yet</div>';
+      document.body.classList.remove('meeting-mode');
+      const grid0 = document.getElementById('video-grid');
+      grid0.classList.remove('in-call');
+      grid0.removeAttribute('data-count');
+      grid0.innerHTML = `
+        <div class="video-placeholder">
+          <i data-lucide="video" style="width:60px;height:60px;"></i>
+          <p>Click <strong>Join Session</strong> to start the video consultation</p>
+        </div>`;
+      const jb = document.getElementById('btn-join');
+      jb.disabled = false;
+      jb.innerHTML = '<i data-lucide="video" style="width:18px;height:18px;margin-right:8px;"></i> Join Session';
+      lucide.createIcons();
+
+      loadSessions();
+    }
+
+    // ===== RECORDING =====
+    async function requestRecording() {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/start-recording`, { method: 'PUT' });
+      if (data.success) {
+        currentSession.recording_enabled = true;
+        currentSession.recording_response = null;
+        currentSession.recording_consent_given = false;
+        updateRecordingBanner();
+        BPSToast.info('Recording requested. Waiting for client decision.', { title: 'Recording' });
+        document.getElementById('btn-start-recording').style.display = 'none';
+        document.getElementById('btn-stop-recording').style.display = 'flex';
+      } else {
+        BPSToast.error(data.message || 'Failed to start recording.', { title: 'Recording Error' });
+      }
+    }
+
+    async function giveRecordingConsent(consent) {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/consent-recording`, {
+        method: 'PUT',
+        body: JSON.stringify({ consent }),
+      });
+      if (data.success) {
+        currentSession.recording_response = consent ? 1 : 0;
+        currentSession.recording_consent_given = !!consent;
+        recordingResponded = true;
+        updateRecordingBanner();
+        BPSToast.success(consent ? 'Recording approved.' : 'Recording rejected.', { title: consent ? 'Recording Approved' : 'Recording Rejected' });
+      } else {
+        BPSToast.error(data.message || 'Failed to record your decision.', { title: 'Error' });
+      }
+    }
+
+    // Real-time popup response (client)
+    async function respondRecording(approve) {
+      document.getElementById('recording-consent-modal').style.display = 'none';
+      recordingPromptOpen = false;
+      await giveRecordingConsent(!!approve);
+    }
+
+    // ===== REAL-TIME POLLING (waiting room + recording requests + status) =====
+    function startPolling() {
+      stopPolling();
+      pollTimer = setInterval(pollLoop, 4000);
+    }
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    async function pollLoop() {
+      if (!currentSession) { stopPolling(); return; }
+      let data;
+      try { data = await apiFetch(`/teleconference/${currentSession.id}/poll`); }
+      catch (e) { return; }
+      if (!data || !data.success) return;
+      const p = data.data;
+
+      // Sync key fields
+      currentSession.session_status = p.session_status;
+      currentSession.recording_enabled = p.recording_enabled;
+      currentSession.recording_response = p.recording_response;
+      currentSession.recording_consent_given = p.recording_consent_given;
+      currentSession.participants = p.participants;
+
+      // Status badge
+      const badge = document.getElementById('session-status-badge');
+      if (badge) { badge.textContent = p.session_status; badge.className = `meeting-status meeting-status--${p.session_status}`; }
+
+      // Recording info + banner
+      document.getElementById('info-recording').textContent = p.recording_enabled
+        ? (p.recording_response === 1 ? 'Active (Approved)' : p.recording_response === 0 ? 'Rejected' : 'Requested')
+        : 'Off';
+      updateRecordingBanner();
+
+      // Host: refresh waiting room list
+      if (p.am_i_host) renderWaitingRoom(p.participants || []);
+
+      // Everyone: refresh the participants roster (joined-only) + invited section
+      renderParticipantsPanel(p.participants || []);
+
+      // Removed by the host while in the call (host set status to denied + cleared joined_at)
+      if (twilioRoom && !currentSession.am_i_host && p.my_admit_status === 'denied') {
+        BPSToast.error('You were removed from the meeting by the host.', { title: 'Removed from Meeting' });
+        leaveSession();
+        return;
+      }
+
+      // New chat messages (only after joining)
+      if (twilioRoom) loadChatMessages();
+
+      // Waiting participant: auto-connect once admitted
+      if (awaitingAdmission && p.my_admit_status === 'admitted' && !twilioRoom) {
+        awaitingAdmission = false;
+        BPSToast.success('The host admitted you. Connecting…', { title: 'Admitted' });
+        try {
+          const jd = await apiFetch(`/teleconference/${currentSession.id}/join`, { method: 'POST' });
+          if (jd.success && !jd.waiting && jd.data) await connectToRoom(jd.data);
+        } catch (e) { console.error(e); }
+      }
+      if (awaitingAdmission && p.my_admit_status === 'denied') {
+        awaitingAdmission = false;
+        BPSToast.error('The host did not admit you to the session.', { title: 'Entry Not Granted' });
+        leaveSession();
+        return;
+      }
+
+      // A fresh recording request (enabled, no decision yet) re-arms the popup
+      if (p.recording_enabled && (p.recording_response === null || p.recording_response === undefined) && recordingResponded) {
+        recordingResponded = false;
+      }
+
+      // Client: show the real-time recording-consent popup
+      if (user.id === currentSession.client_id &&
+          p.recording_enabled &&
+          (p.recording_response === null || p.recording_response === undefined) &&
+          !recordingResponded && !recordingPromptOpen) {
+        recordingPromptOpen = true;
+        document.getElementById('recording-consent-modal').style.display = 'flex';
+      }
+
+      // Session ended remotely (only the host can end)
+      if (p.session_status === 'ended') {
+        if (twilioRoom) { BPSToast.info('The host has ended the session.', { title: 'Session Ended' }); leaveSession(); }
+        else {
+          stopPolling();
+          const jb = document.getElementById('btn-join');
+          jb.disabled = true; jb.textContent = 'Session Ended';
+        }
+      }
+    }
+
+    // ===== WAITING ROOM (host) =====
+    function renderWaitingRoom(participants) {
+      if (!currentSession || !currentSession.am_i_host) return;
+      const waiting = (participants || []).filter(p => p.admit_status === 'waiting');
+      const badge = document.getElementById('waiting-count-badge');
+      const list = document.getElementById('waiting-room-list');
+
+      if (badge) {
+        if (waiting.length) { badge.style.display = 'inline-block'; badge.textContent = waiting.length; }
+        else badge.style.display = 'none';
+      }
+
+      if (!waiting.length) {
+        list.innerHTML = '<div class="participant-placeholder">No one is waiting</div>';
+        return;
+      }
+
+      list.innerHTML = waiting.map(p => `
+        <div class="waiting-item" data-name="${escHtml(p.full_name || '')}">
+          <div class="waiting-item__info">
+            <div class="participant-avatar">${(p.full_name || '?')[0]}</div>
+            <span>${escHtml(p.full_name)} <span class="role-badge role-badge--${p.participant_role}">${roleLabel(p.participant_role)}</span></span>
+          </div>
+          <div class="waiting-item__actions">
+            <button class="btn-admit" onclick="admitWaiting(${p.user_id}, true)">Admit</button>
+            <button class="btn-deny" onclick="admitWaiting(${p.user_id}, false)">Deny</button>
+          </div>
+        </div>`).join('');
+    }
+
+    async function admitWaiting(userId, admit) {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/admit`, {
+        method: 'PUT', body: JSON.stringify({ user_id: userId, admit }),
+      });
+      if (data.success) {
+        BPSToast.success(admit ? 'Participant admitted.' : 'Participant denied.', { title: 'Waiting Room' });
+        pollLoop();
+      } else {
+        BPSToast.error(data.message || 'Failed to update waiting room.', { title: 'Error' });
+      }
+    }
+
+    // ===== END SESSION =====
+    async function endSessionAction() {
+      if (!currentSession) return;
+      if (!confirm('Are you sure you want to end this session?')) return;
+
+      const data = await apiFetch(`/teleconference/${currentSession.id}/end`, { method: 'PUT' });
+      if (data.success) {
+        BPSToast.success('Session ended successfully.', { title: 'Session Ended' });
+        leaveSession();
+      } else {
+        BPSToast.error(data.message || 'Failed to end session.', { title: 'Error' });
+      }
+    }
+
+    async function stopRecording() {
+      if (!currentSession) return;
+      const data = await apiFetch(`/teleconference/${currentSession.id}/stop-recording`, { method: 'PUT' });
+      if (data.success) {
+        currentSession.recording_enabled = false;
+        currentSession.recording_consent_given = false;
+        currentSession.recording_response = null;
+        recordingResponded = false;
+        updateRecordingBanner();
+        document.getElementById('btn-start-recording').style.display = 'flex';
+        document.getElementById('btn-stop-recording').style.display = 'none';
+        BPSToast.info('Recording stopped.', { title: 'Recording' });
+      } else {
+        BPSToast.error(data.message || 'Failed to stop recording.', { title: 'Recording Error' });
+      }
+    }
+
+    async function endSessionDirect(sessionId) {
+      if (!confirm('End this session?')) return;
+      const data = await apiFetch(`/teleconference/${sessionId}/end`, { method: 'PUT' });
+      if (data.success) { BPSToast.success('Session ended.', { title: 'Session Ended' }); loadSessions(); }
+      else BPSToast.error(data.message || 'Failed.', { title: 'Error' });
+    }
+
+    // ===== SESSION LOGS =====
+    async function loadSessionLogs(sessionId) {
+      const data = await apiFetch(`/teleconference/${sessionId}/logs`);
+      const list = document.getElementById('session-logs-list');
+
+      if (!data.success || !data.data.length) {
+        list.innerHTML = '<div class="log-empty">No logs yet</div>';
+        return;
+      }
+
+      list.innerHTML = data.data.map(log => `
+        <div class="log-item">
+          <div class="log-item__event">${escHtml(log.event_type.replace(/_/g, ' '))}</div>
+          <div class="log-item__detail">${escHtml(log.participant_name || 'System')} — ${escHtml(log.details || '')}</div>
+          <div class="log-item__time">${formatDateTime(log.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    // ===== IN-MEETING CHAT =====
+    function resetChat() {
+      lastMessageId = 0;
+      const box = document.getElementById('chat-messages');
+      if (box) box.innerHTML = '<div class="chat-empty">No messages yet</div>';
+    }
+
+    function chatTime(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadChatMessages() {
+      if (!currentSession) return;
+      let data;
+      try {
+        data = await apiFetch(`/teleconference/${currentSession.id}/messages?since=${lastMessageId}`);
+      } catch (e) { return; }
+      if (!data || !data.success || !data.data || !data.data.length) return;
+
+      const box = document.getElementById('chat-messages');
+      // Clear the placeholder on first real message
+      const placeholder = box.querySelector('.chat-empty');
+      if (placeholder) placeholder.remove();
+
+      const atBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 40;
+
+      data.data.forEach(m => {
+        lastMessageId = Math.max(lastMessageId, m.id);
+        const mine = m.user_id === user.id;
+        const div = document.createElement('div');
+        div.className = `chat-msg ${mine ? 'chat-msg--mine' : ''}`;
+        div.innerHTML = `
+          <div class="chat-msg__head">
+            <span class="chat-msg__author">${mine ? 'You' : escHtml(m.full_name || 'Participant')}</span>
+            <span class="chat-msg__time">${chatTime(m.created_at)}</span>
+          </div>
+          <div class="chat-msg__body">${escHtml(m.message)}</div>`;
+        box.appendChild(div);
+      });
+
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+      if (!currentSession) return;
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      try {
+        const data = await apiFetch(`/teleconference/${currentSession.id}/messages`, {
+          method: 'POST', body: JSON.stringify({ message: text }),
+        });
+        if (data.success) {
+          await loadChatMessages();
+          const box = document.getElementById('chat-messages');
+          box.scrollTop = box.scrollHeight;
+        } else {
+          BPSToast.error(data.message || 'Failed to send message.', { title: 'Chat Error' });
+        }
+      } catch (e) {
+        BPSToast.error('Failed to send message.', { title: 'Chat Error' });
+      }
+    }
+
+    // ===== DEEP-LINK: join a specific meeting straight from a notification =====
+    // When the user clicks "Join Meeting" in the notification pop-up they land on
+    // meetings.html?join=<id>. We take them directly into THAT meeting — no
+    // schedule list, no extra pop-up.
+    async function autoJoinMeeting(sessionId) {
+      if (!sessionId || isNaN(sessionId)) return;
+      await openSession(sessionId);
+      if (!currentSession || currentSession.id !== sessionId) {
+        BPSToast.error('That meeting could not be opened.', { title: 'Meeting Unavailable' });
+        return;
+      }
+      if (currentSession.session_status === 'ended' || currentSession.session_status === 'cancelled') {
+        BPSToast.info('This meeting has already ended.', { title: 'Session Ended' });
+        return;
+      }
+
+      const btn = document.getElementById('btn-join');
+      btn.disabled = true; btn.textContent = 'Joining…';
+
+      try {
+        const data = await apiFetch(`/teleconference/${currentSession.id}/join`, { method: 'POST' });
+        if (!data.success) {
+          BPSToast.error(data.message || 'Failed to join the meeting.', { title: 'Join Error' });
+          btn.disabled = false; btn.textContent = 'Join Session';
+          return;
+        }
+        if (data.waiting) {
+          awaitingAdmission = true;
+          showWaitingOverlay();
+          BPSToast.info('Waiting for the host to admit you.', { title: 'Waiting Room' });
+          btn.disabled = true; btn.textContent = 'Waiting for host…';
+          return;
+        }
+        await connectToRoom(data.data);
+      } catch (err) {
+        console.error('Auto-join failed:', err);
+        BPSToast.error('Failed to join the meeting. Please try again.', { title: 'Join Error' });
+        btn.disabled = false; btn.textContent = 'Join Session';
+      }
+    }
+
+    // ===== INIT =====
+    if (window.lucide) lucide.createIcons();
+    loadSessions();
+    if (isStaffUser) { loadClients(); loadStaff(); }
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+    });
+
+    // Handle ?join=<id> deep-link
+    (function () {
+      const joinId = parseInt(new URLSearchParams(window.location.search).get('join'), 10);
+      if (joinId) autoJoinMeeting(joinId);
+    })();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+</html>

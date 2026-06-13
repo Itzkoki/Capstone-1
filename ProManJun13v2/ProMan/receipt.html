@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .receipt-wrap { max-width: 720px; margin: 110px auto 60px; padding: 0 20px; }
+    .receipt {
+      background: #fff; border: 1px solid #e6eaf1; border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(20, 30, 60, 0.08); overflow: hidden;
+    }
+    .receipt__head {
+      background: linear-gradient(135deg, #1E3A8A, #15306E); color: #fff;
+      padding: 28px 32px; display: flex; align-items: center; gap: 16px;
+    }
+    .receipt__head img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background: #fff; }
+    .receipt__brand { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 800; line-height: 1.2; }
+    .receipt__brand span { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+    .receipt__paid {
+      margin-left: auto; text-align: right;
+    }
+    .receipt__paid b { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+    .receipt__body { padding: 28px 32px; }
+    .receipt__title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 800; color: #1a202c; margin-bottom: 4px; }
+    .receipt__sub { font-size: 13px; color: #718096; margin-bottom: 22px; }
+
+    .r-amount {
+      text-align: center; padding: 22px; background: #f0fff4; border: 1px solid #c6f6d5;
+      border-radius: 14px; margin-bottom: 24px;
+    }
+    .r-amount__label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #0A5C31; }
+    .r-amount__value { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 800; color: #0B6E3B; margin-top: 4px; }
+    .r-amount__balance { font-size: 12.5px; color: #8A6A18; margin-top: 8px; }
+
+    .r-rows { border-top: 1px solid #edf2f7; }
+    .r-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+    .r-row__label { color: #718096; font-weight: 500; }
+    .r-row__value { color: #1a202c; font-weight: 600; text-align: right; }
+    .r-row__value code { font-family: 'Courier New', monospace; background: #EEF1FA; padding: 2px 8px; border-radius: 6px; }
+
+    .r-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .r-btn { padding: 11px 22px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+    .r-btn--primary { background: #1E3A8A; color: #fff; }
+    .r-btn--ghost { background: #fff; color: #2d3748; border: 1.5px solid #e2e8f0; }
+
+    .r-note { margin-top: 18px; font-size: 11.5px; color: #a0aec0; line-height: 1.6; text-align: center; }
+    .r-pending { text-align: center; padding: 50px 24px; color: #718096; }
+
+    @media print {
+      .navbar, .r-actions, .r-note { display: none !important; }
+      body { background: #fff; }
+      .receipt-wrap { margin: 0; }
+      .receipt { box-shadow: none; border: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body class="articles-page logged-in">
+  <nav class="navbar"><a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse
+        Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links"></ul>
+      <a href="notifications.html" class="navbar__notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg></a>
+    </div>
+  </nav>
+
+  <div class="receipt-wrap">
+    <div class="receipt" id="receipt">
+      <div class="r-pending">Loading receipt…</div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const authHeaders = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    function peso(n) { return '₱' + Number(n || 0).toFixed(2); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }) : '—'; }
+
+    function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
+
+    async function loadReceipt() {
+      const id = getParam('payment');
+      const box = document.getElementById('receipt');
+      if (!id) { box.innerHTML = '<div class="r-pending">No payment specified.</div>'; return; }
+
+      try {
+        const [payRes, apptRes] = await Promise.all([
+          fetch(`${API}/payments/${id}`, { headers: authHeaders }),
+          fetch(`${API}/appointments`, { headers: authHeaders }),
+        ]);
+        if (payRes.status === 401) { window.location.href = 'login.html'; return; }
+        const pj = await payRes.json();
+        if (!pj.success || !pj.data) { box.innerHTML = '<div class="r-pending">Receipt not found.</div>'; return; }
+        const p = pj.data;
+
+        if (p.status !== 'verified') {
+          box.innerHTML = `<div class="r-pending">This receipt will be available once your payment (ref <strong>${esc(p.reference_number)}</strong>) has been verified. Current status: <strong>${esc((p.status || '').replace(/_/g, ' '))}</strong>.</div>`;
+          return;
+        }
+
+        // Find the linked appointment schedule (optional)
+        let schedule = null;
+        try {
+          const aj = await apptRes.json();
+          if (aj.success && Array.isArray(aj.data)) {
+            const appt = aj.data.find(a => a.id === p.appointment_id);
+            if (appt) schedule = appt.approved_datetime || appt.proposed_datetime || appt.preferred_datetime;
+          }
+        } catch (_) { /* optional */ }
+
+        const balanceLine = (p.payment_option === 'half' && Number(p.outstanding_balance) > 0)
+          ? `<div class="r-amount__balance">Remaining ${peso(p.outstanding_balance)} payable in person on the day of your appointment.</div>` : '';
+
+        box.innerHTML = `
+          <div class="receipt__head">
+            <img src="barcarse logo.jpg" alt="BPS">
+            <div class="receipt__brand">Barcarse Psychological Services<span>Official Payment Receipt</span></div>
+            <div class="receipt__paid"><b>Paid</b></div>
+          </div>
+          <div class="receipt__body">
+            <div class="receipt__title">Payment Receipt</div>
+            <div class="receipt__sub">Thank you. Your payment has been verified and your appointment slot is reserved.</div>
+
+            <div class="r-amount">
+              <div class="r-amount__label">Amount Paid Online</div>
+              <div class="r-amount__value">${peso(p.amount_due)}</div>
+              ${balanceLine}
+            </div>
+
+            <div class="r-rows">
+              <div class="r-row"><span class="r-row__label">Reference Number</span><span class="r-row__value"><code>${esc(p.reference_number)}</code></span></div>
+              <div class="r-row"><span class="r-row__label">Paid By</span><span class="r-row__value">${esc(p.client_name || '—')}</span></div>
+              ${p.service_label ? `<div class="r-row"><span class="r-row__label">Service</span><span class="r-row__value">${esc(p.service_label)}</span></div>` : ''}
+              <div class="r-row"><span class="r-row__label">Payment Option</span><span class="r-row__value">${p.payment_option === 'full' ? 'Full Payment' : 'Half Payment (50%)'}</span></div>
+              <div class="r-row"><span class="r-row__label">Total Service Fee</span><span class="r-row__value">${peso(p.total_fee)}</span></div>
+              <div class="r-row"><span class="r-row__label">Payment Method</span><span class="r-row__value">${esc(p.payment_method || 'GCash')}</span></div>
+              ${schedule ? `<div class="r-row"><span class="r-row__label">Appointment Schedule</span><span class="r-row__value">${fmtDate(schedule)}</span></div>` : ''}
+              <div class="r-row"><span class="r-row__label">Date Verified</span><span class="r-row__value">${fmtDate(p.verified_at)}</span></div>
+              ${p.verifier_name ? `<div class="r-row"><span class="r-row__label">Verified By</span><span class="r-row__value">${esc(p.verifier_name)}</span></div>` : ''}
+            </div>
+
+            <div class="r-actions">
+              <button class="r-btn r-btn--primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" style="fill:#fff;"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg> Print / Save as PDF</button>
+              <a class="r-btn r-btn--ghost" href="notifications.html">Back to Notifications</a>
+            </div>
+            <div class="r-note">This is a system-generated receipt for a payment made directly to the clinic's GCash account. No card, wallet, or banking credentials are stored by this system. Retain this receipt for your records.</div>
+          </div>`;
+      } catch (err) {
+        console.error('loadReceipt failed:', err);
+        box.innerHTML = '<div class="r-pending">Failed to load receipt. Please try again.</div>';
+      }
+    }
+
+    loadReceipt();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Report | PSYGEN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .send-wrap { max-width: 760px; margin: 110px auto 60px; padding: 0 20px; font-family: 'Inter', sans-serif; }
+    .send-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 800; color: #1a202c; margin-bottom: 4px; }
+    .send-sub { font-size: 13px; color: #718096; margin-bottom: 24px; }
+    .send-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px; padding: 26px 28px; margin-bottom: 20px; box-shadow: 0 4px 18px rgba(20,30,60,.06); }
+    .send-card h3 { font-size: 14px; font-weight: 700; color: #15306E; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .send-card h3::before { content:''; display:block; width:3px; height:16px; background:linear-gradient(#1E3A8A,#0B6E3B); border-radius:2px; }
+    .info-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #718096; font-weight: 500; }
+    .info-value { color: #1a202c; font-weight: 600; text-align: right; }
+    .info-value code { background: #EEF1FA; padding: 2px 8px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; }
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .source-card { border: 2px solid #e2e8f0; border-radius: 14px; padding: 20px; cursor: pointer; background: #fff; text-align: left; font-family: 'Inter', sans-serif; transition: all .15s; }
+    .source-card:hover { border-color: #1E3A8A; box-shadow: 0 4px 14px rgba(30,58,138,.1); }
+    .source-card.selected { border-color: #1E3A8A; background: #EEF1FA; }
+    .source-card .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+    .source-card--stored .icon { background: #dcfce7; }
+    .source-card--upload .icon { background: #dbeafe; }
+    .source-card .name { font-size: 14px; font-weight: 700; color: #1a202c; margin-bottom: 4px; }
+    .source-card .desc { font-size: 12px; color: #718096; line-height: 1.45; }
+    .source-card.disabled { opacity: .45; cursor: not-allowed; }
+    .source-card.disabled:hover { border-color: #e2e8f0; box-shadow: none; }
+    .upload-area { margin-top: 16px; background: #FAFBFF; border: 1.5px dashed #c7d2fe; border-radius: 12px; padding: 20px; }
+    .upload-area label { font-size: 12.5px; font-weight: 700; color: #2d3748; display: block; margin-bottom: 8px; }
+    .upload-area input[type=file] { font-size: 13px; }
+    .upload-area .hint { font-size: 12px; color: #718096; margin-top: 6px; }
+    .stored-preview { margin-top: 16px; background: #f0faf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #166534; display: flex; align-items: center; gap: 10px; }
+    .send-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg, #1E3A8A, #0B6E3B); color: #fff; font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 6px; }
+    .send-btn:disabled { opacity: .55; cursor: not-allowed; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #15306E; font-weight: 600; text-decoration: none; padding: 8px 14px; background: #EEF1FA; border-radius: 8px; margin-bottom: 20px; }
+    .back-link:hover { background: #dce3f7; }
+    .success-wrap { text-align: center; padding: 40px 20px; }
+    .success-wrap .icon { width: 72px; height: 72px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+    .success-wrap h2 { font-size: 22px; font-weight: 800; color: #1a202c; margin-bottom: 10px; }
+    .success-wrap p { font-size: 14px; color: #718096; line-height: 1.6; margin-bottom: 24px; }
+    #loading-state { text-align: center; padding: 60px 20px; color: #a0aec0; font-size: 14px; }
+    @media (max-width: 540px) { .source-grid { grid-template-columns: 1fr; } .send-wrap { margin-top: 90px; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="Barcarse logo" class="hero__illustration"></div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="navbar__notif-badge" id="notif-badge">0</span>
+      </a>
+      <a href="profile.html" class="navbar__profile" id="navbar-profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+  <div class="send-wrap" id="send-wrap">
+    <div id="loading-state">Loading request details&hellip;</div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const authHeaders = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
+    if (!token) { window.location.href = 'login.html'; }
+
+    // Verify this is a clinical director
+    (function(){
+      try {
+        const user = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
+        if (user.role !== 'clinical_director') { window.location.href = 'psych-reports.html'; }
+      } catch(e) {}
+    })();
+
+    const requestId = new URLSearchParams(location.search).get('id');
+    if (!requestId) { window.location.href = 'psych-reports.html'; }
+
+    let selectedSource = null; // 'stored' or 'upload'
+    let requestData = null;
+
+    function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}) : '—'; }
+    function readFileAsDataUrl(file) {
+      return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+    }
+
+    async function loadRequest() {
+      try {
+        const res = await fetch(API + '/requests/' + requestId, { headers: authHeaders });
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        const json = await res.json();
+        if (!json.success) { showError('Request not found or access denied.'); return; }
+        requestData = json.data;
+        render(requestData);
+      } catch (e) {
+        showError('Could not load request details.');
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('send-wrap').innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:#718096;">
+          <p style="margin-bottom:16px;">${esc(msg)}</p>
+          <a href="psych-reports.html" class="back-link">&larr; Back to Report Requests</a>
+        </div>`;
+    }
+
+    function render(t) {
+      const wrap = document.getElementById('send-wrap');
+      const fullName = [t.client_given_name, t.client_mi, t.client_family_name].filter(Boolean).join(' ');
+      const hasStored = !!t.has_report;
+
+      wrap.innerHTML = `
+        <a href="psych-reports.html" class="back-link">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          Back to Report Requests
+        </a>
+        <div class="send-title">Send Report to Client</div>
+        <div class="send-sub">Review the request details and choose how to deliver the report.</div>
+
+        <div class="send-card">
+          <h3>Client &amp; Request Details</h3>
+          <div class="info-row"><span class="info-label">Client</span><span class="info-value">${esc(t.client_account_name || fullName || '—')}</span></div>
+          <div class="info-row"><span class="info-label">Reference Number</span><span class="info-value"><code>${esc(t.ticket_number)}</code></span></div>
+          <div class="info-row"><span class="info-label">Request Type</span><span class="info-value">${esc(t.request_type_label || t.nature)}</span></div>
+          <div class="info-row"><span class="info-label">Date Submitted</span><span class="info-value">${fmtDate(t.created_at)}</span></div>
+          <div class="info-row"><span class="info-label">Payment Status</span><span class="info-value">${esc(t.payment_status || '—')}</span></div>
+          <div class="info-row"><span class="info-label">Receipt</span><span class="info-value">${t.receipt_number ? '<code>' + esc(t.receipt_number) + '</code>' : '—'}</span></div>
+        </div>
+
+        <div class="send-card">
+          <h3>Choose Report Source</h3>
+          <div class="source-grid">
+            <button type="button"
+              class="source-card source-card--stored ${hasStored ? '' : 'disabled'}"
+              id="btn-stored"
+              ${hasStored ? '' : 'disabled title="No report stored yet"'}
+              onclick="selectSource('stored')">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="#16a34a"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </div>
+              <div class="name">Use Stored Report</div>
+              <div class="desc">${hasStored ? 'Deliver the report already saved in the database for this ticket.' : 'No report has been uploaded to this ticket yet.'}</div>
+            </button>
+            <button type="button"
+              class="source-card source-card--upload"
+              id="btn-upload"
+              onclick="selectSource('upload')">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="#1d4ed8"><path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+              </div>
+              <div class="name">Upload from Device</div>
+              <div class="desc">Select a finalized PDF or image from your computer to send directly.</div>
+            </button>
+          </div>
+
+          <div id="stored-preview" style="display:none;" class="stored-preview">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#16a34a"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Stored report: <strong id="stored-name">${esc(t.attachment_name || 'report.pdf')}</strong> — ready to send.
+          </div>
+
+          <div id="upload-area" class="upload-area" style="display:none;">
+            <label>Select the finalized report file *</label>
+            <input type="file" id="report-file" accept="image/jpeg,image/png,application/pdf">
+            <div class="hint">PDF recommended &mdash; max 5&nbsp;MB</div>
+          </div>
+        </div>
+
+        <div class="send-card">
+          <h3>Confirm &amp; Send</h3>
+          <p style="font-size:13px;color:#718096;margin-bottom:14px;">
+            Once you click <strong>Send Report</strong>, the file will be delivered to the client's Generated Reports
+            and they will receive an in-app notification to view it.
+          </p>
+          <button class="send-btn" id="send-btn" onclick="sendReport(${t.id})">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            Send Report to Client
+          </button>
+        </div>`;
+    }
+
+    function selectSource(src) {
+      selectedSource = src;
+      document.getElementById('btn-stored')?.classList.toggle('selected', src === 'stored');
+      document.getElementById('btn-upload')?.classList.toggle('selected', src === 'upload');
+      document.getElementById('stored-preview').style.display  = src === 'stored' ? 'flex' : 'none';
+      document.getElementById('upload-area').style.display     = src === 'upload' ? 'block' : 'none';
+      if (requestData) {
+        const storedName = requestData.report_filename || 'Stored report';
+        const el = document.getElementById('stored-name');
+        if (el) el.textContent = storedName;
+      }
+    }
+
+    async function sendReport(id) {
+      if (!selectedSource) { BPSToast.warning('Please choose a report source first.', { title: 'Source Required' }); return; }
+
+      const btn = document.getElementById('send-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Sending\u2026';
+
+      try {
+        let body = {};
+
+        if (selectedSource === 'upload') {
+          const input = document.getElementById('report-file');
+          const file = input && input.files && input.files[0];
+          if (!file) { BPSToast.warning('Please select a file to upload.', { title: 'No File' }); btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Report to Client'; return; }
+          if (!['image/jpeg','image/png','application/pdf'].includes(file.type)) { BPSToast.error('Report must be a JPG, PNG, or PDF.', { title: 'Invalid File' }); btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Report to Client'; return; }
+          if (file.size > 5 * 1024 * 1024) { BPSToast.error('File must be under 5 MB.', { title: 'Too Large' }); btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Report to Client'; return; }
+          body.file = await readFileAsDataUrl(file);
+          body.filename = file.name;
+        }
+        // selectedSource === 'stored': empty body, backend uses existing report_file
+
+        const res = await fetch(`${API}/requests/${id}/send`, {
+          method: 'POST', headers: authHeaders, body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (json.success) {
+          document.getElementById('send-wrap').innerHTML = `
+            <div class="success-wrap">
+              <div class="icon"><svg viewBox="0 0 24 24" width="36" height="36" fill="#16a34a"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+              <h2>Report Sent!</h2>
+              <p>The report has been delivered to the client's <strong>Generated Reports</strong>. They have been notified and can now access it from their profile.</p>
+              <a href="psych-reports.html" class="back-link">&larr; Back to Report Requests</a>
+            </div>`;
+        } else {
+          BPSToast.error(json.message || 'Could not send the report. Please try again.', { title: 'Error' });
+          btn.disabled = false;
+          btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Report to Client';
+        }
+      } catch (e) {
+        BPSToast.error('Network error. Please try again.', { title: 'Connection Error' });
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Report to Client';
+      }
+    }
+
+    loadRequest();
+  </script>
+  <script>if (sessionStorage.getItem('bps_logged_in') === 'true') document.body.classList.add('logged-in');</script>
+  <script src="navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intake Submissions | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="staff-management.css">
+  <link rel="stylesheet" href="intakeform.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .intake-container {
+      max-width: 1200px;
+      margin: 100px auto 40px;
+      padding: 0 24px;
+    }
+
+    .intake-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .intake-header__title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a202c;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 7px 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      color: #4a5568;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .filter-btn.active {
+      border-color: var(--green-primary, #1E3A8A);
+      color: var(--green-primary, #1E3A8A);
+      background: rgba(30,58,138, 0.06);
+    }
+
+    .filter-btn:hover {
+      border-color: var(--green-primary, #1E3A8A);
+    }
+
+    .filter-badge {
+      background: #e53e3e;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 11px;
+      padding: 1px 8px;
+      margin-left: 6px;
+    }
+
+    .intake-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 16px;
+      border-left: 4px solid #e2e8f0;
+      transition: all 0.25s;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .intake-card:hover {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .intake-card--pending {
+      border-left-color: #ecc94b;
+    }
+
+    .intake-card--reviewed {
+      border-left-color: #15306E;
+    }
+
+    .intake-card--approved {
+      border-left-color: #1E3A8A;
+    }
+
+    .intake-card--rejected {
+      border-left-color: #e53e3e;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .intake-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .intake-card__client {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1a202c;
+    }
+
+    .intake-card__email {
+      font-size: 13px;
+      color: #718096;
+    }
+
+    .intake-card__status {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status--pending,
+    .status--pending_review {
+      background: #fefcbf;
+      color: #975a16;
+    }
+
+    .status--reviewed {
+      background: #EEF1FA;
+      color: #2a4365;
+    }
+
+    .status--approved {
+      background: #F0FAEC;
+      color: #0A5C31;
+    }
+
+    .status--rejected {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .status--reschedule_proposed {
+      background: #FBF5E7;
+      color: #553c9a;
+    }
+
+    .status--confirmed {
+      background: #F0FAEC;
+      color: #0B6E3B;
+    }
+
+    .status--declined {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .status--cancelled {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .intake-card__meta {
+      font-size: 13px;
+      color: #a0aec0;
+      margin-bottom: 12px;
+    }
+
+    .intake-card__actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Appointment section embedded in cards */
+    .appt-section {
+      background: rgba(30,58,138, 0.04);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 14px;
+      border: 1px solid rgba(30,58,138, 0.12);
+    }
+
+    .appt-section__title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green-primary, #1E3A8A);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .appt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 3px 0;
+    }
+
+    .appt-row__label {
+      color: #718096;
+      font-weight: 500;
+    }
+
+    .appt-row__val {
+      color: #1a202c;
+      font-weight: 600;
+    }
+
+    .appt-row__val--conflict {
+      color: #e53e3e;
+    }
+
+    .appt-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      padding: 7px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-action--view {
+      background: #edf2f7;
+      color: #2d3748;
+    }
+
+    .btn-action--view:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-action--approve {
+      background: #1E3A8A;
+      color: #fff;
+    }
+
+    .btn-action--approve:hover {
+      background: #2da44e;
+    }
+
+    .btn-action--reviewed {
+      background: #15306E;
+      color: #fff;
+    }
+
+    .btn-action--reviewed:hover {
+      background: #15306E;
+    }
+
+    .btn-action--reject {
+      background: #e53e3e;
+      color: #fff;
+    }
+
+    .btn-action--reject:hover {
+      background: #c53030;
+    }
+
+    .btn-action--reschedule {
+      background: #8A6A18;
+      color: #fff;
+    }
+
+    .btn-action--reschedule:hover {
+      background: #6b46c1;
+    }
+
+    /* Reschedule Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 80px 24px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 20px;
+      max-width: 700px;
+      width: 100%;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #1a202c;
+    }
+
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #a0aec0;
+    }
+
+    .modal-close:hover {
+      color: #e53e3e;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .detail-item {
+      margin-bottom: 8px;
+    }
+
+    .detail-item__label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #a0aec0;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .detail-item__value {
+      font-size: 14px;
+      color: #2d3748;
+      line-height: 1.5;
+    }
+
+    .detail-item--full {
+      grid-column: 1 / -1;
+    }
+
+    .detail-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .detail-section__title {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1a202c;
+      margin-bottom: 12px;
+    }
+
+    /* Reschedule form inside modal */
+    .reschedule-form {
+      margin-top: 16px;
+    }
+
+    .reschedule-form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 4px;
+    }
+
+    .reschedule-form input,
+    .reschedule-form textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .reschedule-form input:focus,
+    .reschedule-form textarea:focus {
+      outline: none;
+      border-color: #8A6A18;
+      box-shadow: 0 0 0 3px rgba(138,106,24, 0.1);
+    }
+
+    .reschedule-form textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .conflict-warning {
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #c53030;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #a0aec0;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      fill: currentColor;
+      margin-bottom: 12px;
+    }
+
+    .toast {
+      display: none;
+    }
+
+    /* hidden — using global BPSToast instead */
+  </style>
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body class="articles-page logged-in">
+  <nav class="navbar"><a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse
+        Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+        </svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile"><svg viewBox="0 0 24 24">
+          <path
+            d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+        </svg></a>
+    </div>
+  </nav>
+
+  <div class="intake-container">
+    <div class="intake-header">
+      <h1 class="intake-header__title">Client Intake Submissions</h1>
+    </div>
+
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" onclick="filterBy('all', this)">All</button>
+      <button class="filter-btn" onclick="filterBy('pending_review', this)">Pending Review <span class="filter-badge"
+          id="badge-pending" style="display:none;">0</span></button>
+      <button class="filter-btn" onclick="filterBy('approved', this)">Approved</button>
+      <button class="filter-btn" onclick="filterBy('confirmed', this)">Confirmed</button>
+    </div>
+
+    <div id="intake-list"></div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('detail-modal')">&times;</button>
+      <h2 id="modal-title">Intake Form Details</h2>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Reschedule Modal -->
+  <div class="modal-overlay" id="reschedule-modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('reschedule-modal')">&times;</button>
+      <h2>Propose New Schedule</h2>
+      <p style="font-size:13px;color:#718096;margin-bottom:16px;">The client's preferred schedule is not available.
+        Propose an alternative date and time.</p>
+      <div class="reschedule-form">
+        <input type="hidden" id="reschedule-appt-id">
+        <div>
+          <label for="proposed-datetime">Proposed Date & Time *</label>
+          <div id="reschedule-cal-container"></div><input type="hidden" id="proposed-datetime">
+        </div>
+        <div class="conflict-warning" id="conflict-warning">
+          <svg viewBox="0 0 24 24" width="16" height="16" style="fill:#c53030;vertical-align:middle;margin-right:6px;">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+          </svg>This time conflicts with an existing appointment. Please choose a different time.
+        </div>
+        <div>
+          <label for="staff-notes">Notes for Client (optional)</label>
+          <textarea id="staff-notes" placeholder="Explain why the preferred schedule is unavailable..."></textarea>
+        </div>
+        <div class="form-buttons">
+          <button class="btn-action btn-action--view" onclick="closeModal('reschedule-modal')">Cancel</button>
+          <button class="btn-action btn-action--reschedule" id="btn-submit-reschedule"
+            onclick="submitReschedule()">Propose Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script src="bps-calendar.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+
+    if (!user.role || user.role === 'client') window.location.replace('landingpage.html');
+
+    let allForms = [];
+    let allAppointments = {};
+    let currentFilter = 'all';
+
+    function showToast(msg, type) {
+      if (type === 'error') BPSToast.error(msg);
+      else BPSToast.success(msg);
+    }
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, {
+        ...opts,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers }
+      });
+      if (res.status === 401) window.location.href = 'login.html';
+      return res.json();
+    }
+
+    function fmtDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+      const days = Math.floor(h / 24); if (days < 30) return days + 'd ago';
+      return new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function statusLabel(s) { return (s || '').replace(/_/g, ' '); }
+
+    function filterBy(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('intake-list');
+      let filtered = currentFilter === 'all'
+        ? allForms
+        : allForms.filter(f => (allAppointments[f.id] && allAppointments[f.id].status) === currentFilter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><p>No intake forms found.</p></div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map((f, i) => {
+        const data = typeof f.form_data === 'string' ? JSON.parse(f.form_data) : f.form_data;
+        const clientName = f.client_name || data?.fullName || 'Unknown';
+        const clientEmail = f.client_email || data?.email || '';
+        const appt = allAppointments[f.id];
+
+        let apptHtml = '';
+        if (appt) {
+          apptHtml = `
+            <div class="appt-section">
+              <div class="appt-section__title"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:var(--green-primary,#1E3A8A);vertical-align:middle;margin-right:4px;"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg> Appointment</div>
+              <div class="appt-row"><span class="appt-row__label">Status</span><span class="intake-card__status status--${appt.status}">${statusLabel(appt.status)}</span></div>
+              <div class="appt-row"><span class="appt-row__label">Preferred</span><span class="appt-row__val">${fmtDate(appt.preferred_datetime)}</span></div>
+              ${appt.approved_datetime ? `<div class="appt-row"><span class="appt-row__label">Approved</span><span class="appt-row__val" style="color:#0B6E3B;">${fmtDate(appt.approved_datetime)}</span></div>` : ''}
+              ${appt.proposed_datetime ? `<div class="appt-row"><span class="appt-row__label">Proposed</span><span class="appt-row__val" style="color:#8A6A18;">${fmtDate(appt.proposed_datetime)}</span></div>` : ''}
+              ${appt.staff_notes ? `<div class="appt-row"><span class="appt-row__label">Staff Notes</span><span class="appt-row__val">${appt.staff_notes}</span></div>` : ''}
+              ${appt.client_response_notes ? `<div class="appt-row"><span class="appt-row__label">Client Notes</span><span class="appt-row__val">${appt.client_response_notes}</span></div>` : ''}
+              <div class="appt-actions">
+                ${appt.status === 'pending_review' ? `
+                  <button class="btn-action btn-action--approve" onclick="approveAppt(${appt.id})"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#fff;vertical-align:middle;margin-right:4px;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Approve Schedule</button>
+                  <button class="btn-action btn-action--reschedule" onclick="openReschedule(${appt.id})"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#fff;vertical-align:middle;margin-right:4px;"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg> Propose New Time</button>
+                ` : ''}
+              </div>
+            </div>`;
+        }
+
+        return `
+          <div class="intake-card" style="animation-delay:${i * 0.05}s">
+            <div class="intake-card__header">
+              <div>
+                <div class="intake-card__client">${clientName}</div>
+                <div class="intake-card__email">${clientEmail}</div>
+              </div>
+            </div>
+            <div class="intake-card__meta">Submitted ${timeAgo(f.created_at)} · ID #${f.id}</div>
+            <div class="intake-card__actions">
+              <button class="btn-action btn-action--view" onclick="viewForm(${f.id})">View Details</button>
+            </div>
+            ${apptHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadForms() {
+      try {
+        const [apptsRes, formsRes] = await Promise.all([
+          apiFetch('/appointments'),
+          apiFetch('/intake-forms'),
+        ]);
+
+        // Verified intakes (promoted) indexed by intake_form_id.
+        const intakeById = {};
+        if (formsRes.success) formsRes.data.forEach(f => { intakeById[f.id] = f; });
+
+        // The list is driven by appointments. The intake answers come from the
+        // appointment's pending buffer (before payment is verified) or from the
+        // promoted intake_forms row (after verification).
+        allAppointments = {};
+        allForms = [];
+        if (apptsRes.success) {
+          apptsRes.data.forEach(a => {
+            allAppointments[a.id] = a;
+            let fd = a.pending_intake_data
+              || (a.intake_form_id && intakeById[a.intake_form_id] ? intakeById[a.intake_form_id].form_data : null);
+            if (typeof fd === 'string') { try { fd = JSON.parse(fd); } catch (e) { fd = null; } }
+            allForms.push({
+              id: a.id,
+              form_data: fd || {},
+              client_name: a.client_name || (fd && fd.fullName) || 'Unknown',
+              client_email: a.client_email || (fd && fd.email) || '',
+              created_at: a.created_at,
+            });
+          });
+        } else {
+          console.error('Failed to load appointments:', apptsRes.message);
+        }
+
+        // Pending-review badge counts appointments awaiting schedule approval.
+        const pending = Object.values(allAppointments).filter(a => a.status === 'pending_review').length;
+        const badge = document.getElementById('badge-pending');
+        if (badge) {
+          if (pending > 0) { badge.textContent = pending; badge.style.display = 'inline'; }
+          else { badge.style.display = 'none'; }
+        }
+
+        renderList();
+      } catch (err) {
+        console.error('Error loading intake forms:', err);
+        document.getElementById('intake-list').innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg><p>Failed to load intake forms. Please check your connection and try again.</p><button class="btn-action btn-action--view" onclick="loadForms()" style="margin-top:10px;">Retry</button></div>`;
+      }
+    }
+
+    // ===== APPOINTMENT ACTIONS =====
+    async function approveAppt(apptId) {
+      const res = await apiFetch(`/appointments/${apptId}/approve`, { method: 'PUT' });
+      if (res.success) {
+        showToast('Schedule approved! Client has been notified.');
+        loadForms();
+      } else if (res.conflicts) {
+        BPSToast.warning(`Conflict: ${res.message}`, { title: 'Schedule Conflict' });
+      } else {
+        BPSToast.error(res.message || 'Failed to approve.', { title: 'Approval Error' });
+      }
+    }
+
+    let rescheduleCalendar = null;
+
+    function openReschedule(apptId) {
+      document.getElementById('reschedule-appt-id').value = apptId;
+      document.getElementById('proposed-datetime').value = '';
+      document.getElementById('staff-notes').value = '';
+      document.getElementById('conflict-warning').style.display = 'none';
+      document.getElementById('reschedule-modal').classList.add('active');
+
+      // Mount calendar widget
+      if (rescheduleCalendar) rescheduleCalendar.destroy();
+      rescheduleCalendar = BPSCalendar.mount('#reschedule-cal-container', {
+        showTime: true,
+        apiBase: API,
+        token: token,
+        onChange: async (isoVal) => {
+          document.getElementById('proposed-datetime').value = isoVal;
+          // Live conflict check
+          if (!isoVal) return;
+          try {
+            const res = await apiFetch(`/appointments/check-conflicts?datetime=${encodeURIComponent(isoVal)}`);
+            const warning = document.getElementById('conflict-warning');
+            if (res.hasConflict) {
+              warning.style.display = 'block';
+              warning.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#c53030;vertical-align:middle;margin-right:4px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> Conflict detected:<br>` + res.conflicts.map(c => '\u2022 ' + (c.client_name || 'Client') + ' at ' + fmtDate(c.approved_datetime)).join('<br>');
+            } else {
+              warning.style.display = 'none';
+            }
+          } catch (e) { }
+        },
+      });
+    }
+
+    async function submitReschedule() {
+      const apptId = document.getElementById('reschedule-appt-id').value;
+      const dt = document.getElementById('proposed-datetime').value;
+      const notes = document.getElementById('staff-notes').value;
+
+      if (!dt) { BPSToast.warning('Please select a date and time.', { title: 'Missing Date' }); return; }
+      if (new Date(dt) <= new Date()) { BPSToast.warning('Date must be in the future.', { title: 'Invalid Date' }); return; }
+
+      const btn = document.getElementById('btn-submit-reschedule');
+      btn.disabled = true; btn.textContent = 'Submitting...';
+
+      const res = await apiFetch(`/appointments/${apptId}/propose-reschedule`, {
+        method: 'PUT',
+        body: JSON.stringify({ proposed_datetime: dt, staff_notes: notes }),
+      });
+
+      btn.disabled = false; btn.textContent = 'Propose Schedule';
+
+      if (res.success) {
+        showToast('New schedule proposed! Client has been notified.');
+        closeModal('reschedule-modal');
+        loadForms();
+      } else if (res.conflicts) {
+        BPSToast.warning(res.message, { title: 'Schedule Conflict' });
+      } else {
+        BPSToast.error(res.message || 'Failed to propose.', { title: 'Reschedule Error' });
+      }
+    }
+
+    // ===== VIEW DETAIL =====
+    function viewForm(id) {
+      const booking = allForms.find(b => String(b.id) === String(id));
+      if (!booking) { BPSToast.error('Details unavailable.', { title: 'Load Error' }); return; }
+      const fd = booking.form_data || {};
+
+      document.getElementById('modal-title').textContent = `Intake Form — ${fd.fullName || 'Client'} (#${id})`;
+
+      const sections = [
+        {
+          title: 'Consent', fields: [
+            { label: 'Data Privacy Act Consent', value: (fd.dataPrivacyConsent === true || fd.dataPrivacyConsent === 'true' || fd.dataPrivacyConsent === 1 || fd.dataPrivacyConsent === '1') ? '✓ Agreed' : (fd.dataPrivacyConsent === false || fd.dataPrivacyConsent === 'false' || fd.dataPrivacyConsent === 0 || fd.dataPrivacyConsent === '0') ? '✗ Not agreed' : '—', full: true },
+          ]
+        },
+        {
+          title: 'Personal Information', fields: [
+            { label: 'Full Name', value: fd.fullName },
+            { label: 'Nickname', value: fd.nickName },
+            { label: 'Age', value: fd.age },
+            { label: 'Date of Birth', value: fd.dob },
+            { label: 'Gender', value: fd.gender },
+            { label: 'Civil Status', value: fd.civilStatus },
+            { label: 'Address', value: fd.address, full: true },
+          ]
+        },
+        {
+          title: 'Contact', fields: [
+            { label: 'Cellphone', value: fd.cellphone },
+            { label: 'Home Phone', value: fd.homePhone },
+            { label: 'Email', value: fd.email },
+          ]
+        },
+        {
+          title: 'Clinical', fields: [
+            { label: 'Concern', value: fd.concernDesc, full: true },
+            { label: 'Reason', value: fd.reasonCounseling, full: true },
+            { label: 'Since When', value: fd.sinceWhen },
+            { label: 'Duration', value: fd.howLong },
+            { label: 'Therapy Before', value: fd.therapyBefore },
+            { label: 'Medication', value: fd.medicationHistory },
+          ]
+        },
+        {
+          title: 'Preferences', fields: [
+            { label: 'Preferred Schedule', value: fd.prefSchedule ? fmtDate(fd.prefSchedule) : '' },
+            { label: 'Language', value: fd.language },
+            { label: 'Modality', value: fd.modality },
+            { label: 'Counselor Pref.', value: fd.counselorGender },
+          ]
+        },
+        {
+          title: 'Minor / Guardian', fields: [
+            { label: 'Is Minor', value: fd.isMinor },
+            { label: 'Guardian Name', value: fd.guardianName },
+            { label: 'Guardian Contact', value: fd.guardianContact },
+            { label: 'Relationship', value: fd.guardianRelation },
+          ]
+        },
+        {
+          title: 'Emergency Contact', fields: [
+            { label: 'Name', value: fd.emerName },
+            { label: 'Address', value: fd.emerAddress, full: true },
+            { label: 'Contact', value: fd.emerContact },
+            { label: 'Email', value: fd.emerEmail },
+            { label: 'Relation', value: fd.emerRelation },
+          ]
+        },
+      ];
+
+      let html = `<div style="margin-bottom:16px;"><span style="color:#a0aec0;font-size:13px;">Submitted ${timeAgo(booking.created_at)}</span></div>`;
+
+      // Show appointment timeline if exists
+      const appt = allAppointments[id];
+      if (appt) {
+        html += `<div class="appt-section" style="margin-bottom:20px;">
+          <div class="appt-section__title"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:var(--green-primary,#1E3A8A);vertical-align:middle;margin-right:4px;"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg> Appointment Status: <span class="intake-card__status status--${appt.status}">${statusLabel(appt.status)}</span></div>
+          <div class="appt-row"><span class="appt-row__label">Preferred</span><span class="appt-row__val">${fmtDate(appt.preferred_datetime)}</span></div>
+          ${appt.approved_datetime ? `<div class="appt-row"><span class="appt-row__label">Approved</span><span class="appt-row__val" style="color:#0B6E3B;">${fmtDate(appt.approved_datetime)}</span></div>` : ''}
+          ${appt.proposed_datetime ? `<div class="appt-row"><span class="appt-row__label">Proposed</span><span class="appt-row__val" style="color:#8A6A18;">${fmtDate(appt.proposed_datetime)}</span></div>` : ''}
+          ${appt.staff_notes ? `<div class="appt-row"><span class="appt-row__label">Staff Notes</span><span class="appt-row__val">${appt.staff_notes}</span></div>` : ''}
+          ${appt.client_response_notes ? `<div class="appt-row"><span class="appt-row__label">Client Notes</span><span class="appt-row__val">${appt.client_response_notes}</span></div>` : ''}
+        </div>`;
+      }
+
+      sections.forEach(s => {
+        html += `<div class="detail-section"><div class="detail-section__title">${s.title}</div><div class="detail-grid">`;
+        s.fields.forEach(field => {
+          if (!field.value) return;
+          html += `<div class="detail-item ${field.full ? 'detail-item--full' : ''}"><div class="detail-item__label">${field.label}</div><div class="detail-item__value">${field.value}</div></div>`;
+        });
+        html += `</div></div>`;
+      });
+
+      document.getElementById('modal-body').innerHTML = html;
+      document.getElementById('detail-modal').classList.add('active');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
+    });
+
+    loadForms();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

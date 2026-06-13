@@ -1,0 +1,300 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+
+/* ============================================================
+   BPS Design System — mockup style overlay
+   Layered on top of common.css + per-page CSS.
+   Applies the dashboard look across the whole system:
+   royal-blue header, gold underline, Fraunces headings,
+   top-accent white cards, soft status chips, glowing dots.
+   ============================================================ */
+
+:root{
+  /* palette (mirrors common.css, redeclared so this file is self-sufficient) */
+  --royal:#1E3A8A; --royal-deep:#15306E; --royal-press:#102554;
+  --forest:#0B6E3B; --forest-deep:#0A5C31;
+  --gold:#C0922E; --gold-deep:#8A6A18;
+  --mint:#A8E49A; --mint-deep:#3F7A33;
+  --royal-wash:#EEF1FA; --forest-wash:#EAF5EE; --gold-wash:#FBF5E7; --mint-wash:#F0FAEC;
+  --ds-ink:#1B2230; --ds-ink-soft:#525E72; --ds-ink-faint:#8A93A4;
+  --ds-line:#E6EAF1; --ds-line-soft:#F1F3F8;
+  --ds-radius:16px; --ds-radius-sm:10px;
+  --ds-shadow:0 1px 2px rgba(27,34,48,.04), 0 8px 24px rgba(30,58,138,.06);
+  --ds-shadow-lift:0 4px 12px rgba(27,34,48,.06), 0 16px 40px rgba(30,58,138,.10);
+  --font-serif:'Fraunces', 'Playfair Display', Georgia, serif;
+}
+
+/* ---------- Typography: serif headings + numbers ---------- */
+body h1, body h2, body h3,
+.navbar__title-display,
+.card-title, .panel-title, .stat-num, .section-title,
+.page-heading, .display{
+  font-family: var(--font-serif) !important;
+  letter-spacing:-.01em;
+}
+
+/* =========================================================
+   HEADER — solid royal-blue bar with gold underline
+   Applied to EVERY page (landing, login, client, staff) for
+   a consistent header across the whole system.
+   ========================================================= */
+.navbar{
+  background: linear-gradient(135deg, #1E3A8A 0%, #15306E 55%, #0B6E3B 100%);
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  border-bottom:3px solid var(--gold) !important;
+  box-shadow:0 6px 20px rgba(30,58,138,.20) !important;
+}
+.navbar.scrolled{ box-shadow:0 8px 24px rgba(30,58,138,.28) !important; }
+.navbar__title{ color:#fff !important; }
+.navbar__brand{ color:#fff !important; }
+.navbar__logo{
+  border-color:rgba(255,255,255,.45) !important;
+  background:rgba(255,255,255,.08) !important;
+}
+.navbar__logo svg{ fill:#fff !important; }
+.navbar__logo::after{ border-color:rgba(255,255,255,.35) !important; }
+
+.navbar__links a{ color:rgba(255,255,255,.82) !important; font-weight:500; }
+.navbar__links a:hover{ color:#fff !important; }
+.navbar__links a::after{ background:var(--gold) !important; }
+/* current page link (inline style color override target) */
+.navbar__links a[style*="green-primary"],
+.navbar__links a[style*="1E3A8A"],
+.navbar__links a.active{
+  color:#fff !important; font-weight:600;
+}
+.navbar__links a[style*="green-primary"]::after,
+.navbar__links a[style*="1E3A8A"]::after,
+.navbar__links a.active::after{ width:100% !important; background:var(--gold) !important; }
+
+/* "Get Started" CTA button on logged-out pages → gold pill on the blue bar */
+.navbar__cta{
+  background: var(--gold) !important; color:#fff !important;
+  border:1px solid transparent !important; font-weight:600;
+}
+.navbar__cta:hover{ background: var(--gold-deep) !important; }
+.navbar__cta svg{ fill:#fff !important; }
+
+/* notification + profile icons on the dark header */
+.navbar__notif,
+.navbar__profile{
+  width:42px;height:42px;border-radius:var(--ds-radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.12);
+  transition:all .18s ease;
+}
+.navbar__notif:hover,
+.navbar__profile:hover{
+  border-color:var(--gold); background:rgba(255,255,255,.2);
+}
+.navbar__notif svg,
+.navbar__profile svg{ fill:#fff !important; width:19px;height:19px; }
+.navbar__notif svg path[fill]{ fill:#fff !important; }
+
+/* search box in header, if present */
+.navbar input[type="search"],
+.navbar .search input,
+.search-box input{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff; border-radius:var(--ds-radius-sm);
+}
+.navbar input::placeholder{ color:rgba(255,255,255,.65); }
+
+/* =========================================================
+   CARDS — white surface, hairline border, top accent stripe
+   Applies to common card class-names used across pages.
+   ========================================================= */
+.card, .panel, .stat-card, .widget, .dashboard-card,
+.metric-card, .info-card, .report-card, .submission-card,
+.profile-card, .meeting-card, .post-card{
+  background:#fff !important;
+  border:1px solid var(--ds-line) !important;
+  border-radius:var(--ds-radius) !important;
+  box-shadow:var(--ds-shadow) !important;
+  position:relative;
+  transition:box-shadow .2s ease, transform .2s ease;
+}
+.card:hover, .panel:hover, .stat-card:hover,
+.metric-card:hover, .dashboard-card:hover{
+  box-shadow:var(--ds-shadow-lift) !important;
+  transform:translateY(-2px);
+}
+
+/* colored top accent — rotate through palette via :nth-of-type */
+.stat-card, .metric-card{ overflow:hidden; }
+.stat-card::before, .metric-card::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--royal);
+}
+.stat-card:nth-of-type(4n+2)::before,
+.metric-card:nth-of-type(4n+2)::before{ background:var(--forest); }
+.stat-card:nth-of-type(4n+3)::before,
+.metric-card:nth-of-type(4n+3)::before{ background:var(--mint-deep); }
+.stat-card:nth-of-type(4n)::before,
+.metric-card:nth-of-type(4n)::before{ background:var(--gold); }
+
+/* big stat numbers */
+.stat-num, .metric-value, .kpi-value, .big-number{
+  font-family:var(--font-serif) !important;
+  font-weight:600; letter-spacing:-.02em; color:var(--ds-ink);
+}
+
+/* =========================================================
+   BUTTONS — primary royal, secondary forest, ghost outline
+   ========================================================= */
+.btn-primary, .button-primary, .primary-btn,
+button.primary, .btn.btn-blue{
+  background:var(--royal) !important; color:#fff !important;
+  border:1px solid transparent !important;
+  box-shadow:0 2px 8px rgba(30,58,138,.25);
+  border-radius:var(--ds-radius-sm) !important;
+  transition:background .18s ease;
+}
+.btn-primary:hover, .button-primary:hover, .primary-btn:hover{
+  background:var(--royal-deep) !important;
+}
+.btn-primary:active, .primary-btn:active{ background:var(--royal-press) !important; }
+
+.btn-secondary, .secondary-btn, .btn-forest{
+  background:var(--forest) !important; color:#fff !important; border:none !important;
+  border-radius:var(--ds-radius-sm) !important;
+}
+.btn-secondary:hover, .secondary-btn:hover{ background:var(--forest-deep) !important; }
+
+.btn-ghost, .btn-outline, .ghost-btn{
+  background:#fff !important; color:var(--royal-deep) !important;
+  border:1px solid var(--ds-line) !important; border-radius:var(--ds-radius-sm) !important;
+}
+.btn-ghost:hover, .btn-outline:hover{
+  border-color:var(--royal) !important; background:var(--royal-wash) !important;
+}
+:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(30,58,138,.3); }
+
+/* =========================================================
+   STATUS CHIPS / BADGES — soft tinted pills
+   ========================================================= */
+.badge, .chip, .status, .tag, .pill, .status-badge{
+  border-radius:20px !important; font-weight:600; font-size:.72rem;
+  padding:4px 11px; display:inline-flex; align-items:center; gap:5px;
+  border:1px solid transparent;
+}
+.badge-success, .status-confirmed, .status-active, .chip-success,
+.status.confirmed, .badge.success{
+  background:var(--mint-wash) !important; color:var(--mint-deep) !important; border-color:#C8E9BD !important;
+}
+.badge-info, .status-progress, .status-inprogress, .chip-progress,
+.status.in-session, .badge.info{
+  background:var(--forest-wash) !important; color:var(--forest-deep) !important; border-color:#C4E3CF !important;
+}
+.badge-primary, .status-checkin, .status-checked-in, .chip-primary,
+.status.checked-in{
+  background:var(--royal-wash) !important; color:var(--royal-deep) !important; border-color:#D2DAF2 !important;
+}
+.badge-warning, .status-pending, .chip-warning, .status.pending,
+.badge.warning{
+  background:var(--gold-wash) !important; color:var(--gold-deep) !important; border-color:#EAD9AE !important;
+}
+/* error chips keep red */
+.badge-danger, .status-error, .status-rejected, .chip-danger,
+.badge.danger, .status.rejected{
+  background:#FFF5F5 !important; color:#C53030 !important; border-color:#FEB2B2 !important;
+}
+
+/* =========================================================
+   STATUS DOTS — glowing LED style
+   ========================================================= */
+.status-dot, .led, .dot-indicator{
+  width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0;
+}
+.status-dot.online, .led.green, .dot-success{
+  background:var(--mint-deep); box-shadow:0 0 0 4px var(--mint-wash);
+}
+.status-dot.busy, .led.gold, .dot-warning{
+  background:var(--gold-deep); box-shadow:0 0 0 4px var(--gold-wash);
+}
+.status-dot.away, .led.forest{
+  background:var(--forest); box-shadow:0 0 0 4px var(--forest-wash);
+}
+.status-dot.info, .led.blue, .dot-info{
+  background:var(--royal); box-shadow:0 0 0 4px var(--royal-wash);
+}
+
+/* =========================================================
+   PROGRESS BARS — gradient fills
+   ========================================================= */
+.progress, .progress-track, .bar-track{
+  background:var(--ds-line-soft) !important; border-radius:8px !important; overflow:hidden;
+}
+.progress-bar, .progress-fill, .bar-fill{
+  border-radius:8px !important;
+  background:linear-gradient(90deg, var(--royal), var(--forest)) !important;
+}
+.progress-bar.forest, .progress-fill.forest{ background:var(--forest) !important; }
+.progress-bar.gold, .progress-fill.gold{
+  background:linear-gradient(90deg, var(--gold), var(--mint)) !important;
+}
+
+/* =========================================================
+   ALERT / CALLOUT — soft gold banner (like "Action needed")
+   ========================================================= */
+.alert, .callout, .notice, .banner-info{
+  background:var(--gold-wash) !important;
+  border:1px solid #EAD9AE !important;
+  border-radius:var(--ds-radius) !important;
+  color:var(--ds-ink) !important;
+}
+.alert b, .alert strong, .callout b{ color:var(--gold-deep) !important; }
+.alert-success, .notice-success{
+  background:var(--mint-wash) !important; border-color:#C8E9BD !important;
+}
+.alert-error, .notice-error{
+  background:#FFF5F5 !important; border-color:#FEB2B2 !important;
+}
+
+/* =========================================================
+   NAV ACTIVE PILL (for any sidebar that exists on some pages)
+   ========================================================= */
+.side-nav a.active, .sidebar a.active, .nav-item.active{
+  background:var(--royal-wash) !important; color:var(--royal-deep) !important;
+  border-radius:var(--ds-radius-sm); font-weight:600; position:relative;
+}
+.side-nav a.active::before, .sidebar a.active::before, .nav-item.active::before{
+  content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:4px; height:60%; border-radius:0 4px 4px 0; background:var(--royal);
+}
+
+/* links pick up royal */
+a.link, .text-link{ color:var(--royal-deep); }
+a.link:hover{ color:var(--royal); }
+
+/* =========================================================
+   CONTENT BACKGROUND — keep app pages light (mockup style).
+   The dark royal/forest gradient is reserved for the header
+   and for the auth cards' page background (login/register/otp).
+   Auth pages do NOT carry .logged-in, so they're unaffected.
+   ========================================================= */
+body.logged-in{
+  background:#FFFFFF !important;            /* white canvas */
+}
+body.logged-in .articles-page,
+body.logged-in .meetings-page,
+body.logged-in .profile-page,
+body.logged-in .community-page,
+body.logged-in .intake-page,
+body.logged-in .notif-page,
+body.logged-in .staff-page,
+body.logged-in .dashboard-page,
+body.logged-in [class$="-page"]{
+  background:#FFFFFF !important;
+}
+/* content headings/text back to dark ink on the light canvas */
+body.logged-in [class$="-page"] h1,
+body.logged-in [class$="-page"] h2,
+body.logged-in [class$="-page"] h3{ color:var(--ds-ink) !important; }
+
+/* avatar circles → gold/forest gradient like mockup DB badge */
+.avatar, .user-avatar, .avatar-circle{
+  background:linear-gradient(135deg, var(--gold), var(--forest)) !important;
+  color:#fff !important;
+}

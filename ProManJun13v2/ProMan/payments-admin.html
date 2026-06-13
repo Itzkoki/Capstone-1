@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Verification | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="staff-management.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .pay-container { max-width: 1200px; margin: 100px auto 40px; padding: 0 24px; }
+    .pay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 12px; }
+    .pay-header__title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: #1a202c; }
+    .pay-header__sub { font-size: 13.5px; color: #718096; margin-bottom: 22px; max-width: 720px; line-height: 1.6; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 7px 16px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff;
+      cursor: pointer; font-weight: 600; font-size: 13px; color: #4a5568; transition: all 0.2s;
+      font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .filter-btn.active { background: var(--green-primary, #1E3A8A); color: #fff; border-color: var(--green-primary, #1E3A8A); }
+    .filter-badge { background: #e53e3e; color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
+
+    .pay-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
+
+    .pcard { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px; padding: 20px; box-shadow: 0 4px 18px rgba(20,30,60,0.05); }
+    .pcard__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .pcard__client { font-weight: 700; font-size: 15px; color: #1a202c; }
+    .pcard__email { font-size: 12.5px; color: #718096; }
+    .pcard__ref { font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.5px; color: #1a202c; font-size: 13.5px; margin-top: 6px; }
+
+    .pstatus { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .pstatus--pending { background: #fef5e7; color: #8A6A18; }
+    .pstatus--under_review { background: #ebf2ff; color: #1E3A8A; }
+    .pstatus--verified { background: #e6f6ec; color: #0B6E3B; }
+    .pstatus--rejected { background: #fde8e8; color: #c53030; }
+    .pstatus--expired { background: #edf2f7; color: #718096; }
+
+    .pcard__rows { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 14px 0; }
+    .prow__label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #a0aec0; }
+    .prow__value { font-size: 13.5px; color: #2d3748; font-weight: 600; }
+    .prow--full { grid-column: 1 / -1; }
+    .amount-strong { color: var(--green-primary, #1E3A8A); font-size: 16px; }
+
+    .pproof { margin: 12px 0; }
+    .pproof__btn {
+      display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
+      color: var(--green-primary, #1E3A8A); background: var(--royal-wash, #EEF1FA);
+      border: 1px solid #d7def2; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+    }
+    .pproof__btn:hover { background: #e1e8fa; }
+    .pproof__btn svg { fill: var(--green-primary, #1E3A8A); }
+    .pproof--none { font-size: 12.5px; color: #a0aec0; font-style: italic; }
+
+    .pcard__actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .pbtn { border: none; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+    .pbtn--approve { background: #0B6E3B; color: #fff; }
+    .pbtn--approve:hover { background: #095a30; }
+    .pbtn--reject { background: #fff; color: #c53030; border: 1.5px solid #feb2b2; }
+    .pbtn--reject:hover { background: #fff5f5; }
+    .pbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .pcard__meta { font-size: 11.5px; color: #a0aec0; margin-top: 12px; }
+    .pcard__note { margin-top: 10px; font-size: 12.5px; color: #4a5568; background: #f7fafc; border-radius: 8px; padding: 8px 12px; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .empty-state svg { width: 48px; height: 48px; fill: currentColor; margin-bottom: 12px; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; justify-content: center; align-items: flex-start; padding: 70px 24px; overflow-y: auto; }
+    .modal-overlay.active { display: flex; }
+    .modal-content { background: #fff; border-radius: 18px; max-width: 640px; width: 100%; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .modal-content h2 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 16px; color: #1a202c; }
+    .modal-close { float: right; background: none; border: none; font-size: 26px; cursor: pointer; color: #a0aec0; line-height: 1; }
+    .modal-close:hover { color: #e53e3e; }
+    .modal-content img { width: 100%; border-radius: 12px; border: 1px solid #e6eaf1; }
+    .modal-content textarea {
+      width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-size: 14px; font-family: 'Inter', sans-serif; margin: 6px 0 14px; min-height: 90px; resize: vertical;
+    }
+    .modal-content label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
+    .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+  </style>
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body class="articles-page logged-in">
+  <nav class="navbar"><a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse
+        Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links"></ul>
+      <a href="notifications.html" class="navbar__notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg></a>
+    </div>
+  </nav>
+
+  <div class="pay-container">
+    <div class="pay-header">
+      <h1 class="pay-header__title">Payment Verification</h1>
+    </div>
+    <p class="pay-header__sub">Review uploaded proof of payment against the clinic's GCash transaction history.
+      Match the reference number in the payment note, confirm the correct amount for the selected option, then approve
+      or reject. Every action is logged for audit and reconciliation.</p>
+
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" onclick="filterBy('all', this)">All</button>
+      <button class="filter-btn" onclick="filterBy('under_review', this)">Under Review <span class="filter-badge" id="badge-review" style="display:none;">0</span></button>
+      <button class="filter-btn" onclick="filterBy('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="filterBy('verified', this)">Verified</button>
+      <button class="filter-btn" onclick="filterBy('rejected', this)">Rejected</button>
+      <button class="filter-btn" onclick="filterBy('expired', this)">Expired</button>
+    </div>
+
+    <div id="pay-list"></div>
+  </div>
+
+  <!-- Proof viewer modal -->
+  <div class="modal-overlay" id="proof-modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('proof-modal')">&times;</button>
+      <h2>Proof of Payment</h2>
+      <div id="proof-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Reject modal -->
+  <div class="modal-overlay" id="reject-modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('reject-modal')">&times;</button>
+      <h2>Reject Payment</h2>
+      <p style="font-size:13px;color:#718096;margin-bottom:14px;">The client will be notified and the appointment slot
+        released. Provide a reason (e.g. incorrect amount, missing reference number, tampered screenshot).</p>
+      <input type="hidden" id="reject-payment-id">
+      <label for="reject-reason">Reason for rejection</label>
+      <textarea id="reject-reason" placeholder="Explain why this proof was not accepted..."></textarea>
+      <div class="modal-buttons">
+        <button class="pbtn pbtn--reject" onclick="closeModal('reject-modal')" style="border-color:#e2e8f0;color:#4a5568;">Cancel</button>
+        <button class="pbtn pbtn--reject" id="btn-confirm-reject" onclick="confirmReject()">Reject Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const user = BPSSession.getUser();
+
+    if (!user.role || user.role === 'client') window.location.replace('landingpage.html');
+
+    let allPayments = [];
+    let currentFilter = 'all';
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, {
+        ...opts,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers }
+      });
+      if (res.status === 401) { window.location.href = 'login.html'; return {}; }
+      return res.json();
+    }
+
+    function peso(n) { return '₱' + Number(n || 0).toFixed(2); }
+    function statusLabel(s) { return (s || '').replace(/_/g, ' '); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+      const days = Math.floor(h / 24); return days + 'd ago';
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    function filterBy(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('pay-list');
+      const filtered = currentFilter === 'all' ? allPayments : allPayments.filter(p => p.status === currentFilter);
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><p>No payments in this category.</p></div>`;
+        return;
+      }
+
+      list.innerHTML = '<div class="pay-grid">' + filtered.map(p => {
+        const hasProof = !!p.proof_filename || p.status === 'under_review' || p.status === 'verified' || p.status === 'rejected';
+        const proofHtml = hasProof
+          ? `<button class="pproof__btn" onclick="viewProof(${p.id})"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg> View Proof of Payment</button>`
+          : `<span class="pproof--none">No proof uploaded yet.</span>`;
+
+        let actions = '';
+        if (p.status === 'under_review') {
+          actions = `<div class="pcard__actions">
+            <button class="pbtn pbtn--approve" onclick="approve(${p.id})">✓ Approve &amp; Verify</button>
+            <button class="pbtn pbtn--reject" onclick="openReject(${p.id})">✕ Reject</button>
+          </div>`;
+        }
+
+        let note = '';
+        if (p.status === 'verified' && p.admin_note) note = `<div class="pcard__note"><strong>Admin note:</strong> ${esc(p.admin_note)}</div>`;
+        if (p.status === 'rejected' && p.rejection_reason) note = `<div class="pcard__note"><strong>Rejection reason:</strong> ${esc(p.rejection_reason)}</div>`;
+
+        const balanceRow = (p.payment_option === 'half')
+          ? `<div><div class="prow__label">Balance (in person)</div><div class="prow__value">${peso(p.outstanding_balance)}</div></div>` : '';
+
+        return `<div class="pcard">
+          <div class="pcard__top">
+            <div>
+              <div class="pcard__client">${esc(p.client_name || 'Unknown')}</div>
+              <div class="pcard__email">${esc(p.client_email || '')}</div>
+              <div class="pcard__ref">${esc(p.reference_number)}</div>
+            </div>
+            <span class="pstatus pstatus--${p.status}">${statusLabel(p.status)}</span>
+          </div>
+          <div class="pcard__rows">
+            <div><div class="prow__label">Option</div><div class="prow__value">${p.payment_option === 'full' ? 'Full Payment' : 'Half Payment'}</div></div>
+            <div><div class="prow__label">Amount Due</div><div class="prow__value amount-strong">${peso(p.amount_due)}</div></div>
+            <div><div class="prow__label">Method</div><div class="prow__value">${esc(p.payment_method || 'GCash')}</div></div>
+            ${balanceRow}
+            ${p.service_label ? `<div class="prow--full"><div class="prow__label">Service</div><div class="prow__value">${esc(p.service_label)}</div></div>` : ''}
+          </div>
+          <div class="pproof">${proofHtml}</div>
+          ${actions}
+          ${note}
+          <div class="pcard__meta">Created ${timeAgo(p.created_at)} · Booking #${p.appointment_id || '—'}${p.verified_at ? ' · Reviewed ' + fmtDate(p.verified_at) + (p.verifier_name ? ' by ' + esc(p.verifier_name) : '') : ''}</div>
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    async function loadPayments() {
+      try {
+        const res = await apiFetch('/payments');
+        if (res.success) {
+          allPayments = res.data;
+          const reviewCount = allPayments.filter(p => p.status === 'under_review').length;
+          const badge = document.getElementById('badge-review');
+          if (reviewCount > 0) { badge.textContent = reviewCount; badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+          renderList();
+        } else {
+          document.getElementById('pay-list').innerHTML = `<div class="empty-state"><p>Failed to load payments.</p></div>`;
+        }
+      } catch (err) {
+        console.error('loadPayments failed:', err);
+        document.getElementById('pay-list').innerHTML = `<div class="empty-state"><p>Failed to load payments. <button class="pbtn pbtn--approve" onclick="loadPayments()">Retry</button></p></div>`;
+      }
+    }
+
+    async function viewProof(id) {
+      const body = document.getElementById('proof-modal-body');
+      body.innerHTML = '<p style="color:#718096;">Loading proof…</p>';
+      document.getElementById('proof-modal').classList.add('active');
+      const res = await apiFetch(`/payments/${id}`);
+      if (res.success && res.data && res.data.proof_of_payment) {
+        const proof = res.data.proof_of_payment;
+        const ref = res.data.reference_number;
+        if (proof.startsWith('data:application/pdf')) {
+          body.innerHTML = `<p style="margin-bottom:10px;font-weight:600;">${esc(ref)}</p><iframe src="${proof}" style="width:100%;height:480px;border:1px solid #e6eaf1;border-radius:12px;"></iframe>`;
+        } else {
+          body.innerHTML = `<p style="margin-bottom:10px;font-weight:600;">${esc(ref)}</p><img src="${proof}" alt="Proof of payment">`;
+        }
+      } else {
+        body.innerHTML = '<p style="color:#a0aec0;">No proof of payment is available for this record.</p>';
+      }
+    }
+
+    async function approve(id) {
+      const note = prompt('Optional note to the client (e.g. confirmation message). Leave blank to skip:', '');
+      if (note === null) return; // cancelled
+      const res = await apiFetch(`/payments/${id}/verify`, {
+        method: 'PUT', body: JSON.stringify({ action: 'approve', note: note || null }),
+      });
+      if (res.success) { BPSToast.success('Payment verified. Slot reserved and client notified.'); loadPayments(); }
+      else { BPSToast.error(res.message || 'Failed to verify payment.', { title: 'Error' }); }
+    }
+
+    function openReject(id) {
+      document.getElementById('reject-payment-id').value = id;
+      document.getElementById('reject-reason').value = '';
+      document.getElementById('reject-modal').classList.add('active');
+    }
+
+    async function confirmReject() {
+      const id = document.getElementById('reject-payment-id').value;
+      const reason = document.getElementById('reject-reason').value.trim();
+      if (!reason) { BPSToast.warning('Please provide a reason for rejection.', { title: 'Reason Required' }); return; }
+      const btn = document.getElementById('btn-confirm-reject');
+      btn.disabled = true;
+      const res = await apiFetch(`/payments/${id}/verify`, {
+        method: 'PUT', body: JSON.stringify({ action: 'reject', note: reason }),
+      });
+      btn.disabled = false;
+      if (res.success) {
+        closeModal('reject-modal');
+        BPSToast.success('Payment rejected and slot released. Client notified.');
+        loadPayments();
+      } else {
+        BPSToast.error(res.message || 'Failed to reject payment.', { title: 'Error' });
+      }
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
+    });
+
+    loadPayments();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

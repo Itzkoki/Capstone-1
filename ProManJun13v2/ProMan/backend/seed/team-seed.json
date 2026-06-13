@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Alfred Anthony",
+    "role": "Clinical Psychologist",
+    "bio": "Assessment & individual therapy",
+    "photo_thumbnail": "/uploads/team/thumbs/alfred-anthony.jpg",
+    "photo_full": "/uploads/team/full/alfred-anthony.jpg"
+  },
+  {
+    "name": "Ann Toni",
+    "role": "Counseling Psychologist",
+    "bio": "CBT \u00b7 Anxiety & mood concerns",
+    "photo_thumbnail": "/uploads/team/thumbs/ann-toni.jpg",
+    "photo_full": "/uploads/team/full/ann-toni.jpg"
+  },
+  {
+    "name": "Christian Murielle",
+    "role": "Child Psychologist",
+    "bio": "Pediatric evaluation & play therapy",
+    "photo_thumbnail": "/uploads/team/thumbs/christian-murielle.jpg",
+    "photo_full": "/uploads/team/full/christian-murielle.jpg"
+  },
+  {
+    "name": "Jacque Rusell",
+    "role": "Psychometrician",
+    "bio": "Testing, scoring & interpretation",
+    "photo_thumbnail": "/uploads/team/thumbs/jacque-rusell.jpg",
+    "photo_full": "/uploads/team/full/jacque-rusell.jpg"
+  },
+  {
+    "name": "Jerrimae",
+    "role": "Guidance Counselor",
+    "bio": "Career & family guidance",
+    "photo_thumbnail": "/uploads/team/thumbs/jerrimae.jpg",
+    "photo_full": "/uploads/team/full/jerrimae.jpg"
+  },
+  {
+    "name": "Jervis",
+    "role": "Psychotherapist",
+    "bio": "Trauma-informed care",
+    "photo_thumbnail": "/uploads/team/thumbs/jervis.jpg",
+    "photo_full": "/uploads/team/full/jervis.jpg"
+  },
+  {
+    "name": "Joana Grace",
+    "role": "Neuropsychologist",
+    "bio": "Cognitive assessment",
+    "photo_thumbnail": "/uploads/team/thumbs/joana-grace.jpg",
+    "photo_full": "/uploads/team/full/joana-grace.jpg"
+  },
+  {
+    "name": "John Raven",
+    "role": "Clinical Psychologist",
+    "bio": "Adult assessment & therapy",
+    "photo_thumbnail": "/uploads/team/thumbs/john-raven.jpg",
+    "photo_full": "/uploads/team/full/john-raven.jpg"
+  },
+  {
+    "name": "Mark Jayson",
+    "role": "Community Programs Lead",
+    "bio": "Outreach & workshops",
+    "photo_thumbnail": "/uploads/team/thumbs/mark-jayson.jpg",
+    "photo_full": "/uploads/team/full/mark-jayson.jpg"
+  },
+  {
+    "name": "Mark Kristian",
+    "role": "Psychometrician",
+    "bio": "Group testing & data review",
+    "photo_thumbnail": "/uploads/team/thumbs/mark-kristian.jpg",
+    "photo_full": "/uploads/team/full/mark-kristian.jpg"
+  },
+  {
+    "name": "Ronald",
+    "role": "Counseling Psychologist",
+    "bio": "Stress & relationship support",
+    "photo_thumbnail": "/uploads/team/thumbs/ronald.jpg",
+    "photo_full": "/uploads/team/full/ronald.jpg"
+  },
+  {
+    "name": "Sherry Rose",
+    "role": "Guidance Counselor",
+    "bio": "Student & adolescent support",
+    "photo_thumbnail": "/uploads/team/thumbs/sherry-rose.jpg",
+    "photo_full": "/uploads/team/full/sherry-rose.jpg"
+  }
+]

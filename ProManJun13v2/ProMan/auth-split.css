@@ -1,0 +1,502 @@
+/* ============================================================
+   AUTH SPLIT LAYOUT — shared by login + register
+   ------------------------------------------------------------
+   A two-panel "card" centered on the page:
+     • a media panel carrying an auto-rotating image carousel,
+       tinted with the BPS royal→forest brand gradient, and
+     • a form panel carrying the existing login / register form.
+   The reference layout is replicated (structure, spacing,
+   hierarchy, full-bleed rounded media panel) but the palette
+   stays 100% BPS branding — royal blue, forest, gold, mint.
+
+   Login  → media LEFT  / form RIGHT  (.auth-split--media-left)
+   Register → media RIGHT / form LEFT  (.auth-split--media-right)
+   ============================================================ */
+
+/* ---- page shell ---------------------------------------------------- */
+.auth-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, var(--royal-wash) 0%, transparent 55%),
+    radial-gradient(1000px 700px at 110% 120%, var(--forest-wash) 0%, transparent 50%),
+    #F4F6FB;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: stretch;       /* let the split fill the full height */
+  justify-content: stretch;
+  /* Full-screen, but with a small uniform gutter so the panel's rounded
+     corners and shadow stay visible "floating" on the page background.
+     Top offset accounts for the fixed 64px navbar. */
+  padding: calc(var(--nav-height) + 20px) 20px 20px;
+}
+
+/* ---- the split panel (full-screen, rounded, carousel-dominant) ----- */
+.auth-split {
+  width: 100%;
+  /* fill the viewport below the navbar, minus the wrapper gutter
+     (20px top gap after the nav offset + 20px bottom) */
+  min-height: calc(100vh - var(--nav-height) - 40px);
+  align-self: stretch;
+  display: grid;
+  /* carousel (media) is the primary element — noticeably larger than the
+     form column. ~1.7 : 1 split. */
+  grid-template-columns: 1.7fr 1fr;
+  background: var(--white);
+  /* curved design elements preserved at full screen */
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(27, 34, 48, .04),
+    0 30px 70px rgba(30, 58, 138, .14);
+  border: 1px solid var(--ds-line, #E6EAF1);
+  animation: authCardIn .7s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(.992); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* media on the LEFT (login) → form is column 2 */
+.auth-split--media-left .auth-split__media { grid-column: 1; }
+.auth-split--media-left .auth-split__form  { grid-column: 2; }
+
+/* media on the RIGHT (register) → form is column 1;
+   flip the column proportions so the carousel stays the dominant panel */
+.auth-split--media-right { grid-template-columns: 1fr 1.7fr; }
+.auth-split--media-right .auth-split__media { grid-column: 2; }
+.auth-split--media-right .auth-split__form  { grid-column: 1; }
+
+/* ============================================================
+   MEDIA PANEL — image carousel + brand tint + floating caption
+   ============================================================ */
+.auth-split__media {
+  position: relative;
+  overflow: hidden;
+  min-height: 100%;
+  isolation: isolate;
+  background: var(--royal-deep); /* fallback while images load */
+}
+
+/* each slide stacks; fade between them */
+.auth-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity 1.1s ease, transform 7s ease;
+  will-change: opacity, transform;
+}
+.auth-slide.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* BPS brand gradient tint — this is what keeps the page on-brand
+   instead of inheriting the photos' own blue/teal colours */
+.auth-split__media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(150deg,
+      rgba(30, 58, 138, .82) 0%,
+      rgba(21, 48, 110, .72) 48%,
+      rgba(11, 110, 59, .78) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* subtle darkening at the bottom so the caption stays legible */
+.auth-split__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(to top,
+      rgba(16, 37, 84, .55) 0%,
+      transparent 42%);
+  pointer-events: none;
+}
+
+/* ---- media foreground content (brand + caption + dots) ------------- */
+.auth-media__inner {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 38px;
+  color: #fff;
+}
+
+.auth-media__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  align-self: flex-start;
+  padding: 9px 16px 9px 10px;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* override any global `a` link styling so the pill reads as brand chrome */
+  text-decoration: none;
+  color: #fff;
+  transition: background .2s ease, border-color .2s ease;
+}
+.auth-media__brand:hover {
+  background: rgba(255, 255, 255, .18);
+  border-color: rgba(255, 255, 255, .45);
+  text-decoration: none;
+}
+.auth-media__brand:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .55);
+}
+.auth-media__brand img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, .5);
+}
+.auth-media__brand span {
+  font-family: var(--font-serif, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.auth-media__caption {
+  max-width: 380px;
+}
+.auth-media__eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--mint, #A8E49A);
+  margin-bottom: 12px;
+}
+.auth-media__headline {
+  font-family: var(--font-serif, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.18;
+  letter-spacing: -.015em;
+  margin: 0 0 10px;
+  text-shadow: 0 2px 18px rgba(16, 37, 84, .35);
+}
+.auth-media__sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, .9);
+  margin: 0;
+}
+
+/* slide indicator dots */
+.auth-media__dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+.auth-media__dots button {
+  width: 26px;
+  height: 5px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .35);
+  cursor: pointer;
+  transition: background .3s ease, width .3s ease;
+}
+.auth-media__dots button:hover { background: rgba(255, 255, 255, .6); }
+.auth-media__dots button.is-active {
+  width: 38px;
+  background: var(--gold, #C0922E);
+}
+.auth-media__dots button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .55);
+}
+
+/* ============================================================
+   FORM PANEL
+   ============================================================ */
+.auth-split__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 44px;
+  min-width: 0;            /* allow inner content to shrink */
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* (typography kept BPS — serif heading applied via design-system.css too) */
+.auth-card__title {
+  font-family: var(--font-serif, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -.015em;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.auth-card__subtitle {
+  font-size: 14px;
+  color: var(--text-body);
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+/* ===== FORM FIELDS (carried over from login.css / register.css) ===== */
+.form-group { margin-bottom: 20px; }
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text-dark);
+  margin-bottom: 7px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1.5px solid #E6EAF1;
+  border-radius: 11px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-dark);
+  background: #FBFCFE;
+  transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+  outline: none;
+}
+.form-group input::placeholder { color: #8A93A4; }
+.form-group input:focus {
+  border-color: var(--green-primary);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, .12);
+}
+
+/* password field + show/hide toggle */
+.password-wrapper { position: relative; }
+.password-wrapper input { padding-right: 46px; }
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8A93A4;
+  transition: color .25s ease;
+}
+.password-toggle:hover { color: var(--text-dark); }
+.password-toggle svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* password strength meter (register) */
+.password-strength {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  align-items: center;
+}
+.strength-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e0e8e0;
+  transition: background .3s ease;
+}
+.strength-bar.active.weak   { background: #e53935; }
+.strength-bar.active.medium { background: var(--gold, #C0922E); }
+.strength-bar.active.strong { background: var(--green-primary); }
+.strength-text {
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+  min-width: 132px;
+}
+.strength-text.weak   { color: #e53935; }
+.strength-text.medium { color: var(--gold-deep, #8A6A18); }
+.strength-text.strong { color: var(--green-primary); }
+
+.password-requirements { margin: 8px 0 0; }
+
+/* terms checkbox (register) */
+.form-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 24px;
+  margin-top: 4px;
+}
+.form-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  margin-top: 2px;
+  accent-color: var(--green-primary);
+  cursor: pointer;
+}
+.form-checkbox label {
+  font-size: 13px;
+  color: var(--text-body);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.form-checkbox label a {
+  color: var(--green-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.form-checkbox label a:hover { text-decoration: underline; }
+
+/* primary submit */
+.auth-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--green-primary);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15.5px;
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background .25s ease, transform .15s ease, box-shadow .25s ease;
+  box-shadow: 0 4px 16px rgba(30, 58, 138, .28);
+}
+.auth-btn:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(30, 58, 138, .38);
+}
+.auth-btn:active { transform: translateY(0); }
+.auth-btn:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* footer link */
+.auth-footer {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--text-body);
+}
+.auth-footer a {
+  color: var(--green-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-footer a:hover { text-decoration: underline; }
+
+/* inline forgot-password link row */
+.auth-inline-link {
+  text-align: right;
+  margin-bottom: 16px;
+}
+.auth-inline-link a {
+  font-size: 13px;
+  color: var(--green-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.auth-inline-link a:hover { text-decoration: underline; }
+
+/* ============================================================
+   RESPONSIVE
+   ------------------------------------------------------------
+   > 1280px : carousel dominant 1.7 : 1 (default rule above).
+   881–1280px: gentler 1.35 : 1 so the form column still fits its
+               400px content while the carousel stays the larger half.
+   ≤ 880px  : stack — media banner on TOP (the primary visual),
+              form BELOW; both keep rounded corners + gutter.
+   ≤ 560px  : tighten padding.
+   ============================================================ */
+@media (max-width: 1280px) and (min-width: 881px) {
+  .auth-split { grid-template-columns: 1.35fr 1fr ; }
+  .auth-split__form { padding: 44px 36px; }
+  .auth-form-inner { max-width: 380px; }
+}
+
+@media (max-width: 880px) {
+  .auth-wrapper {
+    /* small gutter on mobile too, so rounded corners stay visible */
+    padding: calc(var(--nav-height) + 14px) 14px 14px;
+  }
+  .auth-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;   /* media banner + form fills the rest */
+    min-height: calc(100vh - var(--nav-height) - 28px);
+    max-width: none;
+    width: 100%;
+    border-radius: 22px;            /* preserve curves when stacked */
+  }
+  /* force a single, predictable stacking order regardless of side.
+     The carousel stays the primary visual — a generous banner on top. */
+  .auth-split__media,
+  .auth-split--media-left .auth-split__media,
+  .auth-split--media-right .auth-split__media {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 240px;
+    height: 38vh;
+    max-height: 360px;
+  }
+  .auth-split__form,
+  .auth-split--media-left .auth-split__form,
+  .auth-split--media-right .auth-split__form {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 34px 28px 40px;
+  }
+  .auth-media__inner { padding: 20px 22px; }
+  .auth-media__brand { padding: 7px 13px 7px 8px; gap: 9px; max-width: calc(100% - 4px); }
+  .auth-media__brand img { width: 26px; height: 26px; }
+  .auth-media__brand span { font-size: 13px; white-space: normal; line-height: 1.2; }
+  .auth-media__caption { display: none; }   /* keep the banner clean */
+  .auth-media__dots { margin-top: 0; }
+  .auth-slide { transition: opacity 1s ease, transform 7s ease; }
+}
+
+@media (max-width: 560px) {
+  .auth-split__form { padding: 28px 20px 34px; }
+  .auth-card__title { font-size: 24px; }
+}
+
+/* respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .auth-split { animation: none; }
+  .auth-slide {
+    transition: opacity .4s ease;
+    transform: none !important;
+  }
+}

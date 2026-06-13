@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Payment | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="toast.css">
+  <style>
+    .pay-wrap { max-width: 760px; margin: 110px auto 60px; padding: 0 20px; }
+    .pay-card {
+      background: #fff; border: 1px solid #e6eaf1; border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(20, 30, 60, 0.08); overflow: hidden;
+    }
+    .pay-head {
+      background: linear-gradient(135deg, #1E3A8A, #15306E); color: #fff;
+      padding: 26px 32px; display: flex; align-items: center; gap: 16px;
+    }
+    .pay-head img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; background: #fff; }
+    .pay-head__brand { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 800; line-height: 1.2; }
+    .pay-head__brand span { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+    .pay-body { padding: 28px 32px; }
+    .pay-title { font-family: 'Playfair Display', serif; font-size: 25px; font-weight: 800; color: #1a202c; margin-bottom: 4px; }
+    .pay-sub { font-size: 13px; color: #718096; margin-bottom: 22px; }
+
+    /* Appointment summary */
+    .appt-box { background: #f7f9fc; border: 1px solid #e6eaf1; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+    .appt-box__row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 4px 0; }
+    .appt-box__label { color: #718096; font-weight: 500; }
+    .appt-box__value { color: #1a202c; font-weight: 600; text-align: right; }
+
+    /* Reminder */
+    .pay-reminder { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 16px 18px; margin-bottom: 22px; }
+    .pay-reminder__title { font-size: 13.5px; font-weight: 700; color: #92400e; display: flex; align-items: center; gap: 7px; }
+    .pay-reminder__text { font-size: 12.5px; color: #78350f; margin-top: 7px; line-height: 1.6; }
+
+    /* Option selection */
+    .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .opt-card {
+      border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 20px; text-align: left; cursor: pointer;
+      background: #fff; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .opt-card:hover { border-color: #1E3A8A; box-shadow: 0 4px 14px rgba(30,58,138,0.12); }
+    .opt-card__amt { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 800; color: #1E3A8A; }
+    .opt-card__name { font-size: 14px; font-weight: 700; color: #1a202c; margin-top: 4px; }
+    .opt-card__desc { font-size: 12px; color: #718096; margin-top: 4px; line-height: 1.45; }
+
+    /* QR pay box */
+    .qr-box { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+    .qr-box img { width: 210px; height: 210px; object-fit: contain; border-radius: 14px; border: 1px solid #e6eaf1; background: #fff; }
+    .qr-detail { font-size: 13.5px; color: #2d3748; line-height: 2; flex: 1; min-width: 220px; }
+    .qr-detail .amt { color: #1E3A8A; font-size: 18px; font-weight: 800; }
+    .qr-detail code { background: #EEF1FA; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-family: 'Courier New', monospace; }
+    .qr-copy { margin-left: 6px; padding: 3px 11px; border: 1.5px solid #1E3A8A; background: #fff; color: #1E3A8A; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+    .pay-btn {
+      padding: 12px 26px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+      font-family: 'Inter', sans-serif; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+    }
+    .pay-btn--primary { background: linear-gradient(135deg, #1E3A8A, #15306E); color: #fff; }
+    .pay-btn--green { background: #0B6E3B; color: #fff; }
+    .pay-btn--ghost { background: #fff; color: #2d3748; border: 1.5px solid #e2e8f0; }
+    .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .upload-row { margin-top: 20px; padding-top: 18px; border-top: 1px solid #edf2f7; }
+    .upload-row label { font-size: 12.5px; font-weight: 700; color: #2d3748; display: block; margin-bottom: 8px; }
+    .upload-row input[type=file] { font-size: 13px; }
+
+    .state-box { padding: 22px; border-radius: 14px; text-align: center; }
+    .state-box--ok { background: #f0fff4; border: 1px solid #c6f6d5; }
+    .state-box--review { background: #ebf2ff; border: 1px solid #c3dafe; }
+    .state-box__title { font-size: 16px; font-weight: 800; }
+    .state-box__text { font-size: 13px; color: #2d3748; margin-top: 6px; line-height: 1.5; }
+
+    .pay-note { margin-top: 18px; font-size: 11.5px; color: #a0aec0; line-height: 1.6; }
+    .pay-loading { text-align: center; padding: 60px 24px; color: #718096; }
+    .pay-actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .pay-timer-banner {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; text-align: center;
+      background: #EEF1FA; color: #1E3A8A;
+      border: 2px solid #c3dafe; border-radius: 14px;
+      padding: 18px 16px; margin-top: 24px;
+      font-weight: 600;
+    }
+    .pay-timer-banner__label { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; opacity: .85; }
+    .pay-timer-banner #pay-timer {
+      font-size: 44px; line-height: 1.1; font-weight: 800;
+      font-variant-numeric: tabular-nums; letter-spacing: 1px;
+    }
+    .pay-timer-banner__note { font-size: 12px; font-weight: 500; opacity: .8; margin-top: 2px; }
+    .pay-timer-banner.pay-timer--low { background: #FEF3F2; color: #b42318; border-color: #fca5a5; }
+    .pay-timer-banner.pay-timer--low #pay-timer { animation: paypulse 1s ease-in-out infinite; }
+    @keyframes paypulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+    .reject-banner {
+      background: #FEF3F2; color: #7a271a;
+      border: 1px solid #fca5a5; border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 18px;
+      font-size: 13.5px; line-height: 1.55;
+    }
+    .reject-banner strong { color: #b42318; }
+
+    /* Selected payment-option box */
+    .opt-card--selected {
+      border-color: #1E3A8A !important;
+      background: #EEF1FA;
+      box-shadow: 0 4px 14px rgba(30,58,138,0.18);
+    }
+    .opt-card { position: relative; }
+    .opt-card__check {
+      position: absolute; top: 10px; right: 10px;
+      background: #1E3A8A; color: #fff;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+      padding: 3px 9px; border-radius: 999px;
+    }
+
+    @media (max-width: 600px) {
+      .pay-wrap { margin-top: 90px; }
+      .pay-body { padding: 22px 18px; }
+      .opt-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="pay-wrap">
+    <div class="pay-card">
+      <div class="pay-head">
+        <img src="barcarse logo.jpg" alt="BPS">
+        <div class="pay-head__brand">Barcarse Psychological Services<span>Appointment Payment</span></div>
+      </div>
+      <div class="pay-body" id="pay-body">
+        <div class="pay-loading">Loading your appointment…</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+    const authHeaders = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    const PAY_QR = { full: 'qr-full-payment.jpg', half: 'qr-half-payment.jpg' };
+    const PAY_ACCT = { name: 'JO*N YE*J B.', mobile: '0905 664 \u2022\u2022\u2022\u2022' };
+    const FEES = { half: 1.00, full: 2.00 };
+    const PAY_WINDOW_MIN = 7;
+
+    function peso(n) { return '\u20b1' + Number(n || 0).toFixed(2); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }) : '\u2014'; }
+    function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
+
+    const flow = getParam('flow');
+    const isIntakeFlow = flow === 'intake';
+    const apptParam = getParam('appt');
+    const apptId = apptParam ? parseInt(apptParam, 10) : null;
+    const intakeParam = getParam('intake');
+    const intakeId = (intakeParam && intakeParam !== 'null') ? parseInt(intakeParam, 10) : null;
+
+    let appt = null;
+    let payment = null;
+    let pendingIntake = null;
+    let checkoutPaymentId = null;
+
+    const body = () => document.getElementById('pay-body');
+
+    // ===== 7-minute expiration timer =====
+    // The timer is anchored to the payment's server-side expiry (set to 7 minutes
+    // when the payment is created) and only runs once the client has CHOSEN an
+    // option and a payment exists. Before that, there is no timer.
+    let timerInterval = null;
+    function startTimer() {
+      stopTimer();
+      if (!payment || !payment.expires_at) return;
+      const tick = () => {
+        const remaining = new Date(payment.expires_at).getTime() - Date.now();
+        const el = document.getElementById('pay-timer');
+        if (remaining <= 0) { stopTimer(); onExpire(); return; }
+        if (el) {
+          const m = Math.floor(remaining / 60000);
+          const s = Math.floor((remaining % 60000) / 1000);
+          el.textContent = m + ':' + String(s).padStart(2, '0');
+          const banner = document.getElementById('pay-timer-banner');
+          if (banner) banner.classList.toggle('pay-timer--low', remaining < 60000);
+        }
+      };
+      tick();
+      timerInterval = setInterval(tick, 1000);
+    }
+    function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+
+    // Big, clearly-readable expiration timer shown at the BOTTOM of the pay box.
+    function timerBannerHtml() {
+      return '<div class="pay-timer-banner" id="pay-timer-banner">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" style="fill:currentColor;vertical-align:middle;margin-right:8px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' +
+        '<span class="pay-timer-banner__label">Payment expires in</span>' +
+        '<strong id="pay-timer">7:00</strong>' +
+        '<span class="pay-timer-banner__note">' + (isIntakeFlow ? 'If it runs out, you\u2019ll need to fill out the intake form again.' : 'If it runs out, you can restart payment from your appointment.') + '</span>' +
+        '</div>';
+    }
+    async function onExpire() {
+      if (checkoutPaymentId) {
+        try { await fetch(`${API}/intake-forms/checkout/${checkoutPaymentId}`, { method: 'DELETE', headers: authHeaders }); } catch (_) {}
+      }
+      if (isIntakeFlow) {
+        sessionStorage.removeItem('bps_intake_pending');
+        sessionStorage.removeItem('bps_checkout_payment');
+        BPSToast.warning('Your 7-minute payment window expired. Please fill out the intake form again.', { title: 'Session Expired', duration: 4000 });
+        setTimeout(() => { window.location.href = 'intakeform.html'; }, 1200);
+      } else {
+        BPSToast.warning('Your 7-minute payment window expired. You can restart payment from your appointment.', { title: 'Session Expired', duration: 4000 });
+        setTimeout(() => { window.location.href = 'notifications.html'; }, 1200);
+      }
+    }
+
+    async function loadPage() {
+      // No timer yet — it starts only after the client chooses an option.
+      if (isIntakeFlow) return loadIntakeFlow();
+      return loadApptFlow();
+    }
+
+    async function loadApptFlow() {
+      if (!apptId || Number.isNaN(apptId)) {
+        body().innerHTML = '<div class="pay-loading">No appointment specified. Please open your appointment from the notifications page.</div>';
+        return;
+      }
+      try {
+        const [apptRes, payRes] = await Promise.all([
+          fetch(`${API}/appointments`, { headers: authHeaders }),
+          fetch(`${API}/payments`, { headers: authHeaders }),
+        ]);
+        if (apptRes.status === 401 || payRes.status === 401) { window.location.href = 'login.html'; return; }
+        const aj = await apptRes.json();
+        if (aj.success && Array.isArray(aj.data)) appt = aj.data.find(a => String(a.id) === String(apptId)) || null;
+        if (!appt) { body().innerHTML = '<div class="pay-loading">Appointment not found, or you do not have access to it.</div>'; return; }
+        try {
+          const pj = await payRes.json();
+          if (pj.success && Array.isArray(pj.data)) payment = pj.data.find(p => String(p.appointment_id) === String(apptId)) || null;
+        } catch (_) {}
+        render();
+      } catch (err) {
+        console.error('payment loadApptFlow failed:', err);
+        body().innerHTML = '<div class="pay-loading">Failed to load. Please refresh and try again.</div>';
+      }
+    }
+
+    async function loadIntakeFlow() {
+      const resume = sessionStorage.getItem('bps_checkout_payment');
+      if (resume) {
+        try {
+          const r = JSON.parse(resume);
+          checkoutPaymentId = r.paymentId;
+          const pr = await fetch(`${API}/payments/${r.paymentId}`, { headers: authHeaders });
+          if (pr.status === 401) { window.location.href = 'login.html'; return; }
+          const pj = await pr.json();
+          if (pj.success && pj.data) { payment = pj.data; appt = r.summary || null; render(); return; }
+        } catch (_) {}
+      }
+      const raw = sessionStorage.getItem('bps_intake_pending');
+      if (!raw) {
+        body().innerHTML = '<div class="pay-loading">No intake in progress. Please complete the intake form first.<br><br><a class="pay-btn pay-btn--primary" href="intakeform.html">Go to Intake Form</a></div>';
+        return;
+      }
+      try { pendingIntake = JSON.parse(raw); } catch (_) { pendingIntake = null; }
+      if (!pendingIntake) { body().innerHTML = '<div class="pay-loading">Your intake data could not be read. Please fill out the intake form again.</div>'; return; }
+      appt = { preferred: pendingIntake.prefSchedule, modality: pendingIntake.modality };
+      render();
+    }
+
+    function summaryHtml() {
+      const schedule = appt ? (appt.approved_datetime || appt.proposed_datetime || appt.preferred_datetime || appt.preferred) : null;
+      const modality = appt ? (appt.modality || '') : '';
+      return '<div class="appt-box">' +
+        ((appt && appt.id) ? `<div class="appt-box__row"><span class="appt-box__label">Appointment</span><span class="appt-box__value">#${appt.id}</span></div>` : '') +
+        `<div class="appt-box__row"><span class="appt-box__label">Preferred Schedule</span><span class="appt-box__value">${fmtDate(schedule)}</span></div>` +
+        (modality ? `<div class="appt-box__row"><span class="appt-box__label">Modality</span><span class="appt-box__value">${esc(modality)}</span></div>` : '') +
+        ((appt && appt.staff_name) ? `<div class="appt-box__row"><span class="appt-box__label">Staff</span><span class="appt-box__value">${esc(appt.staff_name)}</span></div>` : '') +
+        '</div>';
+    }
+
+    function reminderHtml() {
+      return '<div class="pay-reminder">' +
+        '<div class="pay-reminder__title"><svg viewBox="0 0 24 24" width="16" height="16" style="fill:#92400e;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> Non-refundable &amp; non-cancellable</div>' +
+        '<div class="pay-reminder__text">By proceeding, you confirm this payment is <strong>non-refundable</strong>, the appointment is <strong>non-cancellable</strong>, and your scheduled date and time can <strong>no longer be changed</strong> once paid.</div>' +
+        '</div>';
+    }
+
+    function render() {
+      const b = body();
+
+      if (payment && payment.status === 'verified') {
+        stopTimer();
+        sessionStorage.removeItem('bps_intake_pending'); sessionStorage.removeItem('bps_checkout_payment');
+        const bal = (payment.payment_option === 'half' && Number(payment.outstanding_balance) > 0)
+          ? `<p class="state-box__text" style="color:#8A6A18;">Remaining <strong>${peso(payment.outstanding_balance)}</strong> payable in person on the day of your appointment.</p>` : '';
+        b.innerHTML =
+          '<div class="pay-title">Payment Complete</div>' +
+          '<div class="pay-sub">Your slot is now reserved.</div>' +
+          summaryHtml() +
+          '<div class="state-box state-box--ok">' +
+            '<div class="state-box__title" style="color:#0A5C31;">\u2713 Payment Verified \u2014 Slot Reserved</div>' +
+            `<p class="state-box__text">Reference <strong>${esc(payment.reference_number)}</strong> \u00b7 ${peso(payment.amount_due)} (${payment.payment_option === 'full' ? 'Full' : 'Half'} payment)</p>` +
+            bal +
+          '</div>' +
+          '<div class="pay-actions">' +
+            `<a class="pay-btn pay-btn--green" href="receipt.html?payment=${payment.id}">View Receipt</a>` +
+            '<a class="pay-btn pay-btn--ghost" href="notifications.html">Back to Notifications</a>' +
+          '</div>';
+        return;
+      }
+
+      if (payment && payment.status === 'under_review') {
+        stopTimer();
+        sessionStorage.removeItem('bps_intake_pending'); sessionStorage.removeItem('bps_checkout_payment');
+        b.innerHTML =
+          '<div class="pay-title">Payment Under Review</div>' +
+          '<div class="pay-sub">We\u2019re verifying your proof of payment.</div>' +
+          summaryHtml() +
+          '<div class="state-box state-box--review">' +
+            '<div class="state-box__title" style="color:#1E3A8A;">Awaiting Verification</div>' +
+            `<p class="state-box__text">Your proof of payment (ref <strong>${esc(payment.reference_number)}</strong>) is being reviewed. You\u2019ll be notified once it\u2019s confirmed.</p>` +
+          '</div>' +
+          '<div class="pay-actions"><a class="pay-btn pay-btn--ghost" href="notifications.html">Back to Notifications</a></div>';
+        return;
+      }
+
+      if (payment && payment.status === 'pending') { renderPayBox(); return; }
+
+      // Rejected — let the client resend their proof of payment for the SAME
+      // payment (reason shown in bold). No timer; they've already paid.
+      if (payment && payment.status === 'rejected') { renderPayBox(); return; }
+
+      // No option chosen yet — show the two boxes. NO timer until a box is picked.
+      let prior = '';
+      if (!isIntakeFlow && payment && payment.status === 'expired') prior = '<div class="pay-sub" style="color:#8A6A18;">Your previous payment window expired. Please submit a new payment.</div>';
+
+      b.innerHTML =
+        '<div class="pay-title">Complete Your Payment</div>' +
+        '<div class="pay-sub">Choose <strong>Half</strong> or <strong>Full</strong> payment to begin. The 7-minute timer starts once you choose.</div>' +
+        prior +
+        summaryHtml() +
+        reminderHtml() +
+        optionBoxesHtml(null) +
+        `<div class="pay-actions"><a class="pay-btn pay-btn--ghost" href="${isIntakeFlow ? 'intakeform.html' : 'notifications.html'}">Cancel</a></div>` +
+        '<div class="pay-note">No card, wallet, or banking credentials are stored by this system.</div>';
+      stopTimer();
+    }
+
+    // The two payment-option boxes (Half / Full). The selected one is highlighted;
+    // tapping the other switches the option. This replaces the old change-mind button.
+    function optionBoxesHtml(selected) {
+      const card = (opt, amt, name, desc) =>
+        `<button class="opt-card${selected === opt ? ' opt-card--selected' : ''}" onclick="selectOption('${opt}')">` +
+          (selected === opt ? '<span class="opt-card__check">\u2713 Selected</span>' : '') +
+          `<div class="opt-card__amt">${peso(amt)}</div>` +
+          `<div class="opt-card__name">${name}</div>` +
+          `<div class="opt-card__desc">${desc}</div>` +
+        '</button>';
+      return '<div class="opt-grid">' +
+        card('half', FEES.half, 'Half Payment', 'Pay 50% now, the remaining ' + peso(FEES.full - FEES.half) + ' in person on the day.') +
+        card('full', FEES.full, 'Full Payment', 'Pay the full service fee online now.') +
+        '</div>';
+    }
+
+    function renderPayBox() {
+      const qr = PAY_QR[payment.payment_option] || PAY_QR.full;
+      const isReject = payment.status === 'rejected';
+      const balance = (payment.payment_option === 'half' && Number(payment.outstanding_balance) > 0)
+        ? `<div style="color:#8A6A18;font-size:12.5px;">Balance in person: <strong>${peso(payment.outstanding_balance)}</strong></div>` : '';
+
+      // Bold rejection notice so the client clearly sees why and what to do.
+      const rejectBanner = isReject
+        ? '<div class="reject-banner">Your previous proof of payment was <strong>not accepted</strong>.' +
+          (payment.rejection_reason ? ' Reason: <strong>' + esc(payment.rejection_reason) + '</strong>.' : '') +
+          ' Please send another screenshot of your payment below.</div>'
+        : '';
+
+      const title = isReject ? 'Resend Your Proof of Payment' : 'Scan &amp; Pay via GCash';
+      const sub = isReject
+        ? '<div class="pay-sub">Upload a clear screenshot of your GCash payment for the same reference below.</div>'
+        : `<div class="pay-sub">You chose <strong>${payment.payment_option === 'full' ? 'Full' : 'Half'}</strong> payment. To switch, tap the other box below before uploading proof.</div>`;
+
+      body().innerHTML =
+        `<div class="pay-title">${title}</div>` +
+        sub +
+        rejectBanner +
+        summaryHtml() +
+        (isReject ? '' : optionBoxesHtml(payment.payment_option)) +
+        reminderHtml() +
+        '<div class="qr-box">' +
+          `<img src="${qr}" alt="Clinic GCash QR">` +
+          '<div class="qr-detail">' +
+            `<div>Pay to: <strong>${esc(PAY_ACCT.name)}</strong></div>` +
+            `<div>Mobile: <strong>${esc(PAY_ACCT.mobile)}</strong></div>` +
+            `<div>Amount: <span class="amt">${peso(payment.amount_due)}</span></div>` +
+            `<div>Reference: <code>${esc(payment.reference_number)}</code><button class="qr-copy" onclick="copyRef('${esc(payment.reference_number)}')">Copy</button></div>` +
+            balance +
+          '</div>' +
+        '</div>' +
+        '<p class="pay-note">Enter the exact amount and include your reference number in the GCash note so we can match your payment.</p>' +
+        '<div class="upload-row">' +
+          `<label for="proof-input">Upload ${isReject ? 'a new ' : ''}proof of payment (JPG, PNG, or PDF \u00b7 max 5 MB)</label>` +
+          '<input type="file" id="proof-input" accept="image/jpeg,image/png,application/pdf">' +
+          '<div class="pay-actions">' +
+            `<button class="pay-btn pay-btn--primary" id="submit-proof-btn" onclick="uploadProof()">${isReject ? 'Resend Proof of Payment' : 'Submit Proof of Payment'}</button>` +
+            `<a class="pay-btn pay-btn--ghost" href="${isIntakeFlow ? 'intakeform.html' : 'notifications.html'}">Back</a>` +
+          '</div>' +
+        '</div>' +
+        (isReject ? '' : timerBannerHtml());
+      if (!isReject) startTimer(); else stopTimer();
+    }
+
+    function applyPaymentResponse(d) {
+      payment = {
+        id: d.id, reference_number: d.reference_number, payment_option: d.payment_option,
+        amount_due: d.amount_due, outstanding_balance: d.outstanding_balance,
+        total_fee: d.total_fee, expires_at: d.expires_at, status: d.status,
+        appointment_id: d.appointment_id || (appt && appt.id) || null,
+      };
+    }
+
+    // Single entry point for the two boxes: create the payment on first choice,
+    // or switch the option if a (still pending) payment already exists.
+    async function selectOption(option) {
+      if (payment && payment.status === 'pending') {
+        if (option === payment.payment_option) return;
+        return updateOption(option);
+      }
+      if (isIntakeFlow) return startIntakeCheckout(option);
+      return createApptPayment(option);
+    }
+
+    async function createApptPayment(option) {
+      try {
+        const res = await fetch(`${API}/payments`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({ appointmentId: apptId, intakeFormId: intakeId, paymentOption: option, agreed: 1 }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          applyPaymentResponse(json.data);
+          BPSToast.success('Payment reference generated. Scan the QR and upload your proof.', { title: 'Reference Ready' });
+          renderPayBox();
+        } else if (json.data && json.data.id) {
+          await loadApptFlow();
+          BPSToast.info(json.message || 'You already have a payment in progress.', { title: 'Payment In Progress' });
+        } else {
+          BPSToast.error(json.message || 'Could not start payment.', { title: 'Payment Error' });
+        }
+      } catch (err) { BPSToast.error('Network error. Please try again.', { title: 'Connection Error' }); }
+    }
+
+    async function startIntakeCheckout(option) {
+      if (!pendingIntake) { BPSToast.error('Your intake data was lost. Please fill out the form again.', { title: 'Error' }); return; }
+      try {
+        const res = await fetch(`${API}/intake-forms/checkout`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify(Object.assign({}, pendingIntake, { paymentOption: option, agreed: 1 })),
+        });
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        const json = await res.json();
+        if (json.success && json.data && json.data.payment) {
+          applyPaymentResponse(Object.assign({}, json.data.payment, { appointment_id: json.data.appointment_id }));
+          checkoutPaymentId = json.data.payment.id;
+          sessionStorage.setItem('bps_checkout_payment', JSON.stringify({
+            paymentId: checkoutPaymentId,
+            summary: { id: json.data.appointment_id, preferred: pendingIntake.prefSchedule, modality: pendingIntake.modality },
+          }));
+          BPSToast.success('Intake saved. Scan the QR and upload your proof within the timer.', { title: 'Reference Ready' });
+          renderPayBox();
+        } else {
+          BPSToast.error(json.message || 'Could not start payment.', { title: 'Checkout Error' });
+        }
+      } catch (err) { BPSToast.error('Network error. Please try again.', { title: 'Connection Error' }); }
+    }
+
+    async function updateOption(option) {
+      if (!payment || !payment.id) return;
+      try {
+        const res = await fetch(`${API}/payments/${payment.id}/option`, {
+          method: 'PUT', headers: authHeaders, body: JSON.stringify({ paymentOption: option }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          applyPaymentResponse(Object.assign({}, json.data, { appointment_id: payment.appointment_id }));
+          BPSToast.success('Switched to ' + (option === 'full' ? 'full' : 'half') + ' payment.', { title: 'Option Updated' });
+          renderPayBox();
+        } else {
+          BPSToast.error(json.message || 'Could not change the payment option.', { title: 'Error' });
+        }
+      } catch (err) { BPSToast.error('Network error. Please try again.', { title: 'Connection Error' }); }
+    }
+    function copyRef(ref) {
+      if (navigator.clipboard) navigator.clipboard.writeText(ref).then(
+        () => BPSToast.success('Reference copied.', { duration: 1500 }), () => {});
+    }
+
+    async function uploadProof() {
+      const input = document.getElementById('proof-input');
+      const file = input && input.files && input.files[0];
+      if (!file) { BPSToast.warning('Please choose a file to upload.', { title: 'No File Selected' }); return; }
+      const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!allowed.includes(file.type)) { BPSToast.error('Please upload a JPG, PNG, or PDF.', { title: 'Invalid File' }); return; }
+      if (file.size > 5 * 1024 * 1024) { BPSToast.error('File must be under 5 MB.', { title: 'File Too Large' }); return; }
+      const btn = document.getElementById('submit-proof-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Submitting\u2026'; }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetch(`${API}/payments/${payment.id}/proof`, {
+            method: 'POST', headers: authHeaders,
+            body: JSON.stringify({ proof: reader.result, filename: file.name }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            checkoutPaymentId = null;
+            stopTimer();
+            BPSToast.success('Proof submitted \u2014 your payment is now under review.', { title: 'Submitted' });
+            payment.status = 'under_review';
+            render();
+          } else {
+            BPSToast.error(json.message || 'Could not submit proof of payment.', { title: 'Upload Error' });
+            if (btn) { btn.disabled = false; btn.textContent = 'Submit Proof of Payment'; }
+          }
+        } catch (err) {
+          BPSToast.error('Network error. Please try again.', { title: 'Connection Error' });
+          if (btn) { btn.disabled = false; btn.textContent = 'Submit Proof of Payment'; }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    loadPage();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

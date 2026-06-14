@@ -4,12 +4,12 @@ const Appointment = {
   /**
    * Create appointment from intake form submission.
    */
-  async create({ intakeFormId, clientId, preferredDatetime, modality, pendingIntakeData }) {
+  async create({ intakeFormId, assessmentFormId, clientId, preferredDatetime, modality, pendingIntakeData }) {
     const result = await db.query(
-      `INSERT INTO appointments (intake_form_id, client_id, preferred_datetime, modality, pending_intake_data)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO appointments (intake_form_id, assessment_form_id, client_id, preferred_datetime, modality, pending_intake_data)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [intakeFormId || null, clientId, preferredDatetime, modality || null,
+      [intakeFormId || null, assessmentFormId || null, clientId, preferredDatetime, modality || null,
        pendingIntakeData ? JSON.stringify(pendingIntakeData) : null]
     );
     return result.rows[0];

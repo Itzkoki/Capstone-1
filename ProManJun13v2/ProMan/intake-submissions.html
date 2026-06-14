@@ -775,15 +775,62 @@
       }
     }
 
+    // Build detail sections for an Assessment intake submission.
+    function buildAssessmentSections(fd) {
+      const consentVal = (v) => (v === true || v === 'true' || v === 1 || v === '1') ? '✓ Agreed'
+        : (v === false || v === 'false' || v === 0 || v === '0') ? '✗ Not agreed' : '—';
+      const asList = (v) => Array.isArray(v) ? v.join(', ') : (v || '');
+      return [
+        { title: 'Consent', fields: [
+          { label: 'Data Privacy Act Consent', value: consentVal(fd.dataPrivacyConsent), full: true },
+          { label: 'Code of Ethics Consent', value: consentVal(fd.codeOfEthicsConsent), full: true },
+        ]},
+        { title: 'Client Information', fields: [
+          { label: 'Family Name', value: fd.familyName },
+          { label: 'Given Name', value: fd.givenName },
+          { label: 'Middle Name', value: fd.middleName },
+          { label: 'Nickname', value: fd.nickname },
+          { label: 'Birthdate', value: fd.birthdate },
+          { label: 'Age', value: fd.age },
+          { label: 'Sex', value: fd.sex },
+          { label: 'Primary Language', value: asList(fd.primaryLanguage), full: true },
+          { label: 'Reason for Referral', value: fd.reasonForReferral, full: true },
+        ]},
+        { title: 'Contact', fields: [
+          { label: 'Contact Number', value: fd.contactNumber },
+          { label: 'Email', value: fd.email },
+          { label: 'Home Address', value: fd.homeAddress, full: true },
+        ]},
+        { title: 'Additional Information', fields: [
+          { label: 'Assessed Before', value: fd.assessedBefore },
+          { label: 'Year & Reason', value: fd.assessedBeforeDetails, full: true },
+          { label: 'Existing Diagnoses', value: fd.existingDiagnoses },
+          { label: 'Diagnosis Details', value: fd.existingDiagnosesDetails, full: true },
+          { label: 'Current Interventions', value: asList(fd.interventions), full: true },
+          { label: 'Other Intervention', value: fd.interventionOther, full: true },
+          { label: 'Answering For', value: fd.answeringFor },
+        ]},
+        { title: 'Schedule', fields: [
+          { label: 'Preferred Schedule', value: fd.prefSchedule ? fmtDate(fd.prefSchedule) : '' },
+          { label: 'Session Modality', value: fd.modality },
+        ]},
+      ];
+    }
+
     // ===== VIEW DETAIL =====
     function viewForm(id) {
       const booking = allForms.find(b => String(b.id) === String(id));
       if (!booking) { BPSToast.error('Details unavailable.', { title: 'Load Error' }); return; }
       const fd = booking.form_data || {};
 
-      document.getElementById('modal-title').textContent = `Intake Form — ${fd.fullName || 'Client'} (#${id})`;
+      const isAssessment = fd.formType === 'assessment' || fd.serviceType === 'Assessment';
+      const assessmentName = [fd.givenName, fd.middleName, fd.familyName].filter(Boolean).join(' ');
 
-      const sections = [
+      document.getElementById('modal-title').textContent = isAssessment
+        ? `Assessment Form — ${assessmentName || 'Client'} (#${id})`
+        : `Intake Form — ${fd.fullName || 'Client'} (#${id})`;
+
+      const sections = isAssessment ? buildAssessmentSections(fd) : [
         {
           title: 'Consent', fields: [
             { label: 'Data Privacy Act Consent', value: (fd.dataPrivacyConsent === true || fd.dataPrivacyConsent === 'true' || fd.dataPrivacyConsent === 1 || fd.dataPrivacyConsent === '1') ? '✓ Agreed' : (fd.dataPrivacyConsent === false || fd.dataPrivacyConsent === 'false' || fd.dataPrivacyConsent === 0 || fd.dataPrivacyConsent === '0') ? '✗ Not agreed' : '—', full: true },

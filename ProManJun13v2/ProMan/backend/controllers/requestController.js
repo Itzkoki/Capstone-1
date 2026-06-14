@@ -154,21 +154,29 @@ const createRequest = async (req, res, next) => {
     const ticket = await generateTicketNumber();
     const concerns = Array.isArray(f.concerns) ? f.concerns : [];
 
+    // Number of copies — only meaningful for additional-copies requests.
+    // Clamp to a sensible range (1–50); default 1. Concerns are always 1.
+    let copies = 1;
+    if (f.nature === 'additional_copies') {
+      const n = parseInt(f.copies, 10);
+      if (!Number.isNaN(n)) copies = Math.min(50, Math.max(1, n));
+    }
+
     const result = await db.query(
       `INSERT INTO client_requests (
         ticket_number, client_id, client_family_name, client_given_name, client_mi,
         guardian_name, assessment_date, contact_number, center_branch,
         nature, concerns, concern_other, description,
         attachment, attachment_name, attachment_mime,
-        concern_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        concern_status, copies
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       RETURNING *`,
       [
         ticket, req.user.id, f.familyName, f.givenName, f.mi || null,
         f.guardianName || null, f.assessmentDate || null, f.contactNumber || null, f.centerBranch || null,
         f.nature, JSON.stringify(concerns), f.concernOther || null, String(f.description).trim(),
         f.attachment || null, f.attachment ? (f.attachmentName || 'attachment').slice(0, 255) : null, attachmentMime,
-        isConcern ? 'Pending Review' : null,
+        isConcern ? 'Pending Review' : null, copies,
       ]
     );
     const row = result.rows[0];
@@ -180,10 +188,11 @@ const createRequest = async (req, res, next) => {
     const user = await User.findById(req.user.id);
     const clientName = user ? user.full_name : 'A client';
 
+    const copiesText = `${copies} cop${copies === 1 ? 'y' : 'ies'}`;
     try {
       await notificationService.notifyUser(
         req.user.id, 'ticket', 'Request Received',
-        `Your ${f.nature === 'additional_copies' ? 'request for additional report copies' : 'report concern'} has been received. Your ticket number is ${ticket}. We'll notify you as it progresses.`,
+        `Your ${f.nature === 'additional_copies' ? `request for ${copiesText} of your report` : 'report concern'} has been received. Your ticket number is ${ticket}. We'll notify you as it progresses.`,
         'requests.html'
       );
     } catch (_) {}
@@ -192,10 +201,12 @@ const createRequest = async (req, res, next) => {
         'ticket', isConcern ? 'New Report Concern Submitted' : 'New Client Request/Concern',
         isConcern
           ? `${clientName} submitted a report concern (ticket ${ticket}). A new report concern has been submitted.`
-          : `${clientName} submitted a request for additional copies (ticket ${ticket}).`,
+          : `${clientName} submitted a request for additional report copies — ${copiesText} (ticket ${ticket}).`,
         isConcern ? 'psych-reports.html#reportConcerns' : 'psych-reports.html#reportRequests'
       );
-      await reqAudit(row.id, req.user.id, 'STAFF_NOTIFIED', 'Staff notified of the new submission.');
+      await reqAudit(row.id, req.user.id,
+        isConcern ? 'CONCERN_SUBMITTED' : 'STAFF_NOTIFIED',
+        isConcern ? 'Staff notified of the new submission.' : `Staff notified — ${copiesText} requested.`);
     } catch (_) {}
 
     return res.status(201).json({ success: true, message: 'Request submitted.', data: publicRow(row) });
@@ -591,6 +602,7 @@ const listReportRequests = async (req, res, next) => {
         client_email: row.client_email,
         request_type: pub.request_type_label,
         nature: row.nature,
+        copies: row.copies || 1,
         date_submitted: row.created_at,
         status: pub.report_request_status,
         has_report: pub.has_report,

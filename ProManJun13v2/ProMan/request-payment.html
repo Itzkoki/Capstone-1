@@ -89,6 +89,18 @@
   </div>
 
   <script src="session.js"></script>
+  <script>
+    // Client-only page: the QR code / payment details belong to the client
+    // payment process. Staff are redirected to their dashboard.
+    (function guardClientOnly() {
+      try {
+        const u = (window.BPSSession && BPSSession.getUser()) || {};
+        if (u.role && u.role !== 'client') {
+          window.location.replace((window.BPSSession && BPSSession.getHomePage()) || 'admin-dashboard.html');
+        }
+      } catch (_) {}
+    })();
+  </script>
   <script src="toast.js"></script>
   <script>
     const API = 'http://localhost:5000/api';

@@ -28,7 +28,24 @@ async function runMigrations() {
     // staff verification.)
     await ensureFeatureColumns();
 
-    // 1. Fix notification type constraint
+    // 1. Neutralize the out-of-band `notification_category` ENUM — FIRST.
+    // ---------------------------------------------------------------------------
+    // Some databases carry a `notifications` column (named `type` OR `category`)
+    // whose data type is a Postgres ENUM named `notification_category`. That enum
+    // was created out of band (it is not produced by these migrations or the
+    // bundled .sql schema) and predates newer notification kinds, so any cast of a
+    // value such as 'ticket' to it fails with:
+    //   invalid input value for enum notification_category: "ticket"
+    //
+    // This MUST run before the notifications_type_check constraint below: when the
+    // enum backs the `type` column, the CHECK (type IN (..., 'ticket')) casts its
+    // literal list to the column type and would otherwise fail and abort the whole
+    // run. The step converts every enum-backed column to plain VARCHAR and drops
+    // the orphan type, so any current/future value is accepted. When no column
+    // uses the enum (the common case) it does nothing. Idempotent and safe.
+    await ensureNotificationCategoryEnum();
+
+    // 1b. Fix notification type constraint (now safe — `type` is VARCHAR).
     await db.query(`ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check`);
     await db.query(`
       ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
@@ -39,29 +56,6 @@ async function runMigrations() {
         'community', 'intake', 'payment', 'ticket'
       ))
     `);
-
-    // 1b. Reconcile the `notification_category` ENUM with the canonical type list.
-    // ---------------------------------------------------------------------------
-    // Some databases carry a `notifications.category` column whose data type is a
-    // Postgres ENUM named `notification_category`. That enum was created out of
-    // band (it is not produced by these migrations or the bundled .sql schema),
-    // so on those databases inserting a newer category such as 'ticket' fails with:
-    //   invalid input value for enum notification_category: "ticket"
-    // and the whole migration run aborts at the generic catch below
-    // ("Migration error (non-fatal)").
-    //
-    // This step makes the enum tolerant: if (and only if) the enum type exists,
-    // every canonical notification value missing from it is appended via
-    // ALTER TYPE ... ADD VALUE IF NOT EXISTS. When the enum does not exist (the
-    // common case — the column is a plain VARCHAR with a CHECK constraint), this
-    // step does nothing. It is fully idempotent and safe to re-run.
-    //
-    // NOTE: `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block, so
-    // each value is added in its own autocommit statement (the pg Pool issues
-    // each db.query() without an explicit surrounding BEGIN). Each ADD VALUE is
-    // additionally wrapped in its own try/catch so a single failure can never
-    // abort the broader migration.
-    await ensureNotificationCategoryEnum();
 
     // 2. (Removed old intake_forms JSONB migration — see migration #16 for correct schema)
 
@@ -413,6 +407,44 @@ async function runMigrations() {
       console.log('✅ intake_forms columns added successfully.');
     }
 
+    // 16c. Assessment intake forms — the dedicated store for the Assessment
+    // booking flow. It mirrors the role of intake_forms (which serves the
+    // Counseling flow) but holds the assessment-specific question set. Like the
+    // counseling intake, an assessment row is ONLY persisted once staff verify
+    // the payment (promoted from appointments.pending_intake_data); until then
+    // the answers live on the appointment's staging buffer.
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS assessment_intake_forms (
+        id                        SERIAL PRIMARY KEY,
+        user_id                   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        family_name               VARCHAR(120),
+        given_name                VARCHAR(120),
+        middle_name               VARCHAR(120),
+        nickname                  VARCHAR(120),
+        birthdate                 DATE,
+        age                       INTEGER,
+        sex                       VARCHAR(20),
+        contact_number            VARCHAR(40),
+        email                     VARCHAR(200),
+        home_address              TEXT,
+        primary_language          TEXT,
+        reason_for_referral       VARCHAR(120),
+        assessed_before           VARCHAR(10),
+        assessed_before_details   TEXT,
+        existing_diagnoses        VARCHAR(20),
+        existing_diagnoses_details TEXT,
+        current_interventions     TEXT,
+        intervention_other        TEXT,
+        answering_for             VARCHAR(20),
+        preferred_schedule        VARCHAR(200),
+        session_modality          VARCHAR(100),
+        data_privacy_consent      BOOLEAN DEFAULT FALSE,
+        code_of_ethics_consent    BOOLEAN DEFAULT FALSE,
+        created_at                TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_assessment_intake_user ON assessment_intake_forms (user_id)`);
+
     // 17. Appointments (linked to intake forms)
     await db.query(`
       CREATE TABLE IF NOT EXISTS appointments (
@@ -443,6 +475,10 @@ async function runMigrations() {
     // is verified. The official intake_forms row is only created (promoted from
     // this) once staff verify the payment; this is cleared on promotion.
     await db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS pending_intake_data JSONB`).catch(() => {});
+    // Link to a promoted Assessment intake form (the counseling flow uses
+    // intake_form_id; the assessment flow uses this column instead). Only one of
+    // the two is set per appointment.
+    await db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assessment_form_id INTEGER REFERENCES assessment_intake_forms(id) ON DELETE SET NULL`).catch(() => {});
 
     // 17b. Payments (payment-first booking — slot held until admin verifies)
     await db.query(`
@@ -968,51 +1004,48 @@ async function runMigrations() {
  *    one failure can never abort the rest of the migration run.
  */
 async function ensureNotificationCategoryEnum() {
-  // Canonical set — kept in sync with the notifications_type_check constraint.
-  const CANONICAL_VALUES = [
-    'case_assigned', 'review_needed', 'validation_ready',
-    'report_ready', 'system_alert', 'general', 'request',
-    'appointment', 'teleconference', 'report',
-    'community', 'intake', 'payment', 'ticket',
-  ];
-
+  // Permanently neutralize the out-of-band `notification_category` ENUM.
+  //
+  // Some databases were provisioned with a `notifications.category` column typed
+  // as a Postgres ENUM (`notification_category`) that predates newer notification
+  // kinds such as 'ticket'. Writing a newer value then fails with:
+  //   invalid input value for enum notification_category: "ticket"
+  //
+  // Appending the missing values via `ALTER TYPE ... ADD VALUE` is unreliable: a
+  // newly added enum label cannot be used in the same transaction that added it,
+  // so the failing write can still slip through on the same migration run. Instead
+  // we convert the column to a plain VARCHAR (preserving its current text values)
+  // and drop the now-unused enum type. After this the column accepts any value the
+  // application emits and this error class is gone for good.
+  //
+  // Fully idempotent and safe on fresh databases: when the column is already a
+  // VARCHAR (or absent), the guarded block does nothing.
   try {
-    // Read the labels that currently exist on the enum (empty when absent).
-    const { rows } = await db.query(
-      `SELECT e.enumlabel AS label
-         FROM pg_type t
-         JOIN pg_enum e ON e.enumtypid = t.oid
-        WHERE t.typname = 'notification_category'`
-    );
+    // Convert EVERY notifications column backed by the enum (could be `type`
+    // and/or `category`) to plain VARCHAR, preserving its current text values.
+    await db.query(`
+      DO $$
+      DECLARE
+        col text;
+      BEGIN
+        FOR col IN
+          SELECT column_name
+            FROM information_schema.columns
+           WHERE table_name = 'notifications'
+             AND udt_name   = 'notification_category'
+        LOOP
+          EXECUTE format('ALTER TABLE notifications ALTER COLUMN %I DROP DEFAULT', col);
+          EXECUTE format('ALTER TABLE notifications ALTER COLUMN %I TYPE VARCHAR(40) USING %I::text', col, col);
+        END LOOP;
+      END $$;
+    `);
 
-    // Enum type not present → nothing to reconcile.
-    if (rows.length === 0) return;
-
-    const existing = new Set(rows.map(r => r.label));
-    const missing = CANONICAL_VALUES.filter(v => !existing.has(v));
-
-    if (missing.length === 0) return; // already complete
-
-    for (const value of missing) {
-      try {
-        // IF NOT EXISTS guards against a concurrent add; identifier is from our
-        // own constant list (never user input), so simple interpolation is safe.
-        await db.query(
-          `ALTER TYPE notification_category ADD VALUE IF NOT EXISTS '${value}'`
-        );
-      } catch (innerErr) {
-        console.error(
-          `⚠️  Could not add '${value}' to notification_category enum:`,
-          innerErr.message
-        );
-      }
-    }
-    console.log(
-      `✅ notification_category enum reconciled (added: ${missing.join(', ')}).`
-    );
+    // Drop the orphaned enum type (best-effort — harmless if still referenced
+    // elsewhere or already gone).
+    await db.query(`DROP TYPE IF EXISTS notification_category`);
   } catch (err) {
-    // Never let enum reconciliation abort the wider migration run.
-    console.error('⚠️  notification_category enum check skipped:', err.message);
+    // Never let this reconciliation abort the wider migration run.
+    console.error('⚠️  notification_category enum neutralize skipped:', err.message);
   }
 }
 
@@ -1288,6 +1321,8 @@ async function ensureRequestTables() {
     await db.query(`ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS receipt_issued_at        TIMESTAMP`);
     await db.query(`ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS sent_at                  TIMESTAMP`);
     await db.query(`ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS sent_by                  INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    // Number of copies requested (only meaningful for additional_copies). Default 1.
+    await db.query(`ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS copies                   INTEGER DEFAULT 1`);
 
     // Allow the 'rejected' top-level status (request rejected at review).
     await db.query(`ALTER TABLE client_requests DROP CONSTRAINT IF EXISTS client_requests_status_check`);

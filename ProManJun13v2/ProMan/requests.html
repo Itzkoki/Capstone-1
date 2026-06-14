@@ -90,6 +90,13 @@
           </button>
         </div>
       </div>
+      <div id="copies-box" style="display:none;margin-top:14px;">
+        <div class="f-field" style="max-width:240px;">
+          <label>How many copies? *</label>
+          <input id="copies" type="number" min="1" max="50" step="1" value="1">
+        </div>
+        <div style="font-size:12px;color:#718096;margin-top:4px;">Specify the number of report copies you need (1–50). A processing fee applies per request.</div>
+      </div>
       <div id="concern-box" style="display:none;margin-top:14px;">
         <label style="font-size:12px;font-weight:700;color:#2d3748;">Concerns Encountered on the Report</label>
         <div class="chk-grid">
@@ -129,6 +136,7 @@
       document.getElementById('nat-copies').classList.toggle('nature-card--sel',n==='additional_copies');
       document.getElementById('nat-concern').classList.toggle('nature-card--sel',n==='report_concern');
       document.getElementById('concern-box').style.display=n==='report_concern'?'block':'none';
+      document.getElementById('copies-box').style.display=n==='additional_copies'?'block':'none';
     }
     function readFileAsDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);})}
     async function submitRequest(){
@@ -137,8 +145,14 @@
       const description=document.getElementById('description').value.trim();
       if(!nature){BPSToast.warning('Please choose the nature of your request.',{title:'Missing Field'});return;}
       if(!familyName||!givenName){BPSToast.warning('Client family name and given name are required.',{title:'Missing Field'});return;}
+      let copies=1;
+      if(nature==='additional_copies'){
+        copies=parseInt(document.getElementById('copies').value,10);
+        if(!copies||copies<1){BPSToast.warning('Please specify how many copies you need (at least 1).',{title:'Missing Field'});return;}
+        if(copies>50){BPSToast.warning('You can request up to 50 copies per request.',{title:'Too Many Copies'});return;}
+      }
       if(!description){BPSToast.warning('Please provide a brief description of your concern.',{title:'Missing Field'});return;}
-      const payload={nature,familyName,givenName,
+      const payload={nature,familyName,givenName,copies,
         mi:document.getElementById('mi').value.trim(),
         guardianName:document.getElementById('guardianName').value.trim(),
         assessmentDate:document.getElementById('assessmentDate').value||null,
@@ -164,6 +178,7 @@
           BPSToast.success('Submitted! Ticket: '+json.data.ticket_number+'. Track it in My Tickets.',{title:'Request Received',duration:5000});
           ['familyName','givenName','mi','guardianName','assessmentDate','contactNumber','centerBranch','concernOther','description'].forEach(id=>document.getElementById(id).value='');
           document.querySelectorAll('#concern-box input[type=checkbox]').forEach(c=>c.checked=false);
+          document.getElementById('copies').value='1';
           fileInput.value='';setNature(null);nature=null;
           document.querySelectorAll('.nature-card').forEach(c=>c.classList.remove('nature-card--sel'));
         }else if(json){BPSToast.error(json.message||'Could not submit your request.',{title:'Submission Error',duration:6000});}

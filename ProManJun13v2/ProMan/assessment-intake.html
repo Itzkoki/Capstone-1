@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment Intake Form | Barcarse Psychological Services</title>
+  <meta name="description" content="Complete the assessment intake form to schedule a psychological assessment at Barcarse Psychological Services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="intakeform.css">
+  <link rel="stylesheet" href="assessment-intake.css">
+  <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+</head>
+<body class="intake-page assessment-page logged-in">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <span class="navbar__title">Barcarse Psychological Services</span>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN WRAPPER ===== -->
+  <div class="intake-wrapper">
+
+    <!-- ============================================ -->
+    <!-- CONSENT AND ACKNOWLEDGMENT (gate before form) -->
+    <!-- ============================================ -->
+    <div class="select-screen active" id="consent-screen">
+      <div class="select-screen__head">
+        <h1 class="select-screen__title">Consent and Acknowledgment</h1>
+        <p class="select-screen__subtitle">Please read and agree to both notices below before starting your assessment intake form.</p>
+      </div>
+
+      <div class="consent-shell">
+        <!-- Data Privacy Act Consent -->
+        <div class="consent-card">
+          <h3 class="consent-card__title">
+            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            Data Privacy Act Consent
+          </h3>
+          <div class="consent-card__body">
+            <p>In compliance with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, its Implementing Rules and Regulations, and applicable issuances of the National Privacy Commission, <strong>Barcarse Psychological Services</strong> collects and processes your personal and sensitive personal information for the following purposes:</p>
+            <ul class="consent-list">
+              <li>To assess your needs, schedule appointments, and deliver counseling and psychological assessment services.</li>
+              <li>To create and maintain your clinical and case records.</li>
+              <li>To contact you and, where necessary, your emergency contact or guardian.</li>
+              <li>To comply with legal, regulatory, and professional obligations.</li>
+            </ul>
+            <p>Your information is kept <strong>strictly confidential</strong>, stored securely, and is accessed only by authorized personnel. It will not be shared with third parties without your consent, except as required or permitted by law. You have the right to access, correct, and object to the processing of your data, and to withdraw this consent at any time, subject to legal and clinical limitations.</p>
+          </div>
+
+          <label class="consent-agree" for="privacy-consent-checkbox">
+            <input type="checkbox" id="privacy-consent-checkbox" onchange="onConsentToggle()">
+            <span>I have read and understood this notice. I freely give my consent to the collection and processing of my personal and sensitive personal information for the purposes stated above.</span>
+          </label>
+        </div>
+
+        <!-- Philippine Code of Ethics for Psychologists -->
+        <div class="consent-card">
+          <h3 class="consent-card__title">
+            <svg viewBox="0 0 24 24"><path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9h-3v-6H9v6H6v-9l6-4.5zM11 14h2v5h-2v-5z"/></svg>
+            Philippine Code of Ethics for Psychologists
+          </h3>
+          <div class="consent-card__body">
+            <p>Barcarse Psychological Services adheres to the <strong>Code of Ethics for Philippine Psychologists</strong> of the Psychological Association of the Philippines (PAP) and the <strong>Philippine Psychology Act of 2009 (Republic Act No. 10029)</strong>. In rendering psychological assessment services, our practitioners are guided by the following core principles:</p>
+            <ul class="consent-list">
+              <li><strong>Respect for the Dignity of Persons and Peoples</strong> — we uphold your worth, rights, autonomy, and informed consent throughout the assessment.</li>
+              <li><strong>Competence</strong> — assessments are conducted only within our practitioners' areas of training, competence, and licensure.</li>
+              <li><strong>Responsibility</strong> — we are accountable for the appropriate use, interpretation, and safekeeping of assessment results.</li>
+              <li><strong>Integrity</strong> — we provide honest, objective, and fair professional services, free from conflicts of interest.</li>
+              <li><strong>Confidentiality</strong> — assessment information is disclosed only with your consent or as required by law and professional standards.</li>
+            </ul>
+            <p>I understand the professional and ethical standards under which this assessment is provided, including the limits of confidentiality where disclosure is required or permitted by law.</p>
+          </div>
+
+          <label class="consent-agree" for="ethics-consent-checkbox">
+            <input type="checkbox" id="ethics-consent-checkbox" onchange="onConsentToggle()">
+            <span>I have read and understood the Philippine Code of Ethics for Psychologists, and I acknowledge and accept the professional and ethical standards described above.</span>
+          </label>
+        </div>
+
+        <div class="consent-footer">
+          <button type="button" class="select-back-btn" onclick="window.location.href='intakeform.html'">← Back</button>
+          <button type="button" class="btn-consent-continue" id="btn-consent-continue" disabled onclick="agreeConsent()">I Agree &amp; Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ASSESSMENT INTAKE FORM FLOW                   -->
+    <!-- ============================================ -->
+    <div id="intake-form-flow" style="display:none;">
+
+      <!-- Selected-service banner -->
+      <div class="service-banner" id="service-banner">
+        <span class="service-banner__text">You are booking: Assessment</span>
+        <button type="button" class="service-banner__change" onclick="window.location.href='intakeform.html'">Change</button>
+      </div>
+
+      <!-- STEPPER -->
+      <div class="stepper" id="stepper">
+        <div class="stepper__progress" id="stepper-progress"></div>
+        <div class="step active" data-step="1">
+          <div class="step__circle">1</div>
+          <div class="step__label">Client Information</div>
+          <div class="step__sublabel">Impormasyon ng Bata</div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step__circle">2</div>
+          <div class="step__label">Additional Information</div>
+          <div class="step__sublabel">Karagdagang Impormasyon</div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step__circle">3</div>
+          <div class="step__label">Assessment Schedule</div>
+          <div class="step__sublabel">Petsa at Oras</div>
+        </div>
+        <div class="step" data-step="4">
+          <div class="step__circle">4</div>
+          <div class="step__label">Review and Submit</div>
+          <div class="step__sublabel">Confirm your details</div>
+        </div>
+      </div>
+
+      <!-- Compact progress indicator (esp. helpful on mobile) -->
+      <div class="step-meta">
+        <span class="step-meta__count" id="step-meta-count">Step 1 of 4</span>
+        <span class="step-meta__name" id="step-meta-name">Client Information</span>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- STEP 1: Client Information                    -->
+      <!-- ============================================ -->
+      <div class="step-panel active" id="panel-1">
+        <div class="intake-card">
+          <h2 class="intake-card__title">Client Information / Impormasyon ng Bata</h2>
+          <p class="intake-card__lead">Please provide basic details about the client. This will help us understand their age, development, and current situation.
+          <em>Ilagay po ang pangunahing impormasyon tungkol sa kliyente. Makakatulong ito upang mas maunawaan namin ang kanyang edad, pag-unlad, at kasalukuyang kalagayan.</em></p>
+
+          <!-- Sub-section: Personal details -->
+          <div class="form-section">
+            <div class="form-section__title">Personal Details</div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="familyName">Family Name (Apelyido) <span class="req">*</span></label>
+                <input type="text" id="familyName" placeholder="e.g. Dela Cruz" required aria-required="true">
+                <div class="field__error-msg" id="err-familyName">Family name is required.</div>
+              </div>
+              <div class="field">
+                <label for="givenName">Given Name (Pangalan) <span class="req">*</span></label>
+                <input type="text" id="givenName" placeholder="e.g. Juan" required aria-required="true">
+                <div class="field__error-msg" id="err-givenName">Given name is required.</div>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="middleName">Middle Name (Gitnang Pangalan)</label>
+                <input type="text" id="middleName" placeholder="e.g. Santos">
+              </div>
+              <div class="field">
+                <label for="nickname">Nickname / Palayaw <span class="req">*</span></label>
+                <input type="text" id="nickname" placeholder="e.g. Juan" required aria-required="true">
+                <div class="field__error-msg" id="err-nickname">Nickname is required.</div>
+              </div>
+            </div>
+
+            <div class="field-row" style="overflow: visible; position: relative; z-index: 10;">
+              <div class="field field--dob">
+                <label>Birthdate / Araw ng Kapanganakan <span class="req">*</span></label>
+                <input type="hidden" id="birthdate" required aria-required="true">
+                <div class="dob-trigger" id="dob-trigger" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Select birthdate">
+                  <span id="dob-display">Select birthdate</span>
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" fill="currentColor"/></svg>
+                </div>
+                <div class="dob-calendar" id="dob-calendar">
+                  <div class="dob-cal__header">
+                    <div class="dob-cal__selects">
+                      <select id="dob-month-select" aria-label="Month"></select>
+                      <select id="dob-year-select" aria-label="Year"></select>
+                    </div>
+                  </div>
+                  <div class="dob-cal__weekdays">
+                    <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                  </div>
+                  <div class="dob-cal__grid" id="dob-cal-grid"></div>
+                  <div class="dob-cal__footer">
+                    <button type="button" class="dob-cal__btn dob-cal__btn--close" id="dob-cal-close">Close</button>
+                    <button type="button" class="dob-cal__btn dob-cal__btn--confirm" id="dob-cal-confirm">Confirm</button>
+                  </div>
+                </div>
+                <div class="field__error-msg" id="err-birthdate">Birthdate is required. Client must be at least 5 years old.</div>
+              </div>
+              <div class="field">
+                <label for="age">Age / Edad <span class="req">*</span></label>
+                <input type="number" id="age" placeholder="e.g. 8" min="5" max="120" required aria-required="true" readonly>
+                <div class="field__hint">Calculated automatically from the birthdate.</div>
+                <div class="field__error-msg" id="err-age">Age must be at least 5.</div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label id="sex-label">Sex / Kasarian <span class="req">*</span></label>
+              <div class="radio-group option-inline" id="sex-group" role="radiogroup" aria-labelledby="sex-label">
+                <label class="radio-option"><input type="radio" name="sex" value="Male"><span>Male</span></label>
+                <label class="radio-option"><input type="radio" name="sex" value="Female"><span>Female</span></label>
+              </div>
+              <div class="field__error-msg" id="err-sex">Please select a sex.</div>
+            </div>
+          </div>
+
+          <!-- Sub-section: Contact details -->
+          <div class="form-section">
+            <div class="form-section__title">Contact Details</div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="contactNumber">Contact Number <span class="req">*</span></label>
+                <input type="tel" id="contactNumber" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required aria-required="true">
+                <div class="field__error-msg" id="err-contactNumber">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
+              </div>
+              <div class="field">
+                <label for="email">Email Address <span class="req">*</span></label>
+                <input type="email" id="email" placeholder="your@email.com" required aria-required="true">
+                <div class="field__error-msg" id="err-email">Enter a valid email address.</div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="homeAddress">Home Address / Tirahan <span class="req">*</span></label>
+              <input type="text" id="homeAddress" placeholder="House #, Street, Barangay, City, Province" required aria-required="true">
+              <div class="field__error-msg" id="err-homeAddress">Home address is required.</div>
+            </div>
+          </div>
+
+          <!-- Sub-section: Language & referral -->
+          <div class="form-section">
+            <div class="form-section__title">Language &amp; Referral</div>
+
+            <div class="field">
+              <label id="language-label">Primary Language(s) Spoken at Home / Pangunahing Wika sa Bahay <span class="req">*</span></label>
+              <div class="choice-grid" id="language-group" role="group" aria-labelledby="language-label">
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="English" onchange="toggleCheck(this,'primaryLanguage')"><span>English</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Tagalog" onchange="toggleCheck(this,'primaryLanguage')"><span>Tagalog</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Cebuano" onchange="toggleCheck(this,'primaryLanguage')"><span>Cebuano</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Ilocano" onchange="toggleCheck(this,'primaryLanguage')"><span>Ilocano</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Hiligaynon" onchange="toggleCheck(this,'primaryLanguage')"><span>Hiligaynon</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Bicol" onchange="toggleCheck(this,'primaryLanguage')"><span>Bicol</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Waray" onchange="toggleCheck(this,'primaryLanguage')"><span>Waray</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Kapampangan" onchange="toggleCheck(this,'primaryLanguage')"><span>Kapampangan</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Pangasinan" onchange="toggleCheck(this,'primaryLanguage')"><span>Pangasinan</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Maguindanao" onchange="toggleCheck(this,'primaryLanguage')"><span>Maguindanao</span></label>
+                <label class="radio-option"><input type="checkbox" name="primaryLanguage" value="Tausug" onchange="toggleCheck(this,'primaryLanguage')"><span>Tausug</span></label>
+              </div>
+              <div class="field__hint">Select all that apply.</div>
+              <div class="field__error-msg" id="err-primaryLanguage">Please select at least one primary language.</div>
+            </div>
+
+            <div class="field">
+              <label id="referral-label">Reason for Referral / Dahilan ng Pagsangguni <span class="req">*</span></label>
+              <div class="radio-group option-stack" id="referral-group" role="radiogroup" aria-labelledby="referral-label">
+                <label class="radio-option">
+                  <input type="radio" name="reasonForReferral" value="Neurodevelopmental Assessment">
+                  <span class="opt-body">
+                    <span class="opt-title">Neurodevelopmental Assessment</span>
+                    <span class="opt-desc">Speech delay, behavioral concerns, suspected ADHD, autism, or intellectual difficulty.</span>
+                    <span class="opt-flag">Face-to-face only</span>
+                  </span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="reasonForReferral" value="Clinical Assessment">
+                  <span class="opt-body">
+                    <span class="opt-title">Clinical Assessment</span>
+                    <span class="opt-desc">Depression, anxiety, trauma, and related concerns.</span>
+                  </span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="reasonForReferral" value="Forensic Assessment">
+                  <span class="opt-body">
+                    <span class="opt-title">Forensic Assessment</span>
+                    <span class="opt-desc">VAWC, child adoption, annulment.</span>
+                  </span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="reasonForReferral" value="Pre-Employment/Neuropsychological">
+                  <span class="opt-body">
+                    <span class="opt-title">Pre-Employment / Neuropsychological</span>
+                    <span class="opt-desc">For internship, employment, or promotion.</span>
+                  </span>
+                </label>
+              </div>
+              <div class="field__error-msg" id="err-reasonForReferral">Please select a reason for referral.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn-next" onclick="goToStep(2)">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- STEP 2: Additional Information                -->
+      <!-- ============================================ -->
+      <div class="step-panel" id="panel-2">
+        <div class="intake-card">
+          <h2 class="intake-card__title">Additional Information / Karagdagang Impormasyon</h2>
+          <p class="intake-card__lead">If you or your child has been assessed before or has a diagnosis, please share it here. You may also include other concerns.<br>
+          <em>Kung nasuri ka na o ang inyong anak dati o may naunang diagnosis, ilagay po dito. Maaari rin kayong magbigay ng iba pang mahalagang detalye o tanong.</em></p>
+
+          <div class="field">
+            <label id="assessedBefore-label">Was the client assessed before? / Nasuri na po ba ang kliyente dati? <span class="req">*</span></label>
+            <div class="yn-group" id="assessedBefore-group" role="radiogroup" aria-labelledby="assessedBefore-label">
+              <div class="yn-option" data-value="Yes" role="radio" tabindex="0" aria-checked="false" onclick="selectYN(this,'assessedBefore')" onkeydown="ynKey(event,this,'assessedBefore')">Yes / Oo</div>
+              <div class="yn-option" data-value="No" role="radio" tabindex="0" aria-checked="false" onclick="selectYN(this,'assessedBefore')" onkeydown="ynKey(event,this,'assessedBefore')">No / Hindi</div>
+            </div>
+            <input type="hidden" id="assessedBefore">
+            <div class="field__error-msg" id="err-assessedBefore">Please select an option.</div>
+          </div>
+
+          <div class="conditional-section" id="assessedBefore-yes-section">
+            <div class="field">
+              <label for="assessedBeforeDetails">If yes: Please specify the year and reason / Paki-ilagay kung kailan at anong uri ng pagsusuri</label>
+              <textarea id="assessedBeforeDetails" placeholder="e.g. 2022 — developmental assessment"></textarea>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="diagnoses-label">Are there any existing diagnoses? / May naunang diagnosis na po ba? <span class="req">*</span></label>
+            <div class="radio-group option-inline" id="diagnoses-group" role="radiogroup" aria-labelledby="diagnoses-label">
+              <label class="radio-option"><input type="radio" name="existingDiagnoses" value="Yes"><span>Yes</span></label>
+              <label class="radio-option"><input type="radio" name="existingDiagnoses" value="No"><span>No</span></label>
+              <label class="radio-option"><input type="radio" name="existingDiagnoses" value="Not Sure"><span>Not Sure</span></label>
+            </div>
+            <div class="field__error-msg" id="err-existingDiagnoses">Please select an option.</div>
+          </div>
+
+          <div class="conditional-section" id="diagnoses-yes-section">
+            <div class="field">
+              <label for="existingDiagnosesDetails">If yes: Please specify / Paki-ilagay ang detalye</label>
+              <textarea id="existingDiagnosesDetails" placeholder="Please specify the diagnosis..."></textarea>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="interventions-label">Is the client currently undergoing any type of intervention or therapy? Check all that apply. <span class="req">*</span><br>
+            <span class="field__sublabel"><em>Ang kliyente po ba ay kasalukuyang sumasailalim sa anumang uri ng therapy o interbensyon? Markahan ang lahat ng tugma.</em></span></label>
+            <div class="choice-grid" id="interventions-group" role="group" aria-labelledby="interventions-label">
+              <label class="radio-option"><input type="checkbox" name="interventions" value="No / Wala" onchange="onInterventionsChange(this)"><span>No / Wala</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Occupational Therapy (OT)" onchange="onInterventionsChange(this)"><span>Occupational Therapy (OT)</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Speech-Language Therapy (SLT)" onchange="onInterventionsChange(this)"><span>Speech-Language Therapy (SLT)</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Behavior Therapy (e.g., ABA)" onchange="onInterventionsChange(this)"><span>Behavior Therapy (e.g., ABA)</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Developmental Pediatric Monitoring" onchange="onInterventionsChange(this)"><span>Developmental Pediatric Monitoring</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Special Education (SPED) Sessions" onchange="onInterventionsChange(this)"><span>Special Education (SPED) Sessions</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Mental Health Counseling / Psychotherapy" onchange="onInterventionsChange(this)"><span>Mental Health Counseling / Psychotherapy</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Physical Therapy" onchange="onInterventionsChange(this)"><span>Physical Therapy</span></label>
+              <label class="radio-option"><input type="checkbox" name="interventions" value="Other" onchange="onInterventionsChange(this)"><span>Other:</span></label>
+            </div>
+            <div class="specify-input" id="intervention-other-specify">
+              <input type="text" id="interventionOther" placeholder="Please specify other intervention / therapy">
+            </div>
+            <div class="field__error-msg" id="err-interventions">Please check at least one option.</div>
+          </div>
+
+          <div class="field">
+            <label id="answeringFor-label">Who are you answering this form for? / Para kanino mo sinasagutan itong form? <span class="req">*</span></label>
+            <div class="radio-group option-inline" id="answeringFor-group" role="radiogroup" aria-labelledby="answeringFor-label">
+              <label class="radio-option"><input type="radio" name="answeringFor" value="For Myself"><span>For Myself</span></label>
+              <label class="radio-option"><input type="radio" name="answeringFor" value="For Others"><span>For Others</span></label>
+            </div>
+            <div class="field__error-msg" id="err-answeringFor">Please select an option.</div>
+          </div>
+        </div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn-prev" onclick="goToStep(1)">← Previous</button>
+          <button type="button" class="btn-next" onclick="goToStep(3)">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- STEP 3: Assessment Schedule                   -->
+      <!-- ============================================ -->
+      <div class="step-panel" id="panel-3">
+        <div class="intake-card">
+          <h2 class="intake-card__title">Assessment Schedule / Petsa at Oras</h2>
+          <p class="intake-card__lead">Please choose your preferred date and time for the assessment. Kindly note that if your selected slot has already reached maximum capacity, we will automatically place you in the nearest available schedule and notify you via call or message.<br>
+          <em>Piliin po ang nais ninyong petsa at oras. Paalala lang po na kung puno na ang inyong napiling petsa o oras, kayo po ay mailalagay sa pinakamalapit na available na iskedyul at aming ipapaalam ito sa inyo sa pamamagitan ng tawag o mensahe.</em></p>
+
+          <input type="hidden" id="prefSchedule" required>
+          <div class="schedule-layout">
+            <div class="field" style="margin-bottom:0;">
+              <label id="schedule-label">Preferred Date and Time <span class="req">*</span></label>
+              <div class="cal-widget" id="cal-widget" role="group" aria-labelledby="schedule-label">
+                <div class="cal-header">
+                  <button type="button" class="cal-nav" id="cal-prev" title="Previous month" aria-label="Previous month">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
+                  </button>
+                  <div class="cal-title" id="cal-title">May 2026</div>
+                  <button type="button" class="cal-nav" id="cal-next" title="Next month" aria-label="Next month">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
+                  </button>
+                </div>
+                <div class="cal-weekdays">
+                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                </div>
+                <div class="cal-grid" id="cal-grid"></div>
+                <div class="cal-time-row">
+                  <label for="cal-time">Time:</label>
+                  <select id="cal-time">
+                    <option value="">Select time</option>
+                    <option value="09:00">9:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="12:00">12:00 PM</option>
+                    <option value="13:00">1:00 PM</option>
+                    <option value="14:00">2:00 PM</option>
+                    <option value="15:00">3:00 PM</option>
+                    <option value="16:00">4:00 PM</option>
+                    <option value="17:00">5:00 PM</option>
+                  </select>
+                </div>
+                <div class="cal-availability" id="cal-availability"></div>
+                <div class="cal-selected" id="cal-selected">No date selected</div>
+              </div>
+              <div class="field__error-msg" id="err-prefSchedule">Please select a date and time.</div>
+            </div>
+
+            <div class="schedule-side">
+              <div class="field">
+                <label id="modality-label">Session Modality <span class="req">*</span></label>
+                <div class="radio-group option-stack" id="modality-group" role="radiogroup" aria-labelledby="modality-label">
+                  <label class="radio-option" id="modality-online-option"><input type="radio" name="modality" value="Online"><span>Online</span></label>
+                  <label class="radio-option"><input type="radio" name="modality" value="Face-to-Face"><span>Face-to-Face</span></label>
+                </div>
+                <div class="field__hint" id="modality-hint">Online sessions are unavailable for Neurodevelopmental Assessment (face-to-face only).</div>
+                <div class="field__error-msg" id="err-modality">Please select a session modality.</div>
+              </div>
+
+              <div class="schedule-note">
+                <strong>Heads up:</strong> if your chosen slot is already full, we will place you in the nearest available schedule and notify you by call or message.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn-prev" onclick="goToStep(2)">← Previous</button>
+          <button type="button" class="btn-next" onclick="goToStep(4)">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- STEP 4: Review and Submit                     -->
+      <!-- ============================================ -->
+      <div class="step-panel" id="panel-4">
+        <div class="intake-card">
+          <h2 class="intake-card__title">Review and Submit</h2>
+          <div id="review-content"></div>
+
+          <div class="security-info">
+            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            <p>Your data is transmitted securely via HTTPS with TLS 1.3 encryption and stored with AES-256 encryption. All sensitive fields are encrypted at rest.</p>
+          </div>
+        </div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn-prev" onclick="goToStep(3)">← Previous</button>
+          <button type="button" class="btn-submit" id="submit-btn" onclick="submitForm()">Submit Assessment Form</button>
+        </div>
+      </div>
+
+    </div><!-- /intake-form-flow -->
+  </div><!-- /intake-wrapper -->
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script>
+    const API_BASE = 'http://localhost:5000';
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    const assessmentConsent = {
+      dataPrivacyConsent: false,
+      codeOfEthicsConsent: false,
+    };
+
+    // ============================================
+    // CONSENT GATE
+    // ============================================
+    function onConsentToggle() {
+      const p = document.getElementById('privacy-consent-checkbox').checked;
+      const e = document.getElementById('ethics-consent-checkbox').checked;
+      document.getElementById('btn-consent-continue').disabled = !(p && e);
+    }
+
+    function agreeConsent() {
+      const p = document.getElementById('privacy-consent-checkbox').checked;
+      const e = document.getElementById('ethics-consent-checkbox').checked;
+      if (!p || !e) return;
+      assessmentConsent.dataPrivacyConsent = true;
+      assessmentConsent.codeOfEthicsConsent = true;
+      document.getElementById('consent-screen').classList.remove('active');
+      document.getElementById('intake-form-flow').style.display = 'block';
+      updateStepper();
+      showPanel(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================
+    // STEPPER
+    // ============================================
+    const STEP_NAMES = { 1: 'Client Information', 2: 'Additional Information', 3: 'Assessment Schedule', 4: 'Review and Submit' };
+
+    function updateStepper() {
+      document.querySelectorAll('.step').forEach(s => {
+        const n = parseInt(s.dataset.step);
+        s.classList.remove('active', 'completed');
+        if (n === currentStep) s.classList.add('active');
+        else if (n < currentStep) s.classList.add('completed');
+        // Allow jumping back to any already-visited (current or earlier) step.
+        s.setAttribute('data-clickable', n <= currentStep ? 'true' : 'false');
+      });
+      const pct = ((currentStep - 1) / (totalSteps - 1)) * 100;
+      const bar = document.getElementById('stepper-progress');
+      const stepperEl = document.getElementById('stepper');
+      if (bar && stepperEl) {
+        const totalW = stepperEl.offsetWidth - 80;
+        bar.style.width = (totalW * pct / 100) + 'px';
+      }
+      const countEl = document.getElementById('step-meta-count');
+      const nameEl = document.getElementById('step-meta-name');
+      if (countEl) countEl.textContent = `Step ${currentStep} of ${totalSteps}`;
+      if (nameEl) nameEl.textContent = STEP_NAMES[currentStep] || '';
+    }
+
+    // Let users click a visited step in the stepper to jump back to it.
+    document.querySelectorAll('.stepper .step').forEach(s => {
+      s.addEventListener('click', () => {
+        const n = parseInt(s.dataset.step);
+        if (n < currentStep) goToStep(n);   // only backwards — never skips validation
+      });
+    });
+
+    function showPanel(step) {
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + step).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goToStep(step) {
+      if (step > currentStep && !validateStep(currentStep)) return;
+      currentStep = step;
+      updateStepper();
+      showPanel(step);
+      if (step === 4) buildReview();
+    }
+
+    // ============================================
+    // HELPERS
+    // ============================================
+    function showError(id, show) {
+      const el = document.getElementById('err-' + id);
+      if (el) {
+        show ? el.classList.add('show') : el.classList.remove('show');
+        el.setAttribute('role', 'alert');
+      }
+      const inp = document.getElementById(id);
+      if (inp) {
+        show ? inp.classList.add('field-error') : inp.classList.remove('field-error');
+        inp.setAttribute('aria-invalid', show ? 'true' : 'false');
+        if (el) inp.setAttribute('aria-describedby', 'err-' + id);
+      }
+    }
+
+    function getRadio(name) {
+      const checked = document.querySelector('input[name="' + name + '"]:checked');
+      return checked ? checked.value : '';
+    }
+
+    function getCheckboxes(name) {
+      return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(c => c.value);
+    }
+
+    const phPhoneRegex = /^(\+63|0)9\d{9}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // ============================================
+    // YES / NO TOGGLE
+    // ============================================
+    function selectYN(el, hiddenId) {
+      el.parentElement.querySelectorAll('.yn-option').forEach(o => {
+        o.classList.remove('selected');
+        o.setAttribute('aria-checked', 'false');
+      });
+      el.classList.add('selected');
+      el.setAttribute('aria-checked', 'true');
+      document.getElementById(hiddenId).value = el.dataset.value;
+      showError(hiddenId, false);
+      if (hiddenId === 'assessedBefore') {
+        document.getElementById('assessedBefore-yes-section').classList.toggle('show', el.dataset.value === 'Yes');
+      }
+    }
+
+    // Keyboard support for the Yes/No toggle (Enter/Space select; arrows move).
+    function ynKey(event, el, hiddenId) {
+      const key = event.key;
+      if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+        event.preventDefault();
+        selectYN(el, hiddenId);
+      } else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowUp') {
+        event.preventDefault();
+        const opts = Array.from(el.parentElement.querySelectorAll('.yn-option'));
+        const i = opts.indexOf(el);
+        const next = (key === 'ArrowRight' || key === 'ArrowDown')
+          ? opts[(i + 1) % opts.length]
+          : opts[(i - 1 + opts.length) % opts.length];
+        next.focus();
+        selectYN(next, hiddenId);
+      }
+    }
+
+    // ============================================
+    // GENERIC CHECKBOX TOGGLE (multi-select chips)
+    // ============================================
+    function toggleCheck(cb, errId) {
+      cb.closest('.radio-option').classList.toggle('selected', cb.checked);
+      if (errId) showError(errId, false);
+    }
+
+    // ============================================
+    // INTERVENTIONS (checkbox group)
+    // ============================================
+    function onInterventionsChange(cb) {
+      // "No / Wala" is mutually exclusive with the rest.
+      const all = document.querySelectorAll('#interventions-group input[type="checkbox"]');
+      if (cb.value === 'No / Wala' && cb.checked) {
+        all.forEach(c => { if (c.value !== 'No / Wala') c.checked = false; });
+      } else if (cb.value !== 'No / Wala' && cb.checked) {
+        all.forEach(c => { if (c.value === 'No / Wala') c.checked = false; });
+      }
+      // Sync selected styling + "Other" specify input
+      all.forEach(c => c.closest('.radio-option').classList.toggle('selected', c.checked));
+      const otherChecked = Array.from(all).some(c => c.value === 'Other' && c.checked);
+      document.getElementById('intervention-other-specify').classList.toggle('show', otherChecked);
+      showError('interventions', false);
+    }
+
+    // ============================================
+    // RADIO HANDLERS
+    // ============================================
+    document.querySelectorAll('.radio-group input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const group = radio.closest('.radio-group');
+        group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+        radio.closest('.radio-option').classList.add('selected');
+
+        if (radio.name === 'sex') showError('sex', false);
+        if (radio.name === 'primaryLanguage') showError('primaryLanguage', false);
+        if (radio.name === 'answeringFor') showError('answeringFor', false);
+        if (radio.name === 'existingDiagnoses') {
+          document.getElementById('diagnoses-yes-section').classList.toggle('show', radio.value === 'Yes');
+          showError('existingDiagnoses', false);
+        }
+        if (radio.name === 'reasonForReferral') {
+          showError('reasonForReferral', false);
+          applyModalityRule(radio.value);
+        }
+        if (radio.name === 'modality') showError('modality', false);
+      });
+    });
+
+    // Neurodevelopmental Assessment => face-to-face only (Online grayed out).
+    function applyModalityRule(referral) {
+      const onlineOption = document.getElementById('modality-online-option');
+      const onlineInput = onlineOption.querySelector('input');
+      const hint = document.getElementById('modality-hint');
+      const isNeuro = referral === 'Neurodevelopmental Assessment';
+      onlineInput.disabled = isNeuro;
+      onlineOption.classList.toggle('radio-option--disabled', isNeuro);
+      hint.style.display = isNeuro ? 'block' : 'none';
+      if (isNeuro) {
+        if (onlineInput.checked) {
+          onlineInput.checked = false;
+          onlineOption.classList.remove('selected');
+        }
+        // Auto-select Face-to-Face
+        const f2f = document.querySelector('#modality-group input[value="Face-to-Face"]');
+        if (f2f && !f2f.checked) {
+          f2f.checked = true;
+          f2f.closest('.radio-option').classList.add('selected');
+        }
+      }
+    }
+
+    // ============================================
+    // BIRTHDATE CALENDAR WIDGET (same as counseling intake)
+    // Writes YYYY-MM-DD into the hidden #birthdate input and
+    // auto-calculates #age. Enforces a minimum age of 5.
+    // ============================================
+    (function initDobCalendar() {
+      const trigger = document.getElementById('dob-trigger');
+      const display = document.getElementById('dob-display');
+      const calendar = document.getElementById('dob-calendar');
+      const grid = document.getElementById('dob-cal-grid');
+      const monthSelect = document.getElementById('dob-month-select');
+      const yearSelect = document.getElementById('dob-year-select');
+      const closeBtn = document.getElementById('dob-cal-close');
+      const confirmBtn = document.getElementById('dob-cal-confirm');
+      const hiddenInput = document.getElementById('birthdate');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let selectedDate = null;
+      let tempSelected = null;
+
+      const MONTHS = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+
+      MONTHS.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+      monthSelect.value = today.getMonth();
+
+      const currentYear = today.getFullYear();
+      for (let y = currentYear; y >= 1920; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        yearSelect.appendChild(opt);
+      }
+      yearSelect.value = currentYear;
+
+      function renderDobGrid() {
+        const viewMonth = parseInt(monthSelect.value);
+        const viewYear = parseInt(yearSelect.value);
+        const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+        let html = '';
+        for (let i = firstDay - 1; i >= 0; i--) {
+          html += `<button type="button" class="dob-cal__day dob-cal__day--other" disabled>${daysInPrev - i}</button>`;
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          date.setHours(0, 0, 0, 0);
+          const isFuture = date > today;
+          const isToday = date.getTime() === today.getTime();
+          const isSelected = tempSelected && tempSelected.getTime() === date.getTime();
+          let cls = 'dob-cal__day';
+          if (isToday) cls += ' dob-cal__day--today';
+          if (isSelected) cls += ' dob-cal__day--selected';
+          if (isFuture) cls += ' dob-cal__day--disabled';
+          html += `<button type="button" class="${cls}" data-day="${d}" ${isFuture ? 'disabled' : ''}>${d}</button>`;
+        }
+        const totalCells = firstDay + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+          html += `<button type="button" class="dob-cal__day dob-cal__day--other" disabled>${i}</button>`;
+        }
+        grid.innerHTML = html;
+        grid.querySelectorAll('.dob-cal__day:not([disabled])').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const day = parseInt(btn.dataset.day);
+            tempSelected = new Date(parseInt(yearSelect.value), parseInt(monthSelect.value), day);
+            tempSelected.setHours(0, 0, 0, 0);
+            confirmSelection();
+          });
+        });
+      }
+
+      function openCalendar() {
+        tempSelected = selectedDate ? new Date(selectedDate) : null;
+        if (selectedDate) {
+          monthSelect.value = selectedDate.getMonth();
+          yearSelect.value = selectedDate.getFullYear();
+        }
+        renderDobGrid();
+        calendar.classList.add('open');
+      }
+
+      function closeCal() { calendar.classList.remove('open'); }
+
+      function confirmSelection() {
+        if (!tempSelected) {
+          BPSToast.warning('Please select a date.', { title: 'No Date Selected' });
+          return;
+        }
+        selectedDate = new Date(tempSelected);
+        const yyyy = selectedDate.getFullYear();
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(selectedDate.getDate()).padStart(2, '0');
+        hiddenInput.value = `${yyyy}-${mm}-${dd}`;
+        display.textContent = selectedDate.toLocaleDateString('en-PH', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        trigger.classList.add('has-value');
+
+        let age = today.getFullYear() - selectedDate.getFullYear();
+        const m = today.getMonth() - selectedDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < selectedDate.getDate())) age--;
+        if (age > 0) document.getElementById('age').value = age;
+
+        if (age < 5) {
+          showError('birthdate', true);
+          BPSToast.warning('The client must be at least 5 years old to submit the assessment form.', { title: 'Age Requirement' });
+        } else {
+          showError('birthdate', false);
+          showError('age', false);
+        }
+        closeCal();
+      }
+
+      trigger.addEventListener('click', openCalendar);
+      trigger.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCalendar(); } });
+      closeBtn.addEventListener('click', closeCal);
+      confirmBtn.addEventListener('click', confirmSelection);
+      monthSelect.addEventListener('change', renderDobGrid);
+      yearSelect.addEventListener('change', renderDobGrid);
+      document.addEventListener('click', (e) => {
+        if (calendar.classList.contains('open') && !calendar.contains(e.target) && !trigger.contains(e.target)) {
+          closeCal();
+        }
+      });
+    })();
+
+    // ============================================
+    // VALIDATION
+    // ============================================
+    function validateStep(step) {
+      let valid = true;
+      if (step === 1) {
+        const family = document.getElementById('familyName').value.trim();
+        const given = document.getElementById('givenName').value.trim();
+        const nick = document.getElementById('nickname').value.trim();
+        const bd = document.getElementById('birthdate').value;
+        const age = parseInt(document.getElementById('age').value);
+        const sex = getRadio('sex');
+        const contact = document.getElementById('contactNumber').value.trim().replace(/[\s-]/g, '');
+        const em = document.getElementById('email').value.trim();
+        const addr = document.getElementById('homeAddress').value.trim();
+        const lang = getCheckboxes('primaryLanguage');
+        const referral = getRadio('reasonForReferral');
+
+        showError('familyName', !family); if (!family) valid = false;
+        showError('givenName', !given); if (!given) valid = false;
+        showError('nickname', !nick); if (!nick) valid = false;
+
+        let bdInvalid = false;
+        if (!bd) { bdInvalid = true; }
+        else {
+          const d = new Date(bd); const t = new Date();
+          let a = t.getFullYear() - d.getFullYear();
+          const md = t.getMonth() - d.getMonth();
+          if (md < 0 || (md === 0 && t.getDate() < d.getDate())) a--;
+          if (a < 5) bdInvalid = true;
+        }
+        showError('birthdate', bdInvalid); if (bdInvalid) valid = false;
+        showError('age', !age || age < 5); if (!age || age < 5) valid = false;
+        showError('sex', !sex); if (!sex) valid = false;
+        showError('contactNumber', !phPhoneRegex.test(contact)); if (!phPhoneRegex.test(contact)) valid = false;
+        showError('email', !emailRegex.test(em)); if (!emailRegex.test(em)) valid = false;
+        showError('homeAddress', !addr); if (!addr) valid = false;
+        showError('primaryLanguage', lang.length === 0); if (lang.length === 0) valid = false;
+        showError('reasonForReferral', !referral); if (!referral) valid = false;
+      }
+      else if (step === 2) {
+        const assessed = document.getElementById('assessedBefore').value;
+        const diag = getRadio('existingDiagnoses');
+        const interventions = getCheckboxes('interventions');
+        const answering = getRadio('answeringFor');
+
+        showError('assessedBefore', !assessed); if (!assessed) valid = false;
+        showError('existingDiagnoses', !diag); if (!diag) valid = false;
+        showError('interventions', interventions.length === 0); if (interventions.length === 0) valid = false;
+        if (interventions.includes('Other') && !document.getElementById('interventionOther').value.trim()) {
+          showError('interventions', true); valid = false;
+        }
+        showError('answeringFor', !answering); if (!answering) valid = false;
+      }
+      else if (step === 3) {
+        const sched = document.getElementById('prefSchedule').value;
+        const mod = getRadio('modality');
+        showError('prefSchedule', !sched); if (!sched) valid = false;
+        showError('modality', !mod); if (!mod) valid = false;
+      }
+      return valid;
+    }
+
+    // ============================================
+    // CALENDAR WIDGET (same logic as counseling intake)
+    // ============================================
+    (function initCalendar() {
+      const grid = document.getElementById('cal-grid');
+      const title = document.getElementById('cal-title');
+      const prevBtn = document.getElementById('cal-prev');
+      const nextBtn = document.getElementById('cal-next');
+      const timeSelect = document.getElementById('cal-time');
+      const selectedLabel = document.getElementById('cal-selected');
+      const availabilityLabel = document.getElementById('cal-availability');
+      const hiddenInput = document.getElementById('prefSchedule');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let viewYear = today.getFullYear();
+      let viewMonth = today.getMonth();
+      let selectedDate = null;
+      let fullDates = new Set();
+      let dateAvailabilityCache = {};
+
+      const ALL_TIME_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+      const TIME_LABELS = {
+        '09:00':'9:00 AM','10:00':'10:00 AM','11:00':'11:00 AM','12:00':'12:00 PM',
+        '13:00':'1:00 PM','14:00':'2:00 PM','15:00':'3:00 PM','16:00':'4:00 PM','17:00':'5:00 PM'
+      };
+      const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      async function fetchAvailability(dateStr) {
+        if (dateAvailabilityCache[dateStr]) return dateAvailabilityCache[dateStr];
+        try {
+          const token = BPSSession.getToken();
+          if (!token) return null;
+          const res = await fetch(`${API_BASE}/api/appointments/availability?date=${dateStr}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const json = await res.json();
+          if (json.success) {
+            dateAvailabilityCache[dateStr] = json.data;
+            if (json.data.isFull) fullDates.add(dateStr);
+            return json.data;
+          }
+        } catch (e) { console.error('Failed to fetch availability:', e); }
+        return null;
+      }
+
+      async function loadMonthAvailability() {
+        const token = BPSSession.getToken();
+        if (!token) return;
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const promises = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          if (date < today) continue;
+          const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          if (!dateAvailabilityCache[dateStr]) promises.push(fetchAvailability(dateStr));
+        }
+        await Promise.all(promises);
+        renderCalendar();
+      }
+
+      function renderCalendar() {
+        title.textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+        const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+        prevBtn.disabled = isCurrentMonth;
+
+        const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        const startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+        let html = '';
+        for (let i = startOffset - 1; i >= 0; i--) {
+          html += `<button type="button" class="cal-day cal-day--other" disabled>${daysInPrevMonth - i}</button>`;
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(viewYear, viewMonth, d);
+          date.setHours(0, 0, 0, 0);
+          const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const isPast = date < today;
+          const isToday = date.getTime() === today.getTime();
+          const isFull = fullDates.has(dateStr);
+          const isSelected = selectedDate && selectedDate.getTime() === date.getTime();
+          const cached = dateAvailabilityCache[dateStr];
+
+          let cls = 'cal-day';
+          if (isToday) cls += ' cal-day--today';
+          if (isSelected) cls += ' cal-day--selected';
+          if (isPast) cls += ' cal-day--disabled';
+          else if (isFull) cls += ' cal-day--full';
+
+          const disabled = isPast || isFull;
+          let titleAttr = '';
+          if (isFull) titleAttr = 'Fully booked (5/5 clients)';
+          else if (isPast) titleAttr = 'Past date';
+          else if (cached) titleAttr = `${cached.remaining} slot${cached.remaining !== 1 ? 's' : ''} available`;
+
+          html += `<button type="button" class="${cls}" data-date="${dateStr}" ${disabled ? 'disabled' : ''} ${titleAttr ? `title="${titleAttr}"` : ''}>${d}</button>`;
+        }
+        const totalCells = startOffset + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+          html += `<button type="button" class="cal-day cal-day--other" disabled>${i}</button>`;
+        }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.cal-day:not([disabled])').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const parts = btn.dataset.date.split('-');
+            selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            selectedDate.setHours(0, 0, 0, 0);
+            const avail = await fetchAvailability(btn.dataset.date);
+            updateTimeSlots(avail);
+            updateHiddenInput();
+            renderCalendar();
+          });
+        });
+      }
+
+      function updateTimeSlots(avail) {
+        let html = '<option value="">Select time</option>';
+        ALL_TIME_SLOTS.forEach(slot => {
+          const isBooked = avail && avail.bookedSlots && avail.bookedSlots.includes(slot);
+          if (isBooked) html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Booked</option>`;
+          else html += `<option value="${slot}">${TIME_LABELS[slot]}</option>`;
+        });
+        timeSelect.innerHTML = html;
+
+        if (avail) {
+          const rem = avail.remaining; const total = avail.maxPerDay;
+          let cls = 'cal-availability';
+          if (rem <= 1) cls += ' cal-availability--low';
+          else if (rem <= 3) cls += ' cal-availability--medium';
+          else cls += ' cal-availability--good';
+          availabilityLabel.className = cls;
+          availabilityLabel.innerHTML = `<span class="cal-avail-dot"></span> ${rem} of ${total} slot${rem !== 1 ? 's' : ''} available`;
+          availabilityLabel.style.display = 'flex';
+        } else {
+          availabilityLabel.style.display = 'none';
+        }
+
+        if (avail && avail.bookedSlots && avail.bookedSlots.includes(timeSelect.value)) {
+          timeSelect.value = '';
+          hiddenInput.value = '';
+          BPSToast.warning('This appointment time is already taken. Please choose another available time.', { title: 'Time Unavailable' });
+        }
+      }
+
+      function updateHiddenInput() {
+        const time = timeSelect.value;
+        if (selectedDate && time) {
+          const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+          hiddenInput.value = `${dateStr}T${time}`;
+          const dt = new Date(hiddenInput.value);
+          selectedLabel.innerHTML = `Selected: <strong>${dt.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at ${dt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}</strong>`;
+          showError('prefSchedule', false);
+        } else if (selectedDate) {
+          selectedLabel.innerHTML = `Date: <strong>${selectedDate.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong> — please select a time`;
+          hiddenInput.value = '';
+        } else {
+          selectedLabel.textContent = 'No date selected';
+          hiddenInput.value = '';
+        }
+      }
+
+      prevBtn.addEventListener('click', () => {
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        renderCalendar(); loadMonthAvailability();
+      });
+      nextBtn.addEventListener('click', () => {
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        renderCalendar(); loadMonthAvailability();
+      });
+      timeSelect.addEventListener('change', updateHiddenInput);
+
+      renderCalendar();
+      loadMonthAvailability();
+    })();
+
+    // ============================================
+    // REVIEW
+    // ============================================
+    function collectData() {
+      return {
+        formType: 'assessment',
+        serviceType: 'Assessment',
+        familyName: document.getElementById('familyName').value.trim(),
+        givenName: document.getElementById('givenName').value.trim(),
+        middleName: document.getElementById('middleName').value.trim(),
+        nickname: document.getElementById('nickname').value.trim(),
+        birthdate: document.getElementById('birthdate').value,
+        age: document.getElementById('age').value,
+        sex: getRadio('sex'),
+        contactNumber: document.getElementById('contactNumber').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        homeAddress: document.getElementById('homeAddress').value.trim(),
+        primaryLanguage: getCheckboxes('primaryLanguage'),
+        reasonForReferral: getRadio('reasonForReferral'),
+        assessedBefore: document.getElementById('assessedBefore').value,
+        assessedBeforeDetails: document.getElementById('assessedBeforeDetails').value.trim(),
+        existingDiagnoses: getRadio('existingDiagnoses'),
+        existingDiagnosesDetails: document.getElementById('existingDiagnosesDetails').value.trim(),
+        interventions: getCheckboxes('interventions'),
+        interventionOther: document.getElementById('interventionOther').value.trim(),
+        answeringFor: getRadio('answeringFor'),
+        prefSchedule: document.getElementById('prefSchedule').value,
+        modality: getRadio('modality'),
+        dataPrivacyConsent: assessmentConsent.dataPrivacyConsent,
+        codeOfEthicsConsent: assessmentConsent.codeOfEthicsConsent,
+        submittedAt: new Date().toISOString(),
+      };
+    }
+
+    function buildReview() {
+      const d = collectData();
+      const schedVal = d.prefSchedule ? new Date(d.prefSchedule).toLocaleString('en-PH') : '';
+      const fullName = [d.givenName, d.middleName, d.familyName].filter(Boolean).join(' ');
+
+      const sections = [
+        { title: 'Consent', rows: [
+          ['Data Privacy Act', d.dataPrivacyConsent ? '✓ Agreed' : '—'],
+          ['Code of Ethics', d.codeOfEthicsConsent ? '✓ Agreed' : '—'],
+        ]},
+        { title: 'Client Information', rows: [
+          ['Name', fullName],
+          ['Nickname', d.nickname || '—'],
+          ['Birthdate', d.birthdate || '—'],
+          ['Age', d.age || '—'],
+          ['Sex', d.sex || '—'],
+          ['Contact Number', d.contactNumber || '—'],
+          ['Email', d.email || '—'],
+          ['Home Address', d.homeAddress || '—'],
+          ['Primary Language', (d.primaryLanguage && d.primaryLanguage.length) ? d.primaryLanguage.join(', ') : '—'],
+          ['Reason for Referral', d.reasonForReferral || '—'],
+        ]},
+        { title: 'Additional Information', rows: [
+          ['Assessed before', d.assessedBefore || '—'],
+          ...(d.assessedBefore === 'Yes' ? [['Year & reason', d.assessedBeforeDetails || '—']] : []),
+          ['Existing diagnoses', d.existingDiagnoses || '—'],
+          ...(d.existingDiagnoses === 'Yes' ? [['Diagnosis details', d.existingDiagnosesDetails || '—']] : []),
+          ['Current interventions', d.interventions.length ? d.interventions.join(', ') : '—'],
+          ...(d.interventions.includes('Other') ? [['Other intervention', d.interventionOther || '—']] : []),
+          ['Answering for', d.answeringFor || '—'],
+        ]},
+        { title: 'Assessment Schedule', rows: [
+          ['Preferred Date & Time', schedVal || '—'],
+          ['Session Modality', d.modality || '—'],
+        ]},
+      ];
+
+      let html = '';
+      sections.forEach(sec => {
+        html += `<div class="review-section"><div class="review-section__title">${sec.title}</div>`;
+        sec.rows.forEach(([label, value]) => {
+          const display = (value && String(value).length > 80) ? String(value).substring(0, 80) + '...' : (value || '—');
+          html += `<div class="review-row"><span class="review-row__label">${label}</span><span class="review-row__value">${display}</span></div>`;
+        });
+        html += '</div>';
+      });
+      document.getElementById('review-content').innerHTML = html;
+    }
+
+    // ============================================
+    // SUBMIT (same flow as counseling: staged for review, payment after approval)
+    // ============================================
+    async function submitForm() {
+      if (!assessmentConsent.dataPrivacyConsent || !assessmentConsent.codeOfEthicsConsent) {
+        BPSToast.warning('Please provide both consents before submitting.', { title: 'Consent Required' });
+        return;
+      }
+
+      const data = collectData();
+      localStorage.setItem('bps_assessment_intake', JSON.stringify(data));
+
+      const token = typeof BPSSession !== 'undefined' ? BPSSession.getToken() : sessionStorage.getItem('bps_token');
+      if (!token) {
+        BPSToast.warning('Please log in to submit your assessment form.', { title: 'Authentication Required' });
+        return;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.textContent = 'Submitting...';
+      try {
+        const res = await fetch(`${API_BASE}/api/assessment-intake-forms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          BPSToast.success('Your assessment form and appointment have been submitted for review. We’ll notify you once a staff member approves your schedule, and payment will follow then.', { title: 'Submitted for Review', duration: 5000 });
+          setTimeout(() => { window.location.href = 'notifications.html'; }, 2000);
+          return;
+        }
+        BPSToast.error(json.message || 'Failed to submit assessment form. Please try again.', { title: 'Submission Error' });
+      } catch (err) {
+        console.error('Failed to submit assessment form:', err);
+        BPSToast.error('Network error. Please check your connection and try again.', { title: 'Connection Error' });
+      } finally {
+        btn.disabled = false; btn.textContent = 'Submit Assessment Form';
+      }
+    }
+
+    // Init
+    updateStepper();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+</html>

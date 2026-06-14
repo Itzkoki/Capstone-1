@@ -260,10 +260,7 @@ const uploadProof = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Could not record proof of payment. Please try again.' });
     }
 
-    // Notify the client (confirmation) and staff (action required)
-    const user = await User.findById(clientId);
-    const clientName = user ? user.full_name : 'A client';
-
+    // Notify the client only. Staff are not alerted during the payment workflow.
     try {
       await notificationService.notifyUser(
         clientId, 'payment', 'Proof of Payment Received',
@@ -272,13 +269,11 @@ const uploadProof = async (req, res, next) => {
       );
     } catch (_) { /* non-fatal */ }
 
-    try {
-      await notificationService.notifyStaff(
-        'payment', 'Payment Awaiting Verification',
-        `${clientName} submitted proof of payment (${updated.reference_number}, ₱${Number(updated.amount_due).toFixed(2)}, ${updated.payment_option} payment) and is awaiting verification.`,
-        'payments-admin.html'
-      );
-    } catch (_) { /* non-fatal */ }
+    // NOTE: Staff are intentionally NOT notified here. The payment workflow
+    // (proof submitted / awaiting verification) is not exposed to staff via
+    // notifications — staff verify pending payments from the payments dashboard,
+    // and only receive a "Payment Successful" confirmation once a payment is
+    // actually verified (see verifyPayment).
 
     return res.status(200).json({
       success: true,
@@ -412,6 +407,20 @@ const verifyPayment = async (req, res, next) => {
       }
       try {
         await notificationService.notifyUser(updated.client_id, 'payment', 'Payment Verified — Slot Confirmed', msg, `receipt.html?payment=${updated.id}`);
+      } catch (_) { /* non-fatal */ }
+
+      // Staff receive ONLY this confirmation event — never the in-progress
+      // payment workflow. It announces a successfully completed payment and links
+      // to the read-only payments dashboard (not the client payment page).
+      try {
+        const client = await User.findById(updated.client_id);
+        const clientName = client ? client.full_name : 'A client';
+        await notificationService.notifyStaff(
+          'payment', 'Payment Successful',
+          `Payment ${updated.reference_number} (₱${Number(updated.amount_due).toFixed(2)}, ${updated.payment_option} payment) from ${clientName} has been completed and verified.`,
+          'payments-admin.html',
+          adminId // don't notify the staff member who performed the verification
+        );
       } catch (_) { /* non-fatal */ }
 
       return res.status(200).json({ success: true, message: 'Payment verified and slot reserved.', data: updated });

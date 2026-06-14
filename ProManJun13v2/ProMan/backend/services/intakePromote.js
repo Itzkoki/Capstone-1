@@ -14,20 +14,26 @@ async function promoteIntakeForAppointment(appointmentId) {
   if (!appointmentId) return null;
 
   const apptRes = await db.query(
-    `SELECT id, client_id, intake_form_id, pending_intake_data
+    `SELECT id, client_id, intake_form_id, assessment_form_id, pending_intake_data
      FROM appointments WHERE id = $1`,
     [appointmentId]
   );
   if (!apptRes.rowCount) return null;
   const appt = apptRes.rows[0];
 
-  // Already promoted — nothing to do.
+  // Already promoted — nothing to do (either flow).
   if (appt.intake_form_id) return appt.intake_form_id;
+  if (appt.assessment_form_id) return appt.assessment_form_id;
   if (!appt.pending_intake_data) return null;
 
   const f = typeof appt.pending_intake_data === 'string'
     ? JSON.parse(appt.pending_intake_data)
     : appt.pending_intake_data;
+
+  // Assessment bookings are promoted into their own table.
+  if (f.formType === 'assessment' || f.serviceType === 'Assessment') {
+    return promoteAssessment(appt, f);
+  }
 
   const result = await db.query(
     `INSERT INTO intake_forms (
@@ -62,6 +68,54 @@ async function promoteIntakeForAppointment(appointmentId) {
     [intakeId, appointmentId]
   );
   return intakeId;
+}
+
+/**
+ * Promote a booking's staged ASSESSMENT answers into assessment_intake_forms.
+ * Mirrors promoteIntakeForAppointment but targets the assessment table and sets
+ * appointments.assessment_form_id (not intake_form_id).
+ */
+async function promoteAssessment(appt, f) {
+  const interventions = Array.isArray(f.interventions)
+    ? f.interventions.join(', ')
+    : (f.interventions || null);
+  const primaryLanguage = Array.isArray(f.primaryLanguage)
+    ? f.primaryLanguage.join(', ')
+    : (f.primaryLanguage || null);
+
+  const result = await db.query(
+    `INSERT INTO assessment_intake_forms (
+      user_id, family_name, given_name, middle_name, nickname,
+      birthdate, age, sex, contact_number, email, home_address,
+      primary_language, reason_for_referral,
+      assessed_before, assessed_before_details,
+      existing_diagnoses, existing_diagnoses_details,
+      current_interventions, intervention_other, answering_for,
+      preferred_schedule, session_modality,
+      data_privacy_consent, code_of_ethics_consent
+    ) VALUES (
+      $1,$2,$3,$4,$5, $6,$7,$8,$9,$10,$11, $12,$13, $14,$15, $16,$17,
+      $18,$19,$20, $21,$22, $23,$24
+    ) RETURNING id`,
+    [
+      appt.client_id, f.familyName || null, f.givenName || null, f.middleName || null, f.nickname || null,
+      f.birthdate || null, f.age ? parseInt(f.age) : null, f.sex || null, f.contactNumber || null,
+      f.email || null, f.homeAddress || null, primaryLanguage, f.reasonForReferral || null,
+      f.assessedBefore || null, f.assessedBeforeDetails || null,
+      f.existingDiagnoses || null, f.existingDiagnosesDetails || null,
+      interventions, f.interventionOther || null, f.answeringFor || null,
+      f.prefSchedule || null, f.modality || null,
+      f.dataPrivacyConsent === true || f.dataPrivacyConsent === 'true' || f.dataPrivacyConsent === 1,
+      f.codeOfEthicsConsent === true || f.codeOfEthicsConsent === 'true' || f.codeOfEthicsConsent === 1,
+    ]
+  );
+  const assessmentId = result.rows[0].id;
+
+  await db.query(
+    `UPDATE appointments SET assessment_form_id = $1, pending_intake_data = NULL WHERE id = $2`,
+    [assessmentId, appt.id]
+  );
+  return assessmentId;
 }
 
 module.exports = { promoteIntakeForAppointment };

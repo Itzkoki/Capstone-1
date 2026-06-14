@@ -142,6 +142,7 @@
           <div class="info-row"><span class="info-label">Client</span><span class="info-value">${esc(t.client_account_name || fullName || '—')}</span></div>
           <div class="info-row"><span class="info-label">Reference Number</span><span class="info-value"><code>${esc(t.ticket_number)}</code></span></div>
           <div class="info-row"><span class="info-label">Request Type</span><span class="info-value">${esc(t.request_type_label || t.nature)}</span></div>
+          ${t.nature === 'additional_copies' ? `<div class="info-row"><span class="info-label">Copies Requested</span><span class="info-value">${esc(t.copies || 1)}</span></div>` : ''}
           <div class="info-row"><span class="info-label">Date Submitted</span><span class="info-value">${fmtDate(t.created_at)}</span></div>
           <div class="info-row"><span class="info-label">Payment Status</span><span class="info-value">${esc(t.payment_status || '—')}</span></div>
           <div class="info-row"><span class="info-label">Receipt</span><span class="info-value">${t.receipt_number ? '<code>' + esc(t.receipt_number) + '</code>' : '—'}</span></div>

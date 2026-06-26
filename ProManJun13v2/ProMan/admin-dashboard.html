@@ -21,7 +21,7 @@
       <div class="navbar__logo">
         <img src="barcarse logo.jpg" alt="BPS Logo">
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links" id="nav-links"></ul>
@@ -43,6 +43,7 @@
   </div>
 
   <script src="session.js"></script>
+  <script src="role-guard.js"></script>
   <script>
     const API_BASE = 'http://localhost:5000/api';
     const token = BPSSession.getToken();

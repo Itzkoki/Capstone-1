@@ -50,6 +50,7 @@ async function sweepUnpaidIntakes() {
       SELECT a.id AS appt_id
       FROM appointments a
       WHERE a.payment_status IS DISTINCT FROM 'paid_verified'
+        AND a.status NOT IN ('confirmed')
         AND NOT EXISTS (
           SELECT 1 FROM payments p
           WHERE p.appointment_id = a.id

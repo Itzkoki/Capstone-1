@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { authorizeMinRole } = require('../middleware/rbac');
+const { authorizeMinRole, authorize } = require('../middleware/rbac');
 const {
   createPayment, uploadProof, getPayments, getPayment, getPaymentCounts, verifyPayment, updatePaymentOption,
 } = require('../controllers/paymentController');
@@ -20,7 +20,8 @@ router.put('/:id/option',  updatePaymentOption);
 router.get('/',     getPayments);
 router.get('/:id',  getPayment);
 
-// Staff-only verification
-router.put('/:id/verify', authorizeMinRole('psychometrician'), verifyPayment);
+// Payment verification is restricted to Supervising Psychometrician and above.
+// Regular psychometritians cannot verify payments; it requires manual action by SupPsy.
+router.put('/:id/verify', authorize('supervising_psychometrician', 'clinical_director'), verifyPayment);
 
 module.exports = router;

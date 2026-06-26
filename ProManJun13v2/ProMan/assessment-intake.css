@@ -21,17 +21,21 @@
 
 .assessment-page .consent-shell {
   width: 100%;
-  max-width: 780px;
+  max-width: 1040px;
   margin: 0 auto;
+  /* Show the DPA and the Code of Ethics SIDE BY SIDE. The action bar spans both
+     columns below them. Collapses to a single column on narrow screens. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+.assessment-page .consent-footer { grid-column: 1 / -1; }
+@media (max-width: 860px) {
+  .assessment-page .consent-shell { grid-template-columns: 1fr; }
 }
 
-/* Flatten the nested scroll boxes — let the notice flow naturally. */
-.assessment-page .consent-card { margin: 0 0 18px; }
-.assessment-page .consent-card__body {
-  max-height: none;
-  overflow: visible;
-  padding-right: 0;
-}
+.assessment-page .consent-card { margin: 0; }
 .assessment-page .consent-card__title {
   display: flex;
   align-items: center;
@@ -125,7 +129,7 @@
   flex: none;
   min-width: 0;
   padding: 11px 14px;
-  align-items: flex-start;   /* tidy when a label wraps to two lines */
+  align-items: center;
 }
 
 /* Read-only auto-calculated age field reads as derived, not editable. */

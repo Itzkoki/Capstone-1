@@ -7,6 +7,7 @@
 
 const ROLE_LEVELS = {
   client: 0,
+  staff: 1,
   psychometrician: 1,
   supervising_psychometrician: 2,
   qc_psychometrician: 3,

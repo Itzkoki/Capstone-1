@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="toast.css">
   <link rel="stylesheet" href="website-management.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body class="wm-page logged-in">
 
@@ -19,7 +21,7 @@
   <nav class="navbar" id="navbar">
     <a href="landingpage.html" class="navbar__brand">
       <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -107,9 +109,47 @@
     </div>
   </div>
 
+  <!-- ===== PARTNER SCHOOL MODAL ===== -->
+  <div class="wm-overlay" id="partner-modal">
+    <div class="wm-modal">
+      <div class="wm-modal__head">
+        <div class="wm-modal__title" id="partner-modal-title">Add Partner School</div>
+        <div class="wm-modal__sub">Shown in the "Partner Schools" carousel on the landing page.</div>
+      </div>
+      <div class="wm-modal__body">
+        <div class="fld" style="margin-top:0">
+          <label class="fld__label">School Logo</label>
+          <div class="photo-up">
+            <div id="partner-logo-preview-wrap"></div>
+            <div class="photo-up__actions">
+              <button type="button" class="wm-btn wm-btn--ghost wm-btn--sm" id="partner-logo-pick-btn">Upload Logo</button>
+              <button type="button" class="wm-btn wm-btn--danger wm-btn--sm" id="partner-logo-clear-btn">Remove</button>
+              <input type="file" id="partner-logo-input" accept="image/*" hidden>
+            </div>
+          </div>
+          <p class="photo-up-note">Supports PNG, JPG, WebP. Logos are displayed at a consistent size — aspect ratio is preserved.</p>
+        </div>
+        <div class="fld">
+          <label class="fld__label">School Name</label>
+          <input type="text" id="partner-name" placeholder="e.g. University of Santo Tomas">
+        </div>
+        <div class="fld">
+          <label class="fld__label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="partner-enabled" checked style="width:auto"> Show in the carousel
+          </label>
+        </div>
+      </div>
+      <div class="wm-modal__foot">
+        <button class="wm-btn wm-btn--ghost" id="partner-cancel">Cancel</button>
+        <button class="wm-btn wm-btn--primary" id="partner-save">Save School</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== REORDER MODAL (removed) ===== -->
 
   <script src="session.js"></script>
+  <script src="role-guard.js"></script>
   <script src="toast.js"></script>
   <script>
   (function () {
@@ -125,7 +165,7 @@
     // Clinical Director only.
     if (user.role !== 'clinical_director') { window.location.replace('admin-dashboard.html'); return; }
 
-    const toast = (msg, type='success') => (window.BPSToast ? BPSToast[type](msg) : alert(msg));
+    const toast = (msg, type='success') => (window.BPSToast ? BPSToast[type](msg) : BPSModal.alert(msg));
 
     async function apiFetch(path, opts = {}) {
       const res = await fetch(`${API}${path}`, {
@@ -195,7 +235,7 @@
         ],
       },
       services: {
-        name: 'Our Core Services', desc: 'Service cards grid',
+        name: 'Our Core Services', desc: 'Service cards + full detail drawer',
         fields: [
           { key: 'label', label: 'Eyebrow Label', type: 'text' },
           { key: 'heading', label: 'Heading', type: 'text' },
@@ -203,7 +243,13 @@
           { key: 'cards', label: 'Service Cards', type: 'list', tag: 'Service',
             itemFields: [
               { key: 'title', label: 'Title', type: 'text' },
-              { key: 'text', label: 'Description', type: 'textarea' },
+              { key: 'text', label: 'Card Description (shown on the grid)', type: 'textarea' },
+              { key: 'accent', label: 'Accent Colour', type: 'text', hint: 'blue, green, or violet' },
+              { key: 'lead', label: 'Drawer Intro Line', type: 'textarea', hint: 'short lead under the title in the detail drawer' },
+              { key: 'about', label: 'About This Service', type: 'textarea' },
+              { key: 'expect', label: 'What You Can Expect', type: 'stringlist' },
+              { key: 'idealFor', label: 'Ideal For', type: 'stringlist' },
+              { key: 'faqs', label: 'Frequently Asked Questions', type: 'faqlist' },
             ] },
         ],
       },
@@ -223,9 +269,11 @@
           { key: 'subheading', label: 'Subheading', type: 'textarea' },
           { key: 'vision_title', label: 'Vision Card Title', type: 'text' },
           { key: 'vision_text', label: 'Vision Text', type: 'textarea' },
+          { key: 'vision_image', label: 'Vision Image', type: 'image', hint: 'shown beside the Vision text' },
           { key: 'values', label: 'Values (pills)', type: 'taglist' },
           { key: 'mission_title', label: 'Mission Card Title', type: 'text' },
           { key: 'mission_text', label: 'Mission Text', type: 'textarea' },
+          { key: 'mission_image', label: 'Mission Image', type: 'image', hint: 'shown beside the Mission text' },
           { key: 'goals', label: 'Mission Goals', type: 'stringlist' },
           { key: 'history_title', label: 'History Title', type: 'text' },
           { key: 'history_text', label: 'History Text', type: 'textarea' },
@@ -235,37 +283,98 @@
         ],
       },
       about: {
-        name: 'Why Choose Us', desc: 'Stats & key features',
+        name: 'Our Facilities', desc: 'Facility photo carousel on the landing page',
         fields: [
           { key: 'label', label: 'Eyebrow Label', type: 'text' },
           { key: 'heading', label: 'Heading', type: 'text' },
           { key: 'subheading', label: 'Subheading', type: 'textarea' },
-          { key: 'stats', label: 'Statistics', type: 'list', tag: 'Stat',
-            itemFields: [
-              { key: 'number', label: 'Number', type: 'text' },
-              { key: 'label', label: 'Label', type: 'text' },
-            ] },
-          { key: 'features', label: 'Features', type: 'list', tag: 'Feature',
-            itemFields: [
-              { key: 'title', label: 'Title', type: 'text' },
-              { key: 'text', label: 'Description', type: 'textarea' },
-            ] },
-        ],
-      },
-      cta: {
-        name: 'Call to Action', desc: 'Closing banner & buttons',
-        fields: [
-          { key: 'label', label: 'Eyebrow Label', type: 'text' },
-          { key: 'heading', label: 'Heading', type: 'text' },
-          { key: 'subheading', label: 'Subheading', type: 'textarea' },
-          { key: 'primary_label', label: 'Primary Button Label', type: 'text' },
-          { key: 'secondary_label', label: 'Secondary Button Label', type: 'text' },
+          { key: 'facilities', label: 'Facilities', type: 'facilities', hint: 'add a photo + caption for each facility — use wide landscape photos (4:3)' },
         ],
       },
     };
 
-    let STATE = { sections: [], content: {}, team: [] };
+    let STATE = { sections: [], content: {}, team: [], partners: [] };
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+    // Baked-in defaults for the Core Services drawer content. Used to pre-fill
+    // the editor (by card position) when a stored card lacks the richer fields,
+    // so the full live content is editable and a save never blanks the drawer.
+    const SERVICE_DEFAULTS = [
+      {
+        title: 'Psychological Assessment', accent: 'blue',
+        text: 'Comprehensive evaluations using standardized tools to understand cognitive, emotional, and behavioral functioning.',
+        lead: 'Comprehensive evaluations to help us understand your unique cognitive, emotional, and behavioral functioning.',
+        about: 'Our psychological assessments utilize standardized, evidence-based tools to gather important information about your mental health, strengths, and areas of concern. This helps us create an accurate diagnosis and personalized treatment plan.',
+        expect: ['In-depth clinical interview', 'Standardized assessment tools', 'Detailed evaluation and interpretation', 'Personalized recommendations', 'Confidential and compassionate support'],
+        idealFor: ['Mental Health Concerns', 'Learning Difficulties', 'Behavioral Issues', 'Emotional Challenges', 'Personal Growth'],
+        faqs: [
+          { q: 'How long does the assessment take?', a: 'Most assessments are completed in one to three sessions of 60–90 minutes, depending on the type and purpose of the evaluation.' },
+          { q: 'Is the assessment confidential?', a: 'Yes. All results are strictly confidential and shared only with you, or with parties you give written consent to.' },
+          { q: 'Will I receive a written report?', a: 'Every assessment concludes with a clear written interpretation and practical, easy-to-understand recommendations.' },
+        ],
+      },
+      {
+        title: 'Counseling', accent: 'green',
+        text: 'Supportive therapeutic conversations to help you navigate life challenges, relationships, and personal growth.',
+        lead: 'Supportive, confidential conversations to help you navigate life’s challenges at your own pace.',
+        about: 'Counseling provides a safe, non-judgmental space to talk through stress, relationships, transitions, and personal growth — blending evidence-based methods with culturally-sensitive, Filipino-centered care.',
+        expect: ['Warm, judgment-free sessions', 'Goal-focused conversations', 'Practical coping strategies', 'Individual, couples, or family support', 'Online or face-to-face options'],
+        idealFor: ['Stress & Anxiety', 'Relationship Concerns', 'Grief & Loss', 'Life Transitions', 'Self-Discovery'],
+        faqs: [
+          { q: 'How many sessions will I need?', a: 'It varies — some clients feel supported in a few sessions, while others prefer ongoing care. We set a comfortable pace together.' },
+          { q: 'Is counseling available online?', a: 'Yes, we offer secure teleconference sessions as well as in-person appointments.' },
+          { q: 'What happens in the first session?', a: 'We get to know your concerns and goals, answer your questions, and agree on a way forward that feels right for you.' },
+        ],
+      },
+      {
+        title: 'Psychotherapy', accent: 'violet',
+        text: 'Evidence-based therapeutic interventions including CBT, DBT, and other modalities for lasting mental wellness.',
+        lead: 'Deeper, structured clinical care using evidence-based therapies for lasting mental wellness.',
+        about: 'Psychotherapy supports concerns that benefit from ongoing clinical work. Our licensed practitioners match proven modalities — including CBT and DBT — to your needs, reviewing progress collaboratively along the way.',
+        expect: ['Evidence-based treatment plan', 'CBT, DBT & trauma-informed care', 'Regular progress reviews', 'Collaborative, paced sessions', 'Skills for lasting change'],
+        idealFor: ['Mood & Depression', 'Anxiety Disorders', 'Trauma & PTSD', 'Stress-related Conditions', 'Emotional Regulation'],
+        faqs: [
+          { q: 'How is this different from counseling?', a: 'Psychotherapy tends to be deeper and longer-term, addressing clinical concerns with structured, evidence-based treatment.' },
+          { q: 'Which therapy approach will be used?', a: 'Your therapist recommends the best-fit modality (such as CBT or DBT) based on your goals and assessment.' },
+          { q: 'How long does treatment last?', a: 'Treatment length depends on your goals; progress is reviewed regularly so care stays right-sized for you.' },
+        ],
+      },
+      {
+        title: 'Mental Health Programs', accent: 'blue',
+        text: 'Group workshops, community outreach, and organizational mental health programs for collective well-being.',
+        lead: 'Group workshops, community outreach, and organizational well-being initiatives for collective resilience.',
+        about: 'Our mental health programs extend care beyond the clinic — delivering psychoeducation, psychological safety, and awareness initiatives tailored for schools, workplaces, and communities.',
+        expect: ['Customized program design', 'Workplace & school workshops', 'Community awareness drives', 'Seminars for professionals', 'Measurable well-being outcomes'],
+        idealFor: ['Workplaces & HR Teams', 'Schools & Universities', 'Community Organizations', 'Helping Professionals', 'Advocacy Groups'],
+        faqs: [
+          { q: 'Can programs be customized?', a: 'Absolutely — every program is tailored to your group’s size, goals, and context.' },
+          { q: 'Do you run programs on-site?', a: 'Yes, we facilitate both on-site and online, in partnership with licensed professionals.' },
+          { q: 'How do we get started?', a: 'Reach out via Inquire Now and we’ll scope a program that fits your needs and schedule.' },
+        ],
+      },
+    ];
+
+    // Merge baked-in drawer defaults into the loaded services content so every
+    // field is populated in the editor even if only title/text were saved before.
+    function seedServiceDefaults() {
+      const c = STATE.content.services || (STATE.content.services = {});
+      const arr = Array.isArray(c.cards) ? c.cards : [];
+      if (!arr.length) { c.cards = SERVICE_DEFAULTS.map((d) => ({ ...d })); return; }
+      c.cards = arr.map((card, i) => {
+        const d = SERVICE_DEFAULTS[i] || {};
+        const hasArr = (v) => Array.isArray(v) && v.length;
+        return {
+          title: card.title || d.title || '',
+          text: card.text || d.text || '',
+          accent: card.accent || d.accent || 'blue',
+          lead: card.lead || d.lead || '',
+          about: card.about || d.about || '',
+          expect: hasArr(card.expect) ? card.expect : (d.expect || []),
+          idealFor: hasArr(card.idealFor) ? card.idealFor : (d.idealFor || []),
+          faqs: hasArr(card.faqs) ? card.faqs : (d.faqs || []),
+        };
+      });
+    }
 
     // ── Field renderers ──────────────────────
     function fieldSimple(f, val) {
@@ -276,13 +385,52 @@
       return `<div class="fld"><label class="fld__label">${f.label}${hint}</label>${input}</div>`;
     }
 
+    // A row inside a list item's nested string-list (e.g. "What You Can Expect")
+    function subStringRow(key, val = '') {
+      return `<div class="fld" data-subrow style="margin:6px 0 0">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <input type="text" data-lsitem="${key}" value="${esc(val)}">
+          <button type="button" class="cms-item__remove" data-remove-sub style="margin-top:2px">${ICON.trash}</button>
+        </div></div>`;
+    }
+    // A question/answer row inside a list item's nested FAQ list
+    function subFaqRow(key, q = '', a = '') {
+      return `<div class="cms-item" data-subrow data-faqrow="${key}" style="margin-top:8px">
+        <div class="cms-item__top">
+          <span class="cms-item__tag">FAQ</span>
+          <button type="button" class="cms-item__remove" data-remove-sub>${ICON.trash}</button>
+        </div>
+        <div class="fld"><label class="fld__label">Question</label><input type="text" data-faq-q value="${esc(q)}"></div>
+        <div class="fld"><label class="fld__label">Answer</label><textarea data-faq-a>${esc(a)}</textarea></div>
+      </div>`;
+    }
+
     function listItem(f, item = {}) {
       const inner = f.itemFields.map((sf) => {
+        if (sf.type === 'stringlist') {
+          const rows = (Array.isArray(item[sf.key]) ? item[sf.key] : [])
+            .map((v) => subStringRow(sf.key, v)).join('');
+          return `<div class="fld">
+            <label class="fld__label">${sf.label}</label>
+            <div data-lslist-name="${sf.key}">${rows}</div>
+            <button type="button" class="add-row" data-add-lslist="${sf.key}">${ICON.plus} Add item</button>
+          </div>`;
+        }
+        if (sf.type === 'faqlist') {
+          const rows = (Array.isArray(item[sf.key]) ? item[sf.key] : [])
+            .map((qa) => subFaqRow(sf.key, qa && qa.q, qa && qa.a)).join('');
+          return `<div class="fld">
+            <label class="fld__label">${sf.label}</label>
+            <div data-faqlist-name="${sf.key}">${rows}</div>
+            <button type="button" class="add-row" data-add-faq="${sf.key}">${ICON.plus} Add FAQ</button>
+          </div>`;
+        }
         const v = item[sf.key] || '';
+        const hint = sf.hint ? `<span class="fld__hint">${sf.hint}</span>` : '';
         const input = sf.type === 'textarea'
           ? `<textarea data-litem="${sf.key}">${esc(v)}</textarea>`
           : `<input type="text" data-litem="${sf.key}" value="${esc(v)}">`;
-        return `<div class="fld"><label class="fld__label">${sf.label}</label>${input}</div>`;
+        return `<div class="fld"><label class="fld__label">${sf.label}${hint}</label>${input}</div>`;
       }).join('');
       return `<div class="cms-item">
         <div class="cms-item__top">
@@ -328,11 +476,84 @@
       </div>`;
     }
 
+    // Single-image field: a preview + Upload/Remove buttons (same mechanism as
+    // the team-member photo). The selected path is held in a hidden [data-simple]
+    // input so collectSection() picks it up automatically like any other field.
+    function fieldImage(f, val) {
+      const path = (typeof val === 'string') ? val : '';
+      const hint = f.hint ? `<span class="fld__hint">${f.hint}</span>` : '';
+      const preview = path
+        ? `<img class="photo-up__preview" src="${esc(resolveAsset(path))}" alt="preview">`
+        : `<div class="photo-up__ph">No image</div>`;
+      return `<div class="fld">
+        <label class="fld__label">${f.label}${hint}</label>
+        <div class="photo-up" data-img-field="${f.key}">
+          <div data-img-preview>${preview}</div>
+          <div class="photo-up__actions">
+            <button type="button" class="wm-btn wm-btn--ghost wm-btn--sm" data-img-pick>Upload</button>
+            <button type="button" class="wm-btn wm-btn--danger wm-btn--sm" data-img-clear>Remove</button>
+            <input type="file" accept="image/*" hidden data-img-input>
+          </div>
+        </div>
+        <input type="hidden" data-simple="${f.key}" value="${esc(path)}">
+      </div>`;
+    }
+
+    // ── Dynamic facilities list (add/delete photo + caption pairs) ──
+    // Each item reuses the single-image upload machinery, but stores its path
+    // in a [data-fac-image] hidden input so collectSection() emits an array.
+    function facilityItem(it) {
+      const item = it && typeof it === 'object' ? it : {};
+      const path = typeof item.image === 'string' ? item.image : '';
+      const caption = typeof item.caption === 'string' ? item.caption : '';
+      const preview = path
+        ? `<img class="photo-up__preview" src="${esc(resolveAsset(path))}" alt="preview">`
+        : `<div class="photo-up__ph">No image</div>`;
+      return `<div class="cms-item" data-fac-item>
+        <div class="fld">
+          <label class="fld__label">Facility Photo</label>
+          <div class="photo-up">
+            <div data-img-preview>${preview}</div>
+            <div class="photo-up__actions">
+              <button type="button" class="wm-btn wm-btn--ghost wm-btn--sm" data-img-pick>Upload</button>
+              <button type="button" class="wm-btn wm-btn--danger wm-btn--sm" data-img-clear>Remove</button>
+              <input type="file" accept="image/*" hidden data-img-input>
+            </div>
+          </div>
+          <input type="hidden" data-fac-image value="${esc(path)}">
+        </div>
+        <div class="fld" style="margin-top:8px">
+          <label class="fld__label">Caption</label>
+          <input type="text" data-fac-caption value="${esc(caption)}" placeholder="e.g. Consultation Room">
+        </div>
+        <button type="button" class="cms-item__remove" data-remove-item title="Remove facility">${ICON.trash}</button>
+      </div>`;
+    }
+    function fieldFacilities(f, content) {
+      let list = Array.isArray(content && content[f.key]) ? content[f.key] : [];
+      // Backward-compat: build from legacy fac1_image/fac1_caption keys.
+      if (!list.length && content) {
+        for (let i = 1; i <= 30; i++) {
+          if (content[`fac${i}_image`] === undefined && content[`fac${i}_caption`] === undefined) continue;
+          list.push({ image: content[`fac${i}_image`] || '', caption: content[`fac${i}_caption`] || '' });
+        }
+      }
+      const items = list.map((it) => facilityItem(it)).join('');
+      const hint = f.hint ? `<span class="fld__hint">${f.hint}</span>` : '';
+      return `<div class="fld">
+        <label class="fld__label">${f.label}${hint}</label>
+        <div class="cms-list" data-fac-list="${f.key}">${items}</div>
+        <button type="button" class="add-row" data-add-fac="${f.key}">${ICON.plus} Add Facility</button>
+      </div>`;
+    }
+
     function renderField(f, content) {
       const val = content ? content[f.key] : undefined;
       if (f.type === 'list')       return fieldList(f, val);
       if (f.type === 'stringlist') return fieldStringList(f, val);
       if (f.type === 'taglist')    return fieldTagList(f, val);
+      if (f.type === 'facilities') return fieldFacilities(f, content);
+      if (f.type === 'image')      return fieldImage(f, val);
       return fieldSimple(f, val);
     }
 
@@ -469,10 +690,60 @@
             card.querySelector(`[data-tlist-name="${addT.dataset.addTag}"]`).insertAdjacentHTML('beforeend', tagChip(''));
             return;
           }
+          const addFac = e.target.closest('[data-add-fac]');
+          if (addFac) {
+            card.querySelector(`[data-fac-list="${addFac.dataset.addFac}"]`).insertAdjacentHTML('beforeend', facilityItem({}));
+            return;
+          }
+          // nested string-list inside a list item (scoped to the clicked item's field)
+          const addLs = e.target.closest('[data-add-lslist]');
+          if (addLs) {
+            addLs.closest('.fld').querySelector(`[data-lslist-name="${addLs.dataset.addLslist}"]`)
+              .insertAdjacentHTML('beforeend', subStringRow(addLs.dataset.addLslist));
+            return;
+          }
+          // nested FAQ list inside a list item
+          const addFaq = e.target.closest('[data-add-faq]');
+          if (addFaq) {
+            addFaq.closest('.fld').querySelector(`[data-faqlist-name="${addFaq.dataset.addFaq}"]`)
+              .insertAdjacentHTML('beforeend', subFaqRow(addFaq.dataset.addFaq));
+            return;
+          }
+          const rmSub = e.target.closest('[data-remove-sub]');
+          if (rmSub) { rmSub.closest('[data-subrow]').remove(); return; }
+          const imgPick = e.target.closest('[data-img-pick]');
+          if (imgPick) {
+            imgPick.closest('.fld').querySelector('[data-img-input]').click();
+            return;
+          }
+          const imgClear = e.target.closest('[data-img-clear]');
+          if (imgClear) {
+            const fld = imgClear.closest('.fld');
+            const hidden = fld.querySelector('[data-simple], [data-fac-image]');
+            if (hidden) hidden.value = '';
+            fld.querySelector('[data-img-preview]').innerHTML = '<div class="photo-up__ph">No image</div>';
+            return;
+          }
           const rm = e.target.closest('[data-remove-item]');
           if (rm) { rm.closest('.cms-item, .fld').remove(); return; }
           const rmt = e.target.closest('[data-remove-tag]');
           if (rmt) { rmt.closest('.tag-input').remove(); return; }
+        });
+        // Image field: upload the chosen file, then store its path + preview.
+        card.addEventListener('change', async (e) => {
+          const input = e.target.closest('[data-img-input]');
+          if (!input) return;
+          const file = input.files[0];
+          if (!file) return;
+          const fld = input.closest('.fld');
+          const path = await pickAndUpload(file, 'full', fld.querySelector('[data-img-pick]'));
+          if (path) {
+            const hidden = fld.querySelector('[data-simple], [data-fac-image]');
+            if (hidden) hidden.value = path;
+            fld.querySelector('[data-img-preview]').innerHTML =
+              `<img class="photo-up__preview" src="${esc(resolveAsset(path))}" alt="preview">`;
+          }
+          input.value = '';
         });
       });
     }
@@ -483,9 +754,25 @@
       card.querySelectorAll('.cms-card__body [data-simple]').forEach((el) => { obj[el.dataset.simple] = el.value; });
       schema.fields.forEach((f) => {
         if (f.type === 'list') {
-          obj[f.key] = [...card.querySelectorAll(`[data-list-name="${f.key}"] .cms-item`)].map((item) => {
+          const container = card.querySelector(`[data-list-name="${f.key}"]`);
+          const items = container ? [...container.children].filter((el) => el.classList.contains('cms-item')) : [];
+          obj[f.key] = items.map((item) => {
             const o = {};
-            f.itemFields.forEach((sf) => { o[sf.key] = item.querySelector(`[data-litem="${sf.key}"]`)?.value || ''; });
+            f.itemFields.forEach((sf) => {
+              if (sf.type === 'stringlist') {
+                o[sf.key] = [...item.querySelectorAll(`[data-lslist-name="${sf.key}"] [data-lsitem="${sf.key}"]`)]
+                  .map((i) => i.value.trim()).filter(Boolean);
+              } else if (sf.type === 'faqlist') {
+                o[sf.key] = [...item.querySelectorAll(`[data-faqlist-name="${sf.key}"] [data-faqrow="${sf.key}"]`)]
+                  .map((row) => ({
+                    q: (row.querySelector('[data-faq-q]')?.value || '').trim(),
+                    a: (row.querySelector('[data-faq-a]')?.value || '').trim(),
+                  }))
+                  .filter((qa) => qa.q || qa.a);
+              } else {
+                o[sf.key] = item.querySelector(`[data-litem="${sf.key}"]`)?.value || '';
+              }
+            });
             return o;
           });
         } else if (f.type === 'stringlist') {
@@ -494,6 +781,13 @@
         } else if (f.type === 'taglist') {
           obj[f.key] = [...card.querySelectorAll(`[data-tlist-name="${f.key}"] [data-titem]`)]
             .map((i) => i.value.trim()).filter(Boolean);
+        } else if (f.type === 'facilities') {
+          const container = card.querySelector(`[data-fac-list="${f.key}"]`);
+          const items = container ? [...container.querySelectorAll('[data-fac-item]')] : [];
+          obj[f.key] = items.map((it) => ({
+            image: (it.querySelector('[data-fac-image]')?.value || '').trim(),
+            caption: (it.querySelector('[data-fac-caption]')?.value || '').trim(),
+          })).filter((x) => x.image || x.caption);
         }
       });
       return obj;
@@ -660,7 +954,7 @@
 
     async function deleteMember(id) {
       const m = STATE.team.find((x) => x.id === id);
-      if (!confirm(`Remove ${m ? m.name : 'this member'} from the team?`)) return;
+      if (!await BPSModal.confirm(`Remove ${m ? m.name : 'this member'} from the team?`, { title: 'Remove member', confirmText: 'Remove', danger: true })) return;
       const res = await apiFetch(`/landing/team/${id}`, { method: 'DELETE' });
       if (res.success) { STATE.team = STATE.team.filter((x) => x.id !== id); renderTeam(); toast('Member removed.'); }
       else toast(res.message || 'Failed.', 'error');
@@ -687,12 +981,202 @@
         const res = await apiFetch('/landing/admin');
         if (!res.success) throw new Error(res.message || 'Failed to load');
         STATE = res.data;
+        seedServiceDefaults();
         render();
+        renderPartnerSection();
       } catch (err) {
         document.getElementById('wm-content').innerHTML =
           `<div class="wm-loading" style="color:#c62828">Could not load website content: ${esc(err.message)}<br><br>Make sure the backend server is running.</div>`;
       }
     })();
+
+    // ── Partner Schools Management ────────────────────────────────
+    function renderPartnerSection() {
+      const wrap = document.getElementById('wm-content');
+      if (!wrap) return;
+
+      let partnerCard = document.getElementById('partner-schools-card');
+      if (!partnerCard) {
+        partnerCard = document.createElement('div');
+        partnerCard.id = 'partner-schools-card';
+        partnerCard.className = 'cms-card is-open';
+        partnerCard.style.marginTop = '28px';
+        wrap.appendChild(partnerCard);
+      }
+
+      partnerCard.innerHTML = `
+        <div class="cms-card__head" data-toggle-card>
+          <span class="cms-card__index">
+            <svg viewBox="0 0 24 24" width="18" height="18" style="fill:currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          </span>
+          <div class="cms-card__name">Partner Schools<small>Logo carousel shown below the History section</small></div>
+          ${ICON.chev}
+        </div>
+        <div class="cms-card__body">
+          <div class="team-mgr">
+            <div class="team-mgr__head">
+              <div class="team-mgr__title">Partner School Logos<small>Upload a logo for each school · use ◀ ▶ to reorder</small></div>
+              <button type="button" class="wm-btn wm-btn--gold wm-btn--sm" id="add-partner-btn">${ICON.plus} Add School</button>
+            </div>
+            <div class="team-grid" id="partner-grid"></div>
+          </div>
+        </div>`;
+
+      partnerCard.querySelector('[data-toggle-card]').addEventListener('click', () => {
+        partnerCard.classList.toggle('is-open');
+      });
+
+      document.getElementById('add-partner-btn').addEventListener('click', () => openPartnerModal(null));
+      renderPartnerGrid();
+    }
+
+    function renderPartnerGrid() {
+      const grid = document.getElementById('partner-grid');
+      if (!grid) return;
+      if (!STATE.partners || !STATE.partners.length) {
+        grid.innerHTML = `<p style="color:var(--ds-ink-faint);font-size:13px;grid-column:1/-1">No partner schools yet. Click "Add School" to create one.</p>`;
+        return;
+      }
+      grid.innerHTML = STATE.partners.map((p, i) => {
+        const logoSrc = p.logo_path ? esc(resolveAsset(p.logo_path)) : '';
+        const logo = logoSrc
+          ? `<img style="max-width:100%;max-height:80px;object-fit:contain;filter:${p.is_enabled ? 'none' : 'grayscale(1) opacity(.4)'}" src="${logoSrc}" alt="${esc(p.school_name)}">`
+          : `<div class="tm-card__ph" style="height:72px;font-size:12px;padding:8px;text-align:center">${esc(p.school_name || 'No Logo')}</div>`;
+        return `<div class="tm-card ${p.is_enabled ? '' : 'is-hidden'}" data-pid="${p.id}" style="position:relative">
+          ${p.is_enabled ? '' : '<span class="tm-card__hidden-flag">Hidden</span>'}
+          <div style="display:flex;align-items:center;justify-content:center;min-height:88px;padding:8px">${logo}</div>
+          <div class="tm-card__name" style="font-size:12px;text-align:center;padding:0 8px 4px">${esc(p.school_name)}</div>
+          <div class="tm-card__actions">
+            <button class="ro-arrow" style="width:30px;height:30px" data-pmove="up" data-pi="${i}" ${i === 0 ? 'disabled' : ''} title="Move left">${ICON.left}</button>
+            <button class="wm-btn wm-btn--ghost wm-btn--sm" data-edit-partner="${p.id}">${ICON.edit}</button>
+            <button class="wm-btn wm-btn--danger wm-btn--sm" data-del-partner="${p.id}">${ICON.trash}</button>
+            <button class="ro-arrow" style="width:30px;height:30px" data-pmove="down" data-pi="${i}" ${i === STATE.partners.length - 1 ? 'disabled' : ''} title="Move right">${ICON.right}</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('add-partner-btn')?.addEventListener('click', () => openPartnerModal(null));
+      grid.querySelectorAll('[data-edit-partner]').forEach((b) =>
+        b.addEventListener('click', () => openPartnerModal(Number(b.dataset.editPartner))));
+      grid.querySelectorAll('[data-del-partner]').forEach((b) =>
+        b.addEventListener('click', () => deletePartner(Number(b.dataset.delPartner))));
+      grid.querySelectorAll('[data-pmove]').forEach((b) =>
+        b.addEventListener('click', () => movePartner(Number(b.dataset.pi), b.dataset.pmove)));
+    }
+
+    async function movePartner(i, dir) {
+      const j = dir === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= STATE.partners.length) return;
+      [STATE.partners[i], STATE.partners[j]] = [STATE.partners[j], STATE.partners[i]];
+      renderPartnerGrid();
+      const order = STATE.partners.map((p) => p.id);
+      const res = await apiFetch('/landing/partners/order', { method: 'PUT', body: JSON.stringify({ order }) });
+      if (!res.success) toast('Could not save new order.', 'error');
+    }
+
+    async function deletePartner(id) {
+      const p = STATE.partners.find((x) => x.id === id);
+      if (!await BPSModal.confirm(`Remove ${p ? p.school_name : 'this school'} from the carousel?`, { title: 'Remove school', confirmText: 'Remove', danger: true })) return;
+      const res = await apiFetch(`/landing/partners/${id}`, { method: 'DELETE' });
+      if (res.success) { STATE.partners = STATE.partners.filter((x) => x.id !== id); renderPartnerGrid(); toast('Partner school removed.'); }
+      else toast(res.message || 'Failed.', 'error');
+    }
+
+    // ── Partner modal ─────────────────────────────────────────────
+    let editingPartnerId = null;
+    let pendingPartnerLogo = undefined;
+
+    async function uploadPartnerLogoFile(file, btn) {
+      if (!/^image\//.test(file.type || '')) throw new Error('Please choose an image file.');
+      if (file.size > 5 * 1024 * 1024) throw new Error('That image is too large (5 MB max).');
+      const fd = new FormData();
+      fd.append('image', file, file.name);
+      const orig = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+      try {
+        const res = await fetch(`${API}/landing/partners/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+        if (res.status === 401) { window.location.href = 'login.html'; throw new Error('Unauthorized'); }
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.message || `Upload failed (${res.status}).`);
+        return json.data.path;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = orig; }
+      }
+    }
+
+    function renderPartnerLogoPreview(logoPath) {
+      const wrap = document.getElementById('partner-logo-preview-wrap');
+      if (!wrap) return;
+      wrap.innerHTML = logoPath
+        ? `<img class="photo-up__preview" src="${esc(resolveAsset(logoPath))}" alt="logo preview" style="object-fit:contain;background:#f5f5f5">`
+        : `<div class="photo-up__ph" style="font-size:12px">No logo</div>`;
+    }
+
+    function openPartnerModal(id) {
+      editingPartnerId = id;
+      pendingPartnerLogo = undefined;
+      const p = id ? STATE.partners.find((x) => x.id === id) : null;
+      document.getElementById('partner-modal-title').textContent = id ? 'Edit Partner School' : 'Add Partner School';
+      document.getElementById('partner-name').value = p ? p.school_name : '';
+      document.getElementById('partner-enabled').checked = p ? p.is_enabled : true;
+      renderPartnerLogoPreview(p ? p.logo_path : '');
+      document.getElementById('partner-modal').classList.add('active');
+    }
+
+    function closePartnerModal() { document.getElementById('partner-modal').classList.remove('active'); }
+
+    document.getElementById('partner-logo-pick-btn').addEventListener('click', () => document.getElementById('partner-logo-input').click());
+    document.getElementById('partner-logo-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const path = await uploadPartnerLogoFile(file, document.getElementById('partner-logo-pick-btn'));
+        if (path) { pendingPartnerLogo = path; renderPartnerLogoPreview(path); }
+      } catch (err) { toast(err.message || 'Upload failed.', 'error'); }
+      e.target.value = '';
+    });
+    document.getElementById('partner-logo-clear-btn').addEventListener('click', () => {
+      pendingPartnerLogo = null;
+      renderPartnerLogoPreview('');
+    });
+    document.getElementById('partner-cancel').addEventListener('click', closePartnerModal);
+
+    document.getElementById('partner-save').addEventListener('click', async (e) => {
+      const name = document.getElementById('partner-name').value.trim();
+      if (!name) { toast('School name is required.', 'error'); return; }
+      const payload = {
+        school_name: name,
+        is_enabled: document.getElementById('partner-enabled').checked,
+      };
+      if (pendingPartnerLogo !== undefined) payload.logo_path = pendingPartnerLogo;
+
+      e.target.disabled = true;
+      try {
+        const res = editingPartnerId
+          ? await apiFetch(`/landing/partners/${editingPartnerId}`, { method: 'PUT', body: JSON.stringify(payload) })
+          : await apiFetch('/landing/partners', { method: 'POST', body: JSON.stringify(payload) });
+        if (res.success) {
+          if (editingPartnerId) {
+            const idx = STATE.partners.findIndex((x) => x.id === editingPartnerId);
+            STATE.partners[idx] = res.data;
+          } else {
+            STATE.partners.push(res.data);
+          }
+          closePartnerModal();
+          renderPartnerGrid();
+          toast(editingPartnerId ? 'Partner school updated.' : 'Partner school added.');
+        } else toast(res.message || 'Save failed.', 'error');
+      } catch { toast('Network error.', 'error'); }
+      finally { e.target.disabled = false; }
+    });
+
+    document.getElementById('partner-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'partner-modal') closePartnerModal();
+    });
   })();
   </script>
   <script src="navbar.js"></script>

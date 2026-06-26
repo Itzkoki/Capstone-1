@@ -6,38 +6,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PSYGEN — Psychological Report Module</title>
   <meta name="description" content="Professional psychological assessment report generation and management system">
-  <link rel="stylesheet" href="psych-reports.css">
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="psych-reports.css">
+  <link rel="stylesheet" href="captcha.css">
+  <style>
+    /* Shared BPS calendar widget styles (Date of Assessment picker) */
+    #cAssessCal .cal-widget { background:#fff; border:1.5px solid #e2e8f0; border-radius:16px; padding:20px; max-width:380px; box-shadow:0 2px 12px rgba(0,0,0,0.04); }
+    #cAssessCal .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    #cAssessCal .cal-title { font-weight:700; font-size:16px; color:#1B2230; text-align:center; }
+    #cAssessCal .cal-nav { width:34px; height:34px; border:1.5px solid #e2e8f0; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all .2s ease; padding:0; }
+    #cAssessCal .cal-nav:hover { border-color:#C0922E; color:#C0922E; background:#f8f7ff; }
+    #cAssessCal .cal-nav:disabled { opacity:.3; cursor:not-allowed; pointer-events:none; }
+    #cAssessCal .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; margin-bottom:8px; }
+    #cAssessCal .cal-weekdays span { font-size:12px; font-weight:600; color:#94a3b8; padding:6px 0; }
+    #cAssessCal .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    #cAssessCal .cal-day { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:500; color:#1B2230; border:none; background:none; border-radius:10px; cursor:pointer; transition:all .2s ease; padding:0; position:relative; }
+    #cAssessCal .cal-day:hover:not(.cal-day--disabled):not(.cal-day--other) { background:#f0efff; color:#C0922E; }
+    #cAssessCal .cal-day--today { border:2px solid #C0922E; font-weight:700; }
+    #cAssessCal .cal-day--selected { background:#C0922E !important; color:#fff !important; font-weight:700; box-shadow:0 2px 10px rgba(192,146,46,0.35); }
+    #cAssessCal .cal-day--other { color:#cbd5e1; cursor:default; }
+    #cAssessCal .cal-day--disabled { color:#cbd5e1; cursor:not-allowed; text-decoration:line-through; }
+    #cAssessCal .cal-selected { margin-top:14px; font-size:13px; color:#475569; }
+    #cAssessCal .cal-selected strong { color:#1B2230; }
+  </style>
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 
 <body>
   <div class="bg-gradient"></div>
+
+  <!-- Global Navbar -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+      </div>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="notif-bell" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="#1B2230"/></svg>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </a>
+    </div>
+  </nav>
+
   <div class="app-layout">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <h1>PSYGEN</h1>
-        <p>Report Module</p>
+        <div class="sidebar-brand__row">
+          <img src="PsyGen-Logo.png" class="sidebar-brand__logo" alt="PsyGen Logo">
+          <div class="sidebar-brand__text">
+            <h1><span class="brand-psy">PSY</span><span class="brand-gen">GEN</span></h1>
+            <p>Report Module</p>
+          </div>
+        </div>
       </div>
       <nav class="sidebar-nav">
         <div class="nav-section-title">Reports</div>
-        <a class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
+        <a class="nav-item" data-view="dashboard" onclick="showView('dashboard')">
           <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
-            </svg></span> Dashboard
+              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+            </svg></span> My Reports
         </a>
-        <a class="nav-item" data-view="create" onclick="showView('create')">
+        <a id="nav-new-report" class="nav-item" data-view="create" onclick="showView('create')">
           <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
               <path
                 d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
             </svg></span> New Report
-        </a>
-        <a class="nav-item" data-view="templates" onclick="showView('templates')">
-          <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path
-                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-            </svg></span> Templates
         </a>
         <a class="nav-item" data-view="archive" onclick="showView('archive')">
           <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -56,6 +99,11 @@
                 <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
               </svg></span> Report Concerns <span class="badge" id="reportConcernBadge">0</span>
           </a>
+          <a class="nav-item" data-view="legacyVerifications" onclick="showView('legacyVerifications')">
+            <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+              </svg></span> Legacy Verifications <span class="badge" id="legacyBadge">0</span>
+          </a>
           <a class="nav-item" data-view="reviews" onclick="showView('reviews')">
             <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path
@@ -68,12 +116,6 @@
                   d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
               </svg></span> Audit Logs
           </a>
-          <a class="nav-item" data-view="manageTpl" onclick="showView('manageTpl')">
-            <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path
-                  d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z" />
-              </svg></span> Manage Templates
-          </a>
           <a class="nav-item" data-view="trash" onclick="showView('trash')">
             <span class="icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path
@@ -84,12 +126,12 @@
       </nav>
       <!-- Exit Button -->
       <div style="padding:12px 16px">
-        <a href="admin-dashboard.html" class="btn btn-outline" style="width:100%;justify-content:center;gap:8px">
+        <a href="case-dashboard.html" class="btn btn-outline" style="width:100%;justify-content:center;gap:8px">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path
               d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
           </svg>
-          Exit
+          Back to Cases
         </a>
       </div>
       <div class="sidebar-footer">
@@ -112,7 +154,7 @@
             <h2>Report Dashboard</h2>
             <p class="subtitle">Manage your psychological assessment reports</p>
           </div>
-          <button class="btn btn-primary" onclick="showView('create')"><svg viewBox="0 0 24 24" width="16" height="16"
+          <button id="btn-new-report" class="btn btn-primary" onclick="showView('create')"><svg viewBox="0 0 24 24" width="16" height="16"
               fill="currentColor">
               <path
                 d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
@@ -131,6 +173,10 @@
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="finalized">Finalized</option>
+                <option value="sig:required">Signature Required</option>
+                <option value="sig:ready_for_release">Ready for Release</option>
+                <option value="sig:released">Released</option>
+                <option value="mod:required">Modification Required</option>
               </select>
             </div>
           </div>
@@ -155,7 +201,8 @@
                 <th>Client</th>
                 <th>Template</th>
                 <th>Status</th>
-                <th>Date</th>
+                <th>Created at</th>
+                <th>Modified at</th>
                 <th class="col-actions">Actions</th>
               </tr>
             </thead>
@@ -243,7 +290,7 @@
             <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">Select a client who has completed
               an intake form. Client information is auto-populated from the intake submission.</p>
             <div class="form-group">
-              <label>Client (from Intake Form) *</label>
+              <label>Client (from Assessment Form) *</label>
               <select class="form-control" id="cClientSelect" onchange="onClientSelect()">
                 <option value="">— Select a client —</option>
               </select>
@@ -267,8 +314,11 @@
                 </div>
               </div>
             </div>
-            <div class="form-group"><label>Date of Assessment *</label><input class="form-control" id="cAssessDate"
-                type="date"></div>
+            <div class="form-group"><label>Date of Assessment *</label>
+              <input type="hidden" id="cAssessDate">
+              <div id="cAssessCal"></div>
+              <div id="err-cAssessDate" style="display:none;color:#dc2626;font-size:13px;margin-top:8px;font-weight:600;">Please select a valid assessment date (today or earlier — future dates are not allowed).</div>
+            </div>
             <div style="display:flex;gap:12px;margin-top:20px">
               <button class="btn btn-outline" onclick="nextCreateStep(1)"><svg viewBox="0 0 24 24" width="14"
                   height="14" fill="currentColor">
@@ -297,18 +347,26 @@
               </table>
             </div>
 
-            <!-- Tests Administered (neurodevelopmental / clinical) -->
-            <div class="form-group" id="testsAdminBlock"><label>Tests Administered (comma-separated)</label><input class="form-control"
-                id="cTests" placeholder="e.g. WISC-V, AQ-10, BASC-3"></div>
-
             <!-- Qualitative notes — shown for ALL templates. The generated
                  narratives are based on these fields. -->
-            <div class="form-group"><label>Observational Notes</label><textarea class="form-control" id="cObsNotes"
-                placeholder="Describe behavioral observations during assessment..."></textarea></div>
-            <div class="form-group"><label>Behavioral Observations</label><textarea class="form-control" id="cBehObs"
-                placeholder="Note any significant behavioral patterns..."></textarea></div>
-            <div class="form-group"><label>Interview Findings</label><textarea class="form-control" id="cInterview"
-                placeholder="Key interview responses and findings..."></textarea></div>
+            <div class="form-group">
+              <label>Observational Notes</label>
+              <textarea class="form-control" id="cObsNotes"
+                placeholder="Describe behavioral observations during assessment (min. 5 words, meaningful clinical content)..."></textarea>
+              <div class="field-validation-msg" id="val-cObsNotes"></div>
+            </div>
+            <div class="form-group">
+              <label>Behavioral Observations</label>
+              <textarea class="form-control" id="cBehObs"
+                placeholder="Note any significant behavioral patterns observed (min. 5 words)..."></textarea>
+              <div class="field-validation-msg" id="val-cBehObs"></div>
+            </div>
+            <div class="form-group">
+              <label>Interview Findings</label>
+              <textarea class="form-control" id="cInterview"
+                placeholder="Key interview responses and clinical findings (min. 5 words)..."></textarea>
+              <div class="field-validation-msg" id="val-cInterview"></div>
+            </div>
 
             <div style="display:flex;gap:12px;margin-top:20px">
               <button class="btn btn-outline" onclick="nextCreateStep(2)"><svg viewBox="0 0 24 24" width="14"
@@ -357,35 +415,25 @@
                     width="14" height="14" fill="currentColor">
                     <path
                       d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
-                  </svg> Versions</button> <button class="btn btn-sm btn-success" onclick="submitReport()"><svg
+                  </svg> Versions</button> <button id="btnSubmitTopBar" class="btn btn-sm btn-success" onclick="submitReport()"><svg
                     viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                  </svg> Submit for Review</button></div>
+                  </svg> <span id="submitBtnLabel">Submit for Review</span></button></div>
             </div>
+            <div id="completenessPanel" style="display:none;margin-bottom:16px"></div>
             <div class="sections-editor" id="sectionsEditor"></div>
             <div style="display:flex;gap:12px;margin-top:20px">
               <button class="btn btn-outline" onclick="nextCreateStep(4)"><svg viewBox="0 0 24 24" width="14"
                   height="14" fill="currentColor">
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                 </svg> Back</button>
-              <button class="btn btn-primary" onclick="submitReport()">Submit for Review <svg viewBox="0 0 24 24"
+              <button id="btnSubmitBottom" class="btn btn-primary" onclick="submitReport()"><span id="submitBtnLabelBottom">Submit for Review</span> <svg viewBox="0 0 24 24"
                   width="14" height="14" fill="currentColor">
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                 </svg></button>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- ═══ Templates View ═══ -->
-      <div class="view" id="view-templates">
-        <div class="page-header">
-          <div>
-            <h2>Report Templates</h2>
-            <p class="subtitle">Available assessment templates</p>
-          </div>
-        </div>
-        <div class="template-grid" id="viewTemplateGrid"></div>
       </div>
 
       <!-- ═══ Pending Reviews View (Director) ═══ -->
@@ -414,12 +462,14 @@
             <h2 id="detailTitle">Report Detail</h2>
             <p class="subtitle" id="detailSubtitle"></p>
           </div>
-          <div id="detailActions"></div>
         </div>
-        <div class="tabs">
-          <div class="tab active" onclick="showDetailTab('info')">Overview</div>
-          <div class="tab" onclick="showDetailTab('sections')">Sections</div>
-          <div class="tab" onclick="showDetailTab('history')">Versions</div>
+        <div class="detail-tabs-bar">
+          <div class="tabs">
+            <div class="tab active" onclick="showDetailTab('info')">Overview</div>
+            <div class="tab" onclick="showDetailTab('sections')">Sections</div>
+            <div class="tab" id="detailTabVersions" onclick="showDetailTab('history')">Versions</div>
+          </div>
+          <div id="detailActions"></div>
         </div>
         <div id="detailContent"></div>
       </div>
@@ -446,21 +496,6 @@
             <tbody id="auditBody"></tbody>
           </table>
         </div>
-      </div>
-
-      <!-- ═══ Manage Templates View (Director) ═══ -->
-      <div class="view" id="view-manageTpl">
-        <div class="page-header">
-          <div>
-            <h2>Manage Templates</h2>
-            <p class="subtitle">Create and edit report templates</p>
-          </div>
-          <button class="btn btn-primary" onclick="showTplModal()"><svg viewBox="0 0 24 24" width="14" height="14"
-              fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg> New Template</button>
-        </div>
-        <div id="manageTplList"></div>
       </div>
 
       <!-- ═══ Archive View ═══ -->
@@ -638,7 +673,7 @@
         <div class="page-header">
           <div>
             <h2>Report Concerns</h2>
-            <p class="subtitle">Client-submitted concerns about released reports — investigate, edit the report, and resolve</p>
+            <p class="subtitle">Client concerns about released reports — approve &amp; collect payment, route to the psychologist, then release or request revision</p>
           </div>
           <button class="btn btn-outline" onclick="loadReportConcerns()"><svg viewBox="0 0 24 24" width="16" height="16"
               fill="currentColor">
@@ -653,8 +688,12 @@
               <select class="filter-select" id="rcStatusFilter" onchange="renderReportConcerns()">
                 <option value="">All Status</option>
                 <option value="Pending Review">Pending Review</option>
-                <option value="Under Investigation">Under Investigation</option>
-                <option value="Client Action Required">Client Action Required</option>
+                <option value="Awaiting Payment">Awaiting Payment</option>
+                <option value="Payment Verification Pending">Payment Verification Pending</option>
+                <option value="Payment Verification Failed">Payment Verification Failed</option>
+                <option value="Payment Verified">Payment Verified</option>
+                <option value="Modified Report Submitted">Modified Report Submitted</option>
+                <option value="Revision Required">Revision Required</option>
                 <option value="Resolved">Resolved</option>
                 <option value="Rejected">Rejected</option>
               </select>
@@ -681,7 +720,53 @@
           </div>
         </div>
       </div>
+
+      <!-- ═══ Legacy Verifications (old / physical reports) ═══ -->
+      <div class="view" id="view-legacyVerifications">
+        <div class="page-header">
+          <div>
+            <h2>Legacy Verifications</h2>
+            <p class="subtitle">Old clients requesting a copy or raising a concern about a report not in the system — verify identity, locate &amp; digitize the report, then it flows into the normal pipeline</p>
+          </div>
+          <button class="btn btn-outline" onclick="loadLegacyVerifications()"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg> Refresh</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Legacy Requests</h3></div>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Reference</th>
+                <th>Request</th>
+                <th>Date Submitted</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="legacyBody"></tbody>
+          </table>
+          <div class="empty-state hidden" id="emptyLegacy">
+            <div class="icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity="0.5">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg></div>
+            <h4>No legacy requests</h4>
+            <p>Requests about older/physical reports will appear here for identity &amp; records verification.</p>
+          </div>
+        </div>
+      </div>
     </main>
+  </div>
+
+  <!-- ═══ Legacy Verification — Review Modal ═══ -->
+  <div class="modal-overlay" id="lvReviewModal">
+    <div class="modal" style="max-width:680px;max-height:92vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <h3 id="lvReviewTitle">Verify Legacy Request</h3>
+        <button class="modal-close" onclick="closeModal('lvReviewModal')">&#x2715;</button>
+      </div>
+      <div id="lvReviewBody" style="overflow-y:auto;flex:1;padding-right:4px;"></div>
+      <div id="lvReviewActions" style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;"></div>
+    </div>
   </div>
 
   <!-- Version History Modal -->
@@ -742,13 +827,82 @@
     </div>
   </div>
 
+  <!-- Mental Health Certificate Options Modal -->
+  <div class="modal-overlay" id="certOptionsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:28px 32px;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.22);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#1E3A8A"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+          <span style="font-size:16px;font-weight:700;color:#1B2230;">PDF Generation Options</span>
+        </div>
+        <button onclick="closeCertOptionsModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#98A2B3;line-height:1;">&#x2715;</button>
+      </div>
+
+      <!-- Certificate toggle -->
+      <div style="border:1.5px solid #E4E7EC;border-radius:10px;padding:14px 16px;margin-bottom:18px;background:#F8FAFC;">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <input type="checkbox" id="certToggle" onchange="toggleCertFields()" style="width:18px;height:18px;accent-color:#1E3A8A;">
+          <span style="font-size:14px;font-weight:600;color:#1B2230;">Include Mental Health Certificate</span>
+        </label>
+        <p style="font-size:12px;color:#718096;margin:6px 0 0 30px;">Appends a standardized BPS Mental Health Certificate as the last page of the PDF.</p>
+      </div>
+
+      <!-- Certificate fields (shown when toggled on) -->
+      <div id="certFields" style="display:none;">
+        <p style="font-size:12px;font-weight:600;color:#475467;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Certificate Details</p>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:#344054;">Client Address</label>
+          <input type="text" id="certAddress" class="form-control" placeholder="e.g. Sampaloc, Manila" style="margin-top:4px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:#344054;">Purpose <span style="color:#e53e3e;">*</span></label>
+          <input type="text" id="certPurpose" class="form-control" placeholder="e.g. employment, school admission, legal" style="margin-top:4px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:#344054;">Psychological Impression / Diagnosis <span style="color:#e53e3e;">*</span></label>
+          <textarea id="certImpression" class="form-control" rows="3" placeholder="Enter the psychological impression or diagnostic impression..." style="margin-top:4px;resize:vertical;"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:#344054;">Validity Period <span style="color:#e53e3e;">*</span></label>
+          <input type="text" id="certValidity" class="form-control" placeholder="e.g. December 31, 2025 / 6 months from date of issue" style="margin-top:4px;">
+        </div>
+
+        <p style="font-size:12px;font-weight:600;color:#475467;text-transform:uppercase;letter-spacing:.8px;margin:16px 0 12px;">Psychologist License Information</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div class="form-group">
+            <label style="font-size:12px;font-weight:600;color:#344054;">License No.</label>
+            <input type="text" id="certLicenseNo" class="form-control" placeholder="e.g. 0012345" style="margin-top:4px;">
+          </div>
+          <div class="form-group">
+            <label style="font-size:12px;font-weight:600;color:#344054;">PTR No.</label>
+            <input type="text" id="certPtrNo" class="form-control" placeholder="e.g. 1234567" style="margin-top:4px;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:18px;">
+          <label style="font-size:12px;font-weight:600;color:#344054;">License Valid Until</label>
+          <input type="text" id="certLicenseValidity" class="form-control" placeholder="e.g. December 31, 2026" style="margin-top:4px;">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button class="btn btn-outline" onclick="closeCertOptionsModal()" style="padding:10px 20px;font-size:13px;">Cancel</button>
+        <button class="btn btn-primary" onclick="doPdfGenerate()" style="padding:10px 20px;font-size:13px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:6px;"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+          Generate PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- PDF Preview & E-Sign Modal -->
   <div class="pdf-preview-modal" id="pdfPreviewModal">
-    <div class="pdf-preview-header">
-      <div class="pdf-preview-title">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
-        <span>Report Preview</span>
-      </div>
+    <div class="pdf-preview-header" style="justify-content:flex-end">
       <div class="pdf-preview-actions">
         <button class="btn-pdf-action" onclick="doDownloadPdf()" title="Download PDF">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -772,7 +926,7 @@
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
           Back to Preview
         </button>
-        <span class="esign-label" id="esignLabel">✍️ Place your signature, then sign</span>
+        <span class="esign-label" id="esignLabel">Place your signature, then sign</span>
       </div>
       <div id="esignFrame" class="pdf-preview-frame" style="overflow:auto;background:#fff"></div>
     </div>
@@ -930,35 +1084,8 @@
     </div>
   </div>
 
-  <!-- ═══ Report Concern — Edit Report Sections Modal ═══ -->
-  <div class="modal-overlay" id="rcEditModal">
-    <div class="modal" style="max-width:680px">
-      <div class="modal-header">
-        <h3 id="rcEditTitle">Edit Report Sections</h3>
-        <button class="modal-close" onclick="rcCloseEdit()">&#x2715;</button>
-      </div>
-      <p style="margin:0 0 14px;color:#64748b;font-size:13px">
-        Edit the report's Identifying Information below. Use <b>Check PDF</b> to preview the corrected report, then <b>Save Version</b> to store it as a new report version.
-      </p>
-      <div class="section-block">
-        <div class="section-header"><h4>Identifying Information</h4></div>
-        <div class="section-body">
-          <textarea class="section-textarea" id="rcIdentText" rows="9" style="min-height:200px"></textarea>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="rcCloseEdit()">Cancel</button>
-        <button class="btn btn-outline" onclick="rcCheckPdf()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 110-9 4.5 4.5 0 010 9zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>
-          Check PDF
-        </button>
-        <button class="btn btn-success" onclick="rcSaveVersionFromSections()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-          Save Version
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Report-concern corrections now reuse the MAIN report editor (Edit Report) and
+       the real report PDF preview, so the simplified concern edit modal was removed. -->
 
   <!-- ═══ PDF Editor Modal (Clinical Director edits the report) ═══ -->
   <div class="pdf-preview-modal" id="pdfEditorModal">
@@ -1027,7 +1154,167 @@
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-  <script src="psych-reports.js"></script>
+  <!-- Finalize Confirmation Modal -->
+  <div class="modal-overlay" id="finalizeModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <h3>Finalize Report</h3>
+        <button class="modal-close" onclick="closeModal('finalizeModal')">&#x2715;</button>
+      </div>
+      <div style="padding:20px 24px;">
+        <p style="font-size:15px;color:var(--text-heading);margin-bottom:8px;font-weight:600;">Finalize?</p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.55;">Once finalized, the report will be locked and submitted for review. This action cannot be undone.</p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:0 24px 20px;">
+        <button class="btn btn-outline" onclick="closeModal('finalizeModal')">Cancel</button>
+        <button class="btn btn-primary" id="finalizeConfirmBtn" onclick="_doFinalizeRpt()">Finalize</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Confirm Modal -->
+  <div class="modal-overlay" id="prConfirmModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 id="prConfirmTitle">Confirm</h3>
+        <button class="modal-close" onclick="prConfirmNo()">&#x2715;</button>
+      </div>
+      <div style="padding:20px 24px;">
+        <p id="prConfirmMsg" style="font-size:14px;color:var(--text-secondary);line-height:1.55;"></p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:0 24px 20px;">
+        <button class="btn btn-outline" onclick="prConfirmNo()">Cancel</button>
+        <button class="btn" id="prConfirmBtn" onclick="prConfirmYes()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Text Prompt Modal -->
+  <div class="modal-overlay" id="prPromptModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 id="prPromptTitle">Enter text</h3>
+        <button class="modal-close" onclick="prPromptNo()">&#x2715;</button>
+      </div>
+      <div style="padding:20px 24px;">
+        <input type="text" id="prPromptInput" class="form-control" style="width:100%"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();prPromptYes();}">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:0 24px 20px;">
+        <button class="btn btn-outline" onclick="prPromptNo()">Cancel</button>
+        <button class="btn btn-primary" onclick="prPromptYes()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session guard + periodic re-validation (auto-logout on deactivation) -->
+  <script src="bps-calendar.js"></script>
+  <script src="icons.js"></script>
+  <script src="session.js"></script>
+  <script src="captcha.js"></script>
+
+  <!-- ── Psych Reports page-load CAPTCHA gate (Feature F) ──────────────
+       Staff only. CAPTCHA must be verified before the module is accessible.
+       Verification persists for the current authenticated session (sessionStorage).
+       Re-prompts on logout, session expiry, or new browser/device.         -->
+  <script>
+    (function () {
+      // Non-staff users should not be here at all — redirect immediately
+      const _u = BPSSession.getUser ? BPSSession.getUser() : null;
+      if (!_u || !_u.role || _u.role === 'client') {
+        window.location.replace('landingpage.html');
+        return;
+      }
+
+      if (BPSCaptcha.isPsychVerified()) return; // already verified this session
+
+      const gate = document.createElement('div');
+      gate.id = 'bps-psych-gate';
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            </svg>
+          </div>
+          <h2 class="bps-community-gate__title">Staff Access Verification</h2>
+          <p class="bps-community-gate__desc">Psych Reports is a restricted module. Please complete a security check to confirm your identity before accessing patient report data.</p>
+          <div class="bps-community-gate__error" id="_bps_psy_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_psy_btn">
+            <span id="_bps_psy_label">Verify to Access Reports</span>
+          </button>
+          <div class="bps-community-gate__footer">
+            Protected by <strong>reCAPTCHA</strong> &nbsp;·&nbsp;
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            &nbsp;·&nbsp;
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(gate);
+
+      // Log that CAPTCHA was displayed for audit trail
+      const _at = sessionStorage.getItem('bps_token');
+      if (_at) {
+        fetch('http://localhost:5000/api/captcha/audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_at}` },
+          body: JSON.stringify({ event: 'captcha_displayed', action: 'psych_reports', context: 'psych_reports' }),
+        }).catch(() => {});
+      }
+
+      document.getElementById('_bps_psy_btn').addEventListener('click', async function () {
+        const btn   = this;
+        const label = document.getElementById('_bps_psy_label');
+        const errEl = document.getElementById('_bps_psy_err');
+        btn.disabled = true;
+        label.textContent = 'Verifying…';
+        errEl.style.display = 'none';
+
+        const result = await BPSCaptcha.executeAndVerify('psych_reports');
+
+        if (result.success) {
+          // Notify backend: log access granted + validate server-side
+          try {
+            const authToken = sessionStorage.getItem('bps_token');
+            await fetch('http://localhost:5000/api/captcha/psych-access', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ captcha_clearance: BPSCaptcha.getClearanceToken() }),
+            });
+          } catch (_) {}
+
+          BPSCaptcha.setPsychVerified();
+          gate.style.transition = 'opacity 0.3s ease';
+          gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          errEl.textContent = result.error || 'Security check failed. Please try again.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          label.textContent = 'Try Again';
+        }
+      });
+    })();
+  </script>
+
+  <script src="psych-reports-utils.js"></script>
+  <script src="psych-reports-core.js"></script>
+  <script src="psych-reports-dashboard.js"></script>
+  <script src="psych-reports-create.js"></script>
+  <script src="psych-reports-detail.js"></script>
+  <script src="psych-reports-esign.js"></script>
+  <script src="psych-reports-approval.js"></script>
+  <script src="psych-reports-archive.js"></script>
+  <script src="psych-reports-templates.js"></script>
+  <script src="psych-reports-requests.js"></script>
+  <script src="psych-reports-concerns.js"></script>
+  <script src="psych-reports-legacy.js"></script>
+  <script src="navbar.js"></script>
+  <script>document.querySelectorAll('.nav-dropdown a.active').forEach(function(a){a.classList.remove('active');});</script>
 </body>
 
 </html>

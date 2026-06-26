@@ -69,6 +69,23 @@ const ForumThread = {
     return result.rows;
   },
 
+  /**
+   * Recently moderated threads of a given status (e.g. approved, rejected),
+   * most-recently-updated first. Used by the Moderation Dashboard tabs.
+   */
+  async findByStatus(status, limit = 20) {
+    const result = await db.query(
+      `SELECT t.*, u.full_name AS author_name
+       FROM forum_threads t
+       LEFT JOIN users u ON u.id = t.author_id
+       WHERE t.status = $1
+       ORDER BY t.updated_at DESC
+       LIMIT $2`,
+      [status, limit]
+    );
+    return result.rows;
+  },
+
   async findById(id) {
     const result = await db.query(
       `SELECT t.*,

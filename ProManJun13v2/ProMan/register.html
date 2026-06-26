@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="auth-split.css">
   <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="captcha.css">
   <link rel="preload" as="image" href="auth-images/carousel-1.png">
 </head>
 
@@ -30,7 +31,8 @@
             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
         </svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
+      
     </a>
   </nav>
 
@@ -104,7 +106,7 @@
             </div>
             <div class="form-checkbox">
               <input type="checkbox" id="terms" name="terms" required>
-              <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+              <label for="terms">I agree to the <a href="#" data-legal="terms">Terms of Service</a> and <a href="#" data-legal="privacy">Privacy
                   Policy</a></label>
             </div>
             <button type="submit" class="auth-btn" id="register-btn">Create Account</button>
@@ -132,6 +134,67 @@
 
     </div>
   </div>
+
+  <!-- ===== Legal popups (Privacy Policy / Terms of Service) ===== -->
+  <script src="legal-modal.js"></script>
+
+  <!-- ===== CAPTCHA module ===== -->
+  <script src="captcha.js"></script>
+
+  <!-- ===== REGISTER CAPTCHA GATE (page-load) ===== -->
+  <script>
+    (function () {
+      // Build a full-page gate that blocks the register form until CAPTCHA passes
+      const gate = document.createElement('div');
+      gate.id = 'bps-register-gate';
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            </svg>
+          </div>
+          <h2 class="bps-community-gate__title">Security Verification</h2>
+          <p class="bps-community-gate__desc">Please complete a quick security check before creating your account.</p>
+          <div class="bps-community-gate__error" id="_bps_reg_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_reg_btn">
+            <span id="_bps_reg_label">Verify to Continue</span>
+          </button>
+          <div class="bps-community-gate__footer">
+            Protected by <strong>reCAPTCHA</strong> &nbsp;·&nbsp;
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            &nbsp;·&nbsp;
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(gate);
+
+      document.getElementById('_bps_reg_btn').addEventListener('click', async function () {
+        const btn   = this;
+        const label = document.getElementById('_bps_reg_label');
+        const errEl = document.getElementById('_bps_reg_err');
+        btn.disabled = true;
+        label.textContent = 'Verifying…';
+        errEl.style.display = 'none';
+
+        const result = await BPSCaptcha.executeAndVerify('register');
+        if (result.success) {
+          gate.style.transition = 'opacity 0.3s ease';
+          gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          errEl.textContent = result.error || 'Verification failed. Please try again.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          label.textContent = 'Try Again';
+        }
+      });
+    })();
+  </script>
 
   <!-- ===== CAROUSEL ===== -->
   <script src="auth-carousel.js"></script>

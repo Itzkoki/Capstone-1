@@ -5,11 +5,26 @@ const User = require('../models/User');
 const Verification = require('../models/Verification');
 const PasswordReset = require('../models/PasswordReset');
 const LoginAttempt = require('../models/LoginAttempt');
-const { sendVerificationEmail } = require('../services/emailService');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { validateClearance } = require('./captchaController');
+const securityEvents = require('../services/securityEvents');
+
+// Number of failed attempts before CAPTCHA is required (lower than MAX_FAILED_ATTEMPTS=5 lockout)
+const CAPTCHA_REQUIRED_AFTER = 3;
+
+// Validates the server-signed clearance token issued by /api/captcha/verify.
+// This avoids a second round-trip to Google (reCAPTCHA tokens are single-use).
+function _verifyCaptchaToken(clearanceToken) {
+  const SKIP = process.env.RECAPTCHA_SKIP_VERIFY === 'true' || !process.env.RECAPTCHA_SECRET_KEY;
+  if (SKIP) return true;
+  if (!clearanceToken) return false;
+  const payload = validateClearance(clearanceToken);
+  return payload !== null; // valid, non-expired server-signed token
+}
 
 const SALT_ROUNDS = 12;
-const OTP_EXPIRY_MINUTES = 15;
+const OTP_EXPIRY_MINUTES = 2; // verification code is valid for 2 minutes
+const OTP_RESEND_COOLDOWN_SECONDS = 120; // must wait 2 minutes between resend requests
 const RESET_TOKEN_EXPIRY_MINUTES = 30;
 const FRONTEND_BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5500';
 
@@ -25,6 +40,14 @@ const generateOTP = () => {
  */
 const generateResetToken = () => {
   return crypto.randomBytes(32).toString('hex');
+};
+
+// Mask an email for safe display in the verification prompt (e.g. j***@x.com).
+const maskEmail = (email) => {
+  if (!email || !email.includes('@')) return email || '';
+  const [local, domain] = email.split('@');
+  const head = local.slice(0, 1);
+  return `${head}${'*'.repeat(Math.max(1, local.length - 1))}@${domain}`;
 };
 
 // ── POST /api/auth/register ──────────────────────────
@@ -84,7 +107,7 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captcha_clearance } = req.body;
     const clientIp = req.ip || req.connection?.remoteAddress || null;
 
     // ── Step 1: Check for active account lockout ──
@@ -103,6 +126,19 @@ const login = async (req, res, next) => {
         locked_until: lockedUntil.toISOString(),
         remaining_minutes: remainingMinutes,
       });
+    }
+
+    // ── Step 1b: Enforce CAPTCHA after CAPTCHA_REQUIRED_AFTER failures ──
+    const preCheckCount = await LoginAttempt.getRecentFailedCount(email);
+    if (preCheckCount >= CAPTCHA_REQUIRED_AFTER) {
+      const captchaOk = _verifyCaptchaToken(captcha_clearance);
+      if (!captchaOk) {
+        return res.status(428).json({
+          success: false,
+          message: 'Please complete the security verification to continue.',
+          captcha_required: true,
+        });
+      }
     }
 
     // ── Step 2: Find user by email ──
@@ -128,6 +164,23 @@ const login = async (req, res, next) => {
         success: false,
         message: 'Invalid email or password',
         attempts_remaining: attemptsRemaining,
+        captcha_required: failedCount >= CAPTCHA_REQUIRED_AFTER,
+      });
+    }
+
+    // ── Step 2b: Block suspended accounts ──
+    // A Clinical Director can suspend a client from the Action Center; that sets
+    // users.is_active = FALSE and must prevent any further login.
+    if (user.is_active === false) {
+      securityEvents.record({
+        module: 'user_access', eventType: 'suspicious_account_activity',
+        userId: user.id, ip: clientIp, subjectKind: 'user',
+        details: `Login attempt on suspended account ${email}.`,
+      });
+      return res.status(403).json({
+        success: false,
+        suspended: true,
+        message: 'Your account has been suspended. Please contact the moderator.',
       });
     }
 
@@ -148,10 +201,30 @@ const login = async (req, res, next) => {
       // Check if threshold is now exceeded
       const failedCount = await LoginAttempt.getRecentFailedCount(email);
 
+      // Action Center tracking: a Failed Login Attempt incident is opened only
+      // once the user has failed 3 times (not on every attempt). The 3rd failure
+      // opens a tracked MEDIUM incident; further failures dedupe into it.
+      // Individual attempts still appear in Audit Logs via login_attempts.
+      const FAILED_LOGIN_TRACK_AT = 3;
+      if (failedCount >= FAILED_LOGIN_TRACK_AT) {
+        securityEvents.record({
+          module: 'user_access', eventType: 'failed_login',
+          userId: user.id, ip: clientIp, subjectKind: 'user',
+          severityOverride: 'medium',
+          details: `${failedCount} failed login attempts for ${email}.`,
+        });
+      }
+
       if (failedCount >= LoginAttempt.MAX_FAILED_ATTEMPTS) {
         // Lock the account
         const lockedUntil = await LoginAttempt.lockAccount(email, clientIp);
         const remainingMinutes = LoginAttempt.LOCKOUT_DURATION_MINUTES;
+
+        securityEvents.record({
+          module: 'user_access', eventType: 'account_lockout',
+          userId: user.id, ip: clientIp, subjectKind: 'user',
+          details: `Account ${email} locked after ${LoginAttempt.MAX_FAILED_ATTEMPTS} failed attempts.`,
+        });
 
         return res.status(423).json({
           success: false,
@@ -167,28 +240,92 @@ const login = async (req, res, next) => {
         success: false,
         message: 'Invalid email or password',
         attempts_remaining: attemptsRemaining,
+        captcha_required: failedCount >= CAPTCHA_REQUIRED_AFTER,
       });
     }
 
-    // ── Step 5: Successful login — clear failed attempts ──
+    // ── Step 5: Password OK — clear failed attempts ──
     await LoginAttempt.clearFailedAttempts(email);
 
-    // Generate JWT
-    const payload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    // ── Step 6: Second factor — email a one-time code on EVERY login ──
+    // No JWT is issued yet. A 6-digit code (valid 2 minutes) is emailed and
+    // must be confirmed via /verify-login-otp before a session is granted.
+    try {
+      const otp = generateOTP();
+      const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
+      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      await Verification.create(user.id, otpHash, expiresAt);
+      await sendVerificationEmail(user.email, otp, user.full_name);
+    } catch (emailError) {
+      console.error('⚠️  Failed to send login verification email:', emailError.message);
+      return res.status(502).json({
+        success: false,
+        message: 'We could not send your verification code. Please try again in a moment.',
+      });
+    }
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    return res.status(200).json({
+      success: true,
+      requiresVerification: true,
+      message: 'A verification code has been sent to your email.',
+      data: {
+        email: user.email,
+        email_hint: maskEmail(user.email),
+        expires_in_minutes: OTP_EXPIRY_MINUTES,
+        // A code was just sent, so the 2-minute resend cooldown starts now.
+        resend_cooldown_seconds: OTP_RESEND_COOLDOWN_SECONDS,
+      },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── POST /api/auth/verify-login-otp ───────────────────
+// Confirms the emailed code for an already-verified account that is logging
+// in, and issues the session JWT. (Distinct from /verify-email, which is the
+// one-time registration confirmation that flips is_verified.)
+const verifyLoginOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findByEmail(email);
+    const invalid = () =>
+      res.status(400).json({ success: false, message: 'Invalid code. Please try again.' });
+
+    if (!user) return invalid();
+
+    const verification = await Verification.findByUserId(user.id);
+    if (!verification) return invalid();
+
+    if (new Date() > new Date(verification.expires_at)) {
+      await Verification.deleteByUserId(user.id);
+      return res.status(400).json({
+        success: false,
+        message: 'Code has expired. Please request a new one.',
+      });
+    }
+
+    const isValid = await bcrypt.compare(String(otp || ''), verification.otp_hash);
+    if (!isValid) return invalid();
+
+    // Single-use: consume the code, then issue the session token.
+    await Verification.deleteByUserId(user.id);
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    );
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
+      // Force Password Reset (Action Center): after OTP, the client is sent to
+      // the reset-password page instead of the dashboard. No email is involved.
+      must_reset_password: user.must_reset_password === true,
       data: {
         token,
+        must_reset_password: user.must_reset_password === true,
         user: {
           id: user.id,
           full_name: user.full_name,
@@ -197,6 +334,79 @@ const login = async (req, res, next) => {
           role: user.role,
         },
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── POST /api/auth/force-reset-password ───────────────
+// Authenticated reset for a client flagged with must_reset_password (set by the
+// Clinical Director's "Force Password Reset" action). No email token is used —
+// the just-logged-in session authorizes the change. Clears the flag and ends
+// other sessions on success.
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
+const forceResetPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (req.user.type === 'staff') {
+      return res.status(400).json({ success: false, message: 'Not applicable to staff accounts.' });
+    }
+    const user = await User.findByEmail(req.user.email);
+    if (!user) return res.status(404).json({ success: false, message: 'Account not found.' });
+    if (!user.must_reset_password) {
+      return res.status(400).json({ success: false, message: 'No password reset is required for this account.' });
+    }
+    if (!password || !PASSWORD_RULE.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 12 characters and include upper, lower, a number and a special character.',
+      });
+    }
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    await User.updatePassword(user.id, hashedPassword);
+    await User.setMustResetPassword(user.id, false);
+    // End any other active sessions so the new password is required everywhere.
+    await User.invalidateSessions(user.id);
+    return res.status(200).json({ success: true, message: 'Password updated. Please sign in with your new password.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── POST /api/auth/resend-login-otp ───────────────────
+// Re-sends a fresh login code for an in-progress login, with the same
+// server-enforced 2-minute cooldown as registration.
+const resendLoginOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findByEmail(email);
+
+    if (user) {
+      // Resend rate limit: first resend is free, then a 2-minute cooldown.
+      const rs = await Verification.resendStatus(user.id, OTP_RESEND_COOLDOWN_SECONDS);
+      if (!rs.allowed) {
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${rs.retryAfter} second(s) before requesting another code.`,
+          retryAfter: rs.retryAfter,
+        });
+      }
+      try {
+        const otp = generateOTP();
+        const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
+        const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+        await Verification.create(user.id, otpHash, expiresAt);
+        await sendVerificationEmail(user.email, otp, user.full_name);
+      } catch (emailError) {
+        console.error('⚠️  Failed to resend login verification email:', emailError.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'If the account is valid, a new verification code has been sent.',
+      retryAfter: OTP_RESEND_COOLDOWN_SECONDS,
     });
   } catch (error) {
     next(error);
@@ -240,7 +450,7 @@ const verifyEmail = async (req, res, next) => {
       await Verification.deleteByUserId(user.id);
       return res.status(400).json({
         success: false,
-        message: 'Verification code has expired. Please register again to receive a new code.',
+        message: 'Code has expired. Please request a new one.',
       });
     }
 
@@ -249,7 +459,7 @@ const verifyEmail = async (req, res, next) => {
     if (!isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email or verification code',
+        message: 'Invalid code. Please try again.',
       });
     }
 
@@ -289,6 +499,16 @@ const resendOtp = async (req, res, next) => {
       });
     }
 
+    // Resend rate limit: first resend is free, then a 2-minute cooldown.
+    const rs = await Verification.resendStatus(user.id, OTP_RESEND_COOLDOWN_SECONDS);
+    if (!rs.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${rs.retryAfter} second(s) before requesting another code.`,
+        retryAfter: rs.retryAfter,
+      });
+    }
+
     // Generate new OTP, hash it, and store (replaces old ones)
     const otp = generateOTP();
     const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
@@ -306,6 +526,7 @@ const resendOtp = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'A new verification code has been sent to your email.',
+      retryAfter: OTP_RESEND_COOLDOWN_SECONDS,
     });
   } catch (error) {
     next(error);
@@ -411,5 +632,5 @@ const verifyToken = (req, res) => {
   });
 };
 
-module.exports = { register, login, verifyEmail, resendOtp, forgotPassword, resetPassword, verifyToken };
+module.exports = { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken };
 

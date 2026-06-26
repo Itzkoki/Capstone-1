@@ -1,12 +1,20 @@
 const db = require('../config/db');
 
 const ActivityLog = {
-  async log(userId, action, resourceType, resourceId, ipAddress, details = null) {
+  /**
+   * @param {object} [meta] - { role, status, userAgent } for the Audit Logs view.
+   */
+  async log(userId, action, resourceType, resourceId, ipAddress, details = null, meta = {}) {
     const result = await db.query(
-      `INSERT INTO activity_logs (user_id, action, resource_type, resource_id, ip_address, details)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO activity_logs (user_id, action, resource_type, resource_id, ip_address, details, role, status, user_agent, fingerprint)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [userId, action, resourceType, resourceId, ipAddress, details ? JSON.stringify(details) : null]
+      [
+        userId, action, resourceType, resourceId, ipAddress,
+        details ? JSON.stringify(details) : null,
+        meta.role || null, meta.status || null, meta.userAgent || null,
+        meta.fingerprint || null,
+      ]
     );
     return result.rows[0];
   },

@@ -19,14 +19,17 @@ const Payment = {
    * NNNN is a zero-padded per-day sequence. A short retry loop guards
    * against the rare race where two bookings land the same sequence.
    */
-  async generateReferenceNumber() {
+  async generateReferenceNumber(refKind = 'BPS') {
     const now = new Date();
     const datePart =
       now.getFullYear().toString() +
       String(now.getMonth() + 1).padStart(2, '0') +
       String(now.getDate()).padStart(2, '0');
 
-    const prefix = `BPS-${datePart}-`;
+    // refKind selects the human-readable scope prefix:
+    //   RPM = request/report payment, CPM = counseling, APM = assessment.
+    // Defaults to the legacy BPS- so existing callers are unchanged.
+    const prefix = `${refKind}-${datePart}-`;
 
     for (let attempt = 0; attempt < 5; attempt++) {
       // Highest existing sequence for today
@@ -66,8 +69,8 @@ const Payment = {
    * The hold expires 24 hours after creation.
    */
   async create({
-    referenceNumber, intakeFormId, appointmentId, clientId,
-    serviceLabel, paymentOption, paymentMethod,
+    referenceNumber, intakeFormId, appointmentId, clientId, clientRequestId,
+    serviceLabel, paymentOption, paymentMethod, module,
     amountDue, totalFee, outstandingBalance, agreedNoCancellation,
     expiresInMinutes,
   }) {
@@ -75,15 +78,15 @@ const Payment = {
     const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
     const result = await db.query(
       `INSERT INTO payments (
-        reference_number, intake_form_id, appointment_id, client_id,
-        service_label, payment_option, payment_method,
+        reference_number, intake_form_id, appointment_id, client_id, client_request_id,
+        service_label, payment_option, payment_method, module,
         amount_due, total_fee, outstanding_balance, expires_at,
         agreed_no_cancellation
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *`,
       [
-        referenceNumber, intakeFormId || null, appointmentId || null, clientId,
-        serviceLabel || null, paymentOption, paymentMethod || 'GCash',
+        referenceNumber, intakeFormId || null, appointmentId || null, clientId, clientRequestId || null,
+        serviceLabel || null, paymentOption, paymentMethod || 'GCash', module || 'counseling',
         amountDue, totalFee, outstandingBalance || 0, expiresAt,
         agreedNoCancellation ? 1 : 0,
       ]
@@ -154,6 +157,20 @@ const Payment = {
        WHERE appointment_id = $1 AND status IN ('pending','under_review','verified')
        ORDER BY created_at DESC LIMIT 1`,
       [appointmentId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
+   * An active (non-failed) payment for a report request, if any.
+   * Active = pending | under_review | verified.
+   */
+  async findActiveByClientRequest(clientRequestId) {
+    const result = await db.query(
+      `SELECT * FROM payments
+       WHERE client_request_id = $1 AND status IN ('pending','under_review','verified')
+       ORDER BY created_at DESC LIMIT 1`,
+      [clientRequestId]
     );
     return result.rows[0] || null;
   },

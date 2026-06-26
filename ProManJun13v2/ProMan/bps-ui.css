@@ -1,0 +1,139 @@
+/* ============================================================
+   BPS UI Kit — shared system Modal + Dropdown + Date picker.
+   Replaces native window.confirm/alert/prompt, native <select>,
+   and native <input type=date|datetime-local>.
+
+   Include on every page:
+     <link rel="stylesheet" href="bps-ui.css">
+     <script src="bps-ui.js"></script>
+
+   Colours fall back to sensible defaults so the kit also works on
+   pages that don't load design-system.css.
+   ============================================================ */
+:root{
+  --bui-royal:#1E3A8A; --bui-royal-deep:#15306E;
+  --bui-red:#dc2626; --bui-red-deep:#b91c1c;
+  --bui-ink:#1B2230; --bui-ink-soft:#525E72; --bui-ink-faint:#8A93A4;
+  --bui-line:#E6EAF1; --bui-bg:#fff; --bui-wash:#EEF1FA;
+  --bui-radius:14px; --bui-radius-sm:10px;
+  --bui-shadow:0 4px 12px rgba(27,34,48,.06), 0 16px 40px rgba(30,58,138,.16);
+  --bui-font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+/* ===================== Modal (confirm/alert/prompt) ===================== */
+.bui-modal{ position:fixed; inset:0; z-index:100000; display:flex; align-items:center;
+  justify-content:center; padding:20px; background:rgba(15,23,42,.5);
+  opacity:0; transition:opacity .16s ease; font-family:var(--bui-font); }
+.bui-modal.is-open{ opacity:1; }
+.bui-modal__box{ background:var(--bui-bg); width:100%; max-width:440px; border-radius:var(--bui-radius);
+  box-shadow:var(--bui-shadow); padding:24px 24px 20px; transform:translateY(8px) scale(.98);
+  transition:transform .16s ease; box-sizing:border-box; }
+.bui-modal.is-open .bui-modal__box{ transform:none; }
+.bui-modal__icon{ width:46px; height:46px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; margin-bottom:14px; background:var(--bui-wash); }
+.bui-modal__icon svg{ width:24px; height:24px; fill:var(--bui-royal); }
+.bui-modal--danger .bui-modal__icon{ background:#fde8e8; }
+.bui-modal--danger .bui-modal__icon svg{ fill:var(--bui-red); }
+.bui-modal__title{ font-size:18px; font-weight:700; color:var(--bui-ink); margin:0 0 6px; }
+.bui-modal__msg{ font-size:14px; line-height:1.55; color:var(--bui-ink-soft); margin:0; white-space:pre-wrap; }
+.bui-modal__input{ width:100%; box-sizing:border-box; margin-top:14px; padding:11px 13px;
+  border:1px solid var(--bui-line); border-radius:var(--bui-radius-sm); font:inherit;
+  font-size:14px; color:var(--bui-ink); background:#fff; }
+.bui-modal__input:focus{ outline:none; border-color:var(--bui-royal); box-shadow:0 0 0 3px rgba(30,58,138,.12); }
+.bui-modal__actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.bui-btn{ appearance:none; border:1px solid transparent; border-radius:var(--bui-radius-sm);
+  padding:9px 18px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:.15s; }
+.bui-btn--ghost{ background:#fff; color:var(--bui-ink-soft); border-color:var(--bui-line); }
+.bui-btn--ghost:hover{ background:#f6f8fc; color:var(--bui-ink); }
+.bui-btn--primary{ background:var(--bui-royal); color:#fff; border-color:var(--bui-royal); }
+.bui-btn--primary:hover{ background:var(--bui-royal-deep); }
+.bui-btn--danger{ background:var(--bui-red); color:#fff; border-color:var(--bui-red); }
+.bui-btn--danger:hover{ background:var(--bui-red-deep); }
+.bui-btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(30,58,138,.30); }
+
+/* ===================== Custom dropdown (replaces <select>) ===================== */
+.bui-select{ position:relative; display:inline-block; width:100%; font-family:var(--bui-font); }
+.bui-select__trigger{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+  width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid var(--bui-line);
+  border-radius:var(--bui-radius-sm); background:#fff; font:inherit; font-size:14px;
+  color:var(--bui-ink); cursor:pointer; text-align:left; transition:border-color .15s, box-shadow .15s; }
+.bui-select__trigger:hover{ border-color:#cdd5e4; }
+.bui-select.is-open .bui-select__trigger,
+.bui-select__trigger:focus-visible{ outline:none; border-color:var(--bui-royal); box-shadow:0 0 0 3px rgba(30,58,138,.12); }
+.bui-select__label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.bui-select__label.is-placeholder{ color:var(--bui-ink-faint); }
+.bui-select__caret{ width:16px; height:16px; flex:0 0 auto; fill:var(--bui-ink-faint); transition:transform .15s; }
+.bui-select.is-open .bui-select__caret{ transform:rotate(180deg); }
+.bui-select.is-disabled{ opacity:.6; pointer-events:none; }
+.bui-select__menu{ position:absolute; z-index:100001; top:calc(100% + 6px); left:0; right:0;
+  background:#fff; border:1px solid var(--bui-line); border-radius:var(--bui-radius-sm);
+  box-shadow:var(--bui-shadow); max-height:260px; overflow-y:auto; padding:6px; display:none; }
+.bui-select.is-open .bui-select__menu{ display:block; }
+.bui-select.drop-up .bui-select__menu{ top:auto; bottom:calc(100% + 6px); }
+.bui-select__opt{ padding:9px 11px; border-radius:8px; font-size:14px; color:var(--bui-ink);
+  cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bui-select__opt:hover, .bui-select__opt.is-active{ background:var(--bui-wash); }
+.bui-select__opt.is-selected{ color:var(--bui-royal); font-weight:600; }
+.bui-select__opt.is-disabled{ color:var(--bui-ink-faint); cursor:not-allowed; }
+.bui-select__opt .bui-check{ width:15px; height:15px; fill:var(--bui-royal); opacity:0; flex:0 0 auto; }
+.bui-select__opt.is-selected .bui-check{ opacity:1; }
+.bui-select__group{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--bui-ink-faint); padding:8px 11px 4px; }
+/* native element kept in DOM for value/form/JS compatibility, hidden visually */
+.bui-select__native{ position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
+
+/* ===================== Date picker (replaces native date inputs) ===================== */
+.bui-date{ position:relative; display:inline-block; width:100%; font-family:var(--bui-font); }
+.bui-date__trigger{ display:flex; align-items:center; gap:8px; width:100%; box-sizing:border-box;
+  padding:11px 13px; border:1px solid var(--bui-line); border-radius:var(--bui-radius-sm);
+  background:#fff; font:inherit; font-size:14px; color:var(--bui-ink); cursor:pointer; text-align:left; }
+.bui-date__trigger:hover{ border-color:#cdd5e4; }
+.bui-date.is-open .bui-date__trigger,
+.bui-date__trigger:focus-visible{ outline:none; border-color:var(--bui-royal); box-shadow:0 0 0 3px rgba(30,58,138,.12); }
+.bui-date__ico{ width:17px; height:17px; flex:0 0 auto; fill:var(--bui-ink-faint); }
+.bui-date__text{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bui-date__text.is-placeholder{ color:var(--bui-ink-faint); }
+.bui-date__clear{ border:none; background:none; cursor:pointer; padding:2px; line-height:0; border-radius:6px; }
+.bui-date__clear svg{ width:15px; height:15px; fill:var(--bui-ink-faint); }
+.bui-date__clear:hover svg{ fill:var(--bui-red); }
+.bui-date.is-disabled{ opacity:.6; pointer-events:none; }
+.bui-date__pop{ position:absolute; z-index:100001; top:calc(100% + 6px); left:0; width:288px;
+  background:#fff; border:1px solid var(--bui-line); border-radius:var(--bui-radius);
+  box-shadow:var(--bui-shadow); padding:14px; display:none; box-sizing:border-box; }
+.bui-date.is-open .bui-date__pop{ display:block; }
+.bui-date.drop-up .bui-date__pop{ top:auto; bottom:calc(100% + 6px); }
+.bui-cal__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.bui-cal__nav{ border:none; background:none; cursor:pointer; width:30px; height:30px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; }
+.bui-cal__nav:hover{ background:var(--bui-wash); }
+.bui-cal__nav svg{ width:18px; height:18px; fill:var(--bui-ink-soft); }
+.bui-cal__title{ font-size:14px; font-weight:700; color:var(--bui-ink); border:none; background:none;
+  cursor:pointer; padding:5px 10px; border-radius:8px; }
+.bui-cal__title:hover{ background:var(--bui-wash); }
+.bui-cal__grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.bui-cal__dow{ font-size:11px; font-weight:600; color:var(--bui-ink-faint); text-align:center; padding:4px 0; }
+.bui-cal__day{ aspect-ratio:1; border:none; background:none; border-radius:8px; cursor:pointer;
+  font:inherit; font-size:13px; color:var(--bui-ink); display:flex; align-items:center; justify-content:center; }
+.bui-cal__day:hover:not(:disabled){ background:var(--bui-wash); }
+.bui-cal__day.is-other{ color:var(--bui-ink-faint); }
+.bui-cal__day.is-today{ font-weight:700; box-shadow:inset 0 0 0 1px var(--bui-line); }
+.bui-cal__day.is-selected{ background:var(--bui-royal); color:#fff; font-weight:700; }
+.bui-cal__day:disabled{ color:#cbd2e0; cursor:not-allowed; }
+/* month / year quick-jump panel */
+.bui-cal__panel{ display:none; grid-template-columns:repeat(4,1fr); gap:6px; max-height:230px; overflow-y:auto; }
+.bui-date.show-panel .bui-cal__grid, .bui-date.show-panel .bui-cal__dows{ display:none; }
+.bui-date.show-panel .bui-cal__panel{ display:grid; }
+.bui-cal__cell{ border:1px solid var(--bui-line); background:#fff; border-radius:8px; padding:9px 4px;
+  font:inherit; font-size:13px; color:var(--bui-ink); cursor:pointer; }
+.bui-cal__cell:hover{ background:var(--bui-wash); border-color:var(--bui-royal); }
+.bui-cal__cell.is-selected{ background:var(--bui-royal); color:#fff; border-color:var(--bui-royal); }
+.bui-cal__dows{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.bui-cal__time{ display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px;
+  border-top:1px solid var(--bui-line); }
+.bui-cal__time label{ font-size:12px; font-weight:600; color:var(--bui-ink-soft); }
+.bui-cal__time select{ flex:1; padding:7px 9px; border:1px solid var(--bui-line); border-radius:8px;
+  font:inherit; font-size:13px; color:var(--bui-ink); background:#fff; }
+.bui-cal__foot{ display:flex; justify-content:space-between; margin-top:12px; }
+.bui-cal__foot button{ border:none; background:none; cursor:pointer; font:inherit; font-size:13px;
+  font-weight:600; color:var(--bui-royal); padding:6px 8px; border-radius:8px; }
+.bui-cal__foot button:hover{ background:var(--bui-wash); }

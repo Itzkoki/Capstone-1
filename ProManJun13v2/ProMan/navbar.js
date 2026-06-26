@@ -68,53 +68,75 @@
       { label: 'About Us', href: LP + '#mission-vision', drop: [
         { label: 'Vision & Mission', href: LP + '#mission-vision', ic: 'vision' },
         { label: 'Meet the Team',    href: LP + '#team', ic: 'team' },
-        { label: 'Why Choose Us',    href: LP + '#about', ic: 'star' }
+        { label: 'Facilities',       href: LP + '#about', ic: 'star' }
       ]},
       { label: 'Services', href: LP + '#services', match: ['intakeform.html', 'meetings.html', 'requests.html'], drop: [
         { label: 'Teleconference',       href: 'meetings.html', ic: 'video' },
         { label: 'Intake Form',          href: 'intakeform.html', ic: 'clipboard' },
         { label: 'Requests & Concerns',  href: 'requests.html', ic: 'ticket' },
-        { label: 'Community Support',    href: 'community.html', ic: 'support' }
       ]},
       { label: 'Community', href: 'community.html', match: ['community.html'], drop: [
         { label: 'FAQs',        href: 'community.html?tab=faqs', ic: 'question' },
         { label: 'Articles',    href: 'community.html?tab=articles', ic: 'document' },
         { label: 'Discussions', href: 'community.html?tab=discussion', ic: 'chat' }
       ]},
-      { label: 'Contact', href: LP + '#cta' }
+      { label: 'Contact', href: 'contact.html' }
     ];
   }
 
+  // Per-role Dashboard menu. Each clinical role sees ONLY the modules it owns;
+  // every staff role additionally gets Teleconference (host/create a session).
+  // The Clinical Director sees everything.
+  function dashItemsForRole(r) {
+    var TELE    = { label: 'Teleconference',        href: 'meetings.html',                    ic: 'video' };
+    var PAY     = { label: 'Payment Verification',  href: 'payments-admin.html',              ic: 'payment' };
+    var CASES   = { label: 'Case Management',       href: 'case-dashboard.html',              ic: 'clipboard' };
+    var REPORTS = { label: 'Reports',               href: 'psych-reports.html',               ic: 'document' };
+
+    switch (r) {
+      case 'psychometrician':
+        // Psychometricians have NO access to the Report Module.
+        return [CASES, TELE];
+      case 'supervising_psychometrician':
+        return [CASES, REPORTS, PAY, TELE];
+      case 'qc_psychometrician':
+        return [CASES, REPORTS, TELE];
+      case 'psychologist':
+        return [CASES, REPORTS, TELE];
+      case 'clinical_director':
+        return [
+          CASES, REPORTS,
+          { label: 'Staff Management', href: 'staff-management.html', ic: 'team' },
+          PAY, TELE,
+          { label: 'Website Management', href: 'website-management.html', ic: 'globe' }
+        ];
+      default:
+        return [CASES, REPORTS, TELE];
+    }
+  }
+
   function staffMenu() {
-    var dash = [
-      { label: 'Psychological Reports', href: 'psych-reports.html', ic: 'document' },
-      { label: 'Staff Management',      href: 'staff-management.html', ic: 'team' },
-      { label: 'Intake Forms',          href: 'intake-submissions.html', ic: 'clipboard' },
-      { label: 'Payment Verification',  href: 'payments-admin.html', ic: 'payment' },
-      { label: 'Report Requests',       href: 'psych-reports.html#reportRequests', ic: 'ticket' },
-      { label: 'Teleconference',        href: 'meetings.html', ic: 'video' }
-    ];
-    if (isClinicAdmin) dash.push({ label: 'Website Management', href: 'website-management.html', ic: 'globe' });
+    var dash = dashItemsForRole(role);
 
     return [
       { label: 'Home', href: LP, match: ['landingpage.html', ''] },
       { label: 'About Us', href: LP + '#mission-vision', drop: [
         { label: 'Vision & Mission', href: LP + '#mission-vision', ic: 'vision' },
         { label: 'Meet the Team',    href: LP + '#team', ic: 'team' },
-        { label: 'Why Choose Us',    href: LP + '#about', ic: 'star' }
+        { label: 'Facilities',       href: LP + '#about', ic: 'star' }
       ]},
-      { label: 'Dashboard', href: 'admin-dashboard.html', 
+      { label: 'Dashboard', href: 'admin-dashboard.html',
         match: ['admin-dashboard.html', 'psych-reports.html', 'staff-management.html',
-                'intake-submissions.html', 'payments-admin.html', 'meetings.html', 'website-management.html'],
+                'payments-admin.html', 'meetings.html', 'website-management.html', 'case-dashboard.html'],
         drop: dash },
       { label: 'Community', href: 'community.html',
-        match: ['community.html', 'articles.html', 'moderation.html'], drop: [
-        { label: 'FAQs',               href: 'community.html?tab=faqs', ic: 'question' },
-        { label: 'Articles',           href: 'community.html?tab=articles', ic: 'document' },
-        { label: 'Discussions',        href: 'community.html?tab=discussion', ic: 'chat' },
-        { label: 'Article Repository', href: 'articles.html', ic: 'archive' }
+        match: ['community.html', 'moderation.html'], drop: [
+        { label: 'FAQs',                 href: 'community.html?tab=faqs', ic: 'question' },
+        { label: 'Articles',             href: 'community.html?tab=articles', ic: 'document' },
+        { label: 'Discussions',          href: 'community.html?tab=discussion', ic: 'chat' },
+        { label: 'Moderation Dashboard', href: 'moderation.html', ic: 'dashboard' }
       ]},
-      { label: 'Contact', href: LP + '#cta' }
+      { label: 'Contact', href: 'contact.html' }
     ];
   }
 

@@ -36,11 +36,82 @@ const getAppointment = async (req, res, next) => {
     const appt = await Appointment.findById(req.params.id);
     if (!appt) return res.status(404).json({ success: false, message: 'Appointment not found.' });
 
-    if (!isStaff(req.user.role) && appt.client_id !== req.user.id) {
+    if (!isStaff(req.user.role) && String(appt.client_id) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
     return res.json({ success: true, data: appt });
+  } catch (error) { next(error); }
+};
+
+// ── GET /api/appointments/:id/intake-preview — return the intake form data for this appointment ──
+const getIntakePreview = async (req, res, next) => {
+  try {
+    const appt = await Appointment.findById(req.params.id);
+    if (!appt) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    if (!isStaff(req.user.role) && String(appt.client_id) !== String(req.user.id)) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    const db = require('../config/db');
+
+    // Assessment form — stored in individual columns (no form_data JSON column)
+    if (appt.assessment_form_id) {
+      const r = await db.query(
+        `SELECT * FROM assessment_intake_forms WHERE id = $1`,
+        [appt.assessment_form_id]
+      );
+      if (r.rows.length) {
+        const row = r.rows[0];
+        const form_data = {
+          formType: 'assessment',
+          familyName: row.family_name,
+          givenName: row.given_name,
+          middleName: row.middle_name,
+          nickname: row.nickname,
+          birthdate: row.birthdate,
+          age: row.age,
+          sex: row.sex,
+          contactNumber: row.contact_number,
+          email: row.email,
+          homeAddress: row.home_address,
+          primaryLanguage: row.primary_language,
+          reasonForReferral: row.reason_for_referral,
+          assessedBefore: row.assessed_before,
+          assessedBeforeDetails: row.assessed_before_details,
+          existingDiagnoses: row.existing_diagnoses,
+          existingDiagnosesDetails: row.existing_diagnoses_details,
+          interventions: row.current_interventions,
+          interventionOther: row.intervention_other,
+          answeringFor: row.answering_for,
+          prefSchedule: row.preferred_schedule,
+          modality: row.session_modality,
+        };
+        return res.json({ success: true, form_type: 'assessment', id: row.id, form_data, created_at: row.created_at });
+      }
+    }
+
+    // Counseling — promoted to intake_forms after payment, otherwise still in pending_intake_data
+    if (appt.intake_form_id) {
+      const r = await db.query(
+        `SELECT id, form_data, created_at FROM intake_forms WHERE id = $1`,
+        [appt.intake_form_id]
+      );
+      if (r.rows.length) {
+        const row = r.rows[0];
+        const fd = typeof row.form_data === 'string' ? JSON.parse(row.form_data) : row.form_data;
+        return res.json({ success: true, form_type: 'counseling', id: row.id, form_data: fd, created_at: row.created_at });
+      }
+    }
+
+    if (appt.pending_intake_data) {
+      const fd = typeof appt.pending_intake_data === 'string'
+        ? JSON.parse(appt.pending_intake_data)
+        : appt.pending_intake_data;
+      return res.json({ success: true, form_type: 'counseling', id: null, form_data: fd, created_at: appt.created_at });
+    }
+
+    return res.status(404).json({ success: false, message: 'No intake data found for this appointment.' });
   } catch (error) { next(error); }
 };
 
@@ -59,14 +130,38 @@ const checkConflicts = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ── PUT /api/appointments/:id/approve — staff approves schedule ──
+// ── PUT /api/appointments/:id/approve — Supervising Psychometrician confirms appointment ──
+// The SupPsy reviews the appointment, verifies the assessment type, and confirms.
+// Neurodevelopmental assessments are automatically locked to Face-to-Face modality.
+// Appointment status goes directly to 'confirmed', making payment available.
 const approveSchedule = async (req, res, next) => {
   try {
     const appt = await Appointment.findById(req.params.id);
     if (!appt) return res.status(404).json({ success: false, message: 'Appointment not found.' });
 
     if (!['pending_review'].includes(appt.status)) {
-      return res.status(400).json({ success: false, message: `Cannot approve from status "${appt.status}".` });
+      return res.status(400).json({ success: false, message: `Cannot confirm from status "${appt.status}".` });
+    }
+
+    const { assessment_type, modality } = req.body;
+
+    // Counseling appointments have intake_form_id set (or pending_intake_data without assessment_form_id)
+    const isCounseling = !!appt.intake_form_id || (!appt.assessment_form_id && !!appt.pending_intake_data);
+
+    if (!isCounseling && !assessment_type) {
+      return res.status(400).json({ success: false, message: 'assessment_type is required when confirming an assessment appointment.' });
+    }
+
+    // Counseling appointments have no assessment type — leave the column NULL
+    const effectiveType = isCounseling ? null : assessment_type;
+    const isNeuro = !isCounseling && assessment_type && assessment_type.toLowerCase() === 'neurodevelopmental';
+
+    // Neurodevelopmental assessments must be Face-to-Face
+    if (isNeuro && modality && modality.toLowerCase() !== 'face-to-face') {
+      return res.status(400).json({
+        success: false,
+        message: 'Neurodevelopmental assessments must be conducted Face-to-Face. Online modality is not permitted.',
+      });
     }
 
     // Check for conflicts
@@ -79,29 +174,37 @@ const approveSchedule = async (req, res, next) => {
       });
     }
 
-    const updated = await Appointment.approve(appt.id, req.user.id);
+    const updated = await Appointment.approve(appt.id, req.user.id, effectiveType);
 
-    // Notify client
+    const modalityNote = isNeuro
+      ? ' This is a Neurodevelopmental assessment and will be conducted Face-to-Face.'
+      : '';
+
+    // Notify client — appointment is confirmed, proceed to payment
     try {
       await notificationService.notifyUser(
         appt.client_id, 'appointment',
-        'Appointment Approved',
-        `Your preferred schedule has been approved! Your appointment is confirmed for ${new Date(updated.approved_datetime).toLocaleString('en-PH')}.`,
-        `notifications.html?appt=${appt.id}`
+        'Appointment Confirmed — Complete Payment',
+        `Your appointment has been confirmed for ${new Date(updated.approved_datetime).toLocaleString('en-PH')}.${modalityNote} Please proceed to payment to reserve your slot.`,
+        `payment.html?appt=${appt.id}`
       );
-    } catch (e) { console.error('Approval notification failed:', e.message); }
+    } catch (e) { console.error('Confirm notification failed:', e.message); }
 
-    // Notify staff
+    // Notify other staff
     try {
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['psychometrician', 'clinical_director'],
         'appointment',
-        'Appointment Approved',
-        `Appointment #${appt.id} has been approved by ${req.user.role}.`,
+        'Appointment Confirmed',
+        `Appointment #${appt.id} has been confirmed by the Supervising Psychometrician.${effectiveType ? ' Assessment type: ' + effectiveType : ''}`,
         `notifications.html?appt=${appt.id}`
       );
     } catch (e) {}
+    // NOTE: the chosen Psychologist is notified of the scheduled appointment only
+    // AFTER the Supervising Psychometrician verifies payment — see
+    // paymentController.verifyPayment (approve path). Not here at confirmation.
 
-    return res.json({ success: true, message: 'Schedule approved.', data: updated });
+    return res.json({ success: true, message: 'Appointment confirmed. Client may now proceed to payment.', data: updated });
   } catch (error) { next(error); }
 };
 
@@ -111,6 +214,9 @@ const proposeReschedule = async (req, res, next) => {
     const { proposed_datetime, staff_notes } = req.body;
     if (!proposed_datetime) {
       return res.status(400).json({ success: false, message: 'proposed_datetime is required.' });
+    }
+    if (!staff_notes || !staff_notes.trim()) {
+      return res.status(400).json({ success: false, message: 'A reason for the schedule change is required.' });
     }
 
     const proposedDt = new Date(proposed_datetime);
@@ -179,21 +285,22 @@ const clientConfirm = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    if (!['approved', 'reschedule_proposed'].includes(appt.status)) {
-      return res.status(400).json({ success: false, message: `Cannot confirm from status "${appt.status}".` });
+    if (!['reschedule_proposed'].includes(appt.status)) {
+      return res.status(400).json({ success: false, message: `Cannot confirm from status "${appt.status}". The Supervising Psychometrician must confirm the appointment first.` });
     }
 
     const updated = await Appointment.clientConfirm(appt.id);
 
-    // Notify staff
+    // Notify SupPsy that the client confirmed the proposed schedule
     try {
       const clientUser = await User.findById(appt.client_id);
       const clientName = clientUser ? clientUser.full_name : 'Client';
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['supervising_psychometrician', 'clinical_director'],
         'appointment',
-        'Appointment Confirmed',
+        'Client Confirmed Appointment Schedule',
         `${clientName} has confirmed their appointment for ${new Date(updated.approved_datetime).toLocaleString('en-PH')}.`,
-        `notifications.html?appt=${appt.id}`
+        'case-dashboard.html'
       );
     } catch (e) {}
 
@@ -203,12 +310,12 @@ const clientConfirm = async (req, res, next) => {
       await Notification.deleteByTypeAndTitle(appt.client_id, 'appointment', 'Appointment Approved');
     } catch (e) { console.error('Auto-delete notification failed:', e.message); }
 
-    // Phase 2 — prompt the client to pay now that the schedule is agreed.
+    // Prompt the client to proceed to payment
     try {
       await notificationService.notifyUser(
         appt.client_id, 'appointment', 'Schedule Confirmed — Complete Payment',
-        'Your schedule is confirmed. Open your appointment to choose a payment option, scan the GCash QR, and upload your proof of payment to reserve your slot.',
-        `notifications.html?appt=${appt.id}`
+        'Your appointment schedule is confirmed! Please proceed to payment to reserve your slot.',
+        `payment.html?appt=${appt.id}`
       );
     } catch (e) { /* non-fatal */ }
 
@@ -233,7 +340,8 @@ const clientDecline = async (req, res, next) => {
     try {
       const clientUser = await User.findById(appt.client_id);
       const clientName = clientUser ? clientUser.full_name : 'Client';
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['psychometrician', 'clinical_director'],
         'appointment',
         'Appointment Declined',
         `${clientName} has declined their appointment.${notes ? ' Reason: ' + notes : ''}`,
@@ -263,6 +371,9 @@ const clientRequestChange = async (req, res, next) => {
     if (!new_datetime) {
       return res.status(400).json({ success: false, message: 'new_datetime is required.' });
     }
+    if (!notes || !notes.trim()) {
+      return res.status(400).json({ success: false, message: 'A reason for the schedule change is required.' });
+    }
 
     const newDt = new Date(new_datetime);
     if (newDt <= new Date()) {
@@ -278,15 +389,16 @@ const clientRequestChange = async (req, res, next) => {
 
     const updated = await Appointment.clientRequestChange(appt.id, new_datetime, notes);
 
-    // Notify staff
+    // Notify SupPsy of the client's counter-proposal with their reason
     try {
       const clientUser = await User.findById(appt.client_id);
       const clientName = clientUser ? clientUser.full_name : 'Client';
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['supervising_psychometrician', 'clinical_director'],
         'appointment',
-        'Schedule Change Requested',
-        `${clientName} has requested a new schedule: ${new Date(new_datetime).toLocaleString('en-PH')}.${notes ? ' Note: ' + notes : ''} Please review.`,
-        `notifications.html?appt=${appt.id}`
+        'Client Proposed a New Schedule',
+        `${clientName} has proposed a new appointment schedule: ${new Date(new_datetime).toLocaleString('en-PH')}. Reason: "${notes}" Please review and confirm or propose an alternative.`,
+        'case-dashboard.html'
       );
     } catch (e) {}
 
@@ -331,7 +443,7 @@ const cancelAppointment = async (req, res, next) => {
     if (!appt) return res.status(404).json({ success: false, message: 'Appointment not found.' });
 
     // Only the appointment owner or staff can cancel
-    if (!isStaff(req.user.role) && appt.client_id !== req.user.id) {
+    if (!isStaff(req.user.role) && String(appt.client_id) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
@@ -356,7 +468,8 @@ const cancelAppointment = async (req, res, next) => {
         // Client cancelled — notify staff
         const clientUser = await User.findById(appt.client_id);
         const clientName = clientUser ? clientUser.full_name : 'Client';
-        await notificationService.notifyStaff(
+        await notificationService.notifyRoles(
+          ['psychometrician', 'clinical_director'],
           'appointment',
           'Appointment Cancelled',
           `${clientName} has cancelled their appointment #${appt.id}. The time slot is now available.`,
@@ -372,7 +485,7 @@ const cancelAppointment = async (req, res, next) => {
 // ── PUT /api/appointments/:id/edit ──
 const editAppointment = async (req, res, next) => {
   try {
-    const { new_datetime } = req.body;
+    const { new_datetime, modality } = req.body;
     if (!new_datetime) {
       return res.status(400).json({ success: false, message: 'new_datetime is required.' });
     }
@@ -386,7 +499,7 @@ const editAppointment = async (req, res, next) => {
     if (!appt) return res.status(404).json({ success: false, message: 'Appointment not found.' });
 
     // Only the appointment owner or staff can edit
-    if (!isStaff(req.user.role) && appt.client_id !== req.user.id) {
+    if (!isStaff(req.user.role) && String(appt.client_id) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
@@ -394,6 +507,14 @@ const editAppointment = async (req, res, next) => {
     // A verified payment (or a closed appointment) locks the schedule.
     if (['cancelled', 'declined'].includes(appt.status) || appt.payment_status === 'paid_verified') {
       return res.status(400).json({ success: false, message: `Cannot edit this appointment (status "${appt.status}"${appt.payment_status === 'paid_verified' ? ', already paid' : ''}).` });
+    }
+
+    // Neurodevelopmental assessments cannot be changed to Online modality
+    if (Appointment.isNeurodevelopmental(appt) && modality && modality.toLowerCase() !== 'face-to-face') {
+      return res.status(400).json({
+        success: false,
+        message: 'Neurodevelopmental assessments must remain Face-to-Face. Online modality is not permitted.',
+      });
     }
 
     // Check daily limit on the new date
@@ -422,7 +543,8 @@ const editAppointment = async (req, res, next) => {
     try {
       const clientUser = await User.findById(appt.client_id);
       const clientName = clientUser ? clientUser.full_name : 'Client';
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['psychometrician', 'clinical_director'],
         'appointment',
         'Appointment Rescheduled',
         `${clientName} has rescheduled their appointment #${appt.id} to ${new Date(new_datetime).toLocaleString('en-PH')}. Please review.`,
@@ -449,4 +571,5 @@ module.exports = {
   checkConflicts, approveSchedule, proposeReschedule,
   clientConfirm, clientDecline, clientRequestChange,
   getAvailability, cancelAppointment, editAppointment,
+  getIntakePreview,
 };

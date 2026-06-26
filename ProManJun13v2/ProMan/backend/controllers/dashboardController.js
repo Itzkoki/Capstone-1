@@ -34,44 +34,39 @@ const getDashboard = async (req, res, next) => {
         ];
         break;
 
+      // Per-role Quick Actions mirror the role-based navbar: each role sees ONLY
+      // its own module(s) plus Teleconference (every staff role can host/create a
+      // session). The Clinical Director sees everything.
       case 'psychometrician':
-        dashboardData.summary = 'View assigned clients, access intake data, and manage assessment records.';
+        dashboardData.summary = 'Review client intake submissions and manage their appointment schedules.';
         dashboardData.quickActions = [
-          { label: 'Intake Submissions', link: 'intake-submissions.html' },
-          { label: 'Payment Verification', link: 'payments-admin.html' },
-          { label: 'Articles', link: 'articles.html' },
-          { label: 'Meetings', link: 'meetings.html' },
+          { label: 'Case Management', link: 'case-dashboard.html' },
+          { label: 'Teleconference', link: 'meetings.html' },
         ];
         break;
 
       case 'supervising_psychometrician':
-        dashboardData.summary = 'Review assessment records and verify scoring accuracy.';
+        dashboardData.summary = 'Verify client payment submissions once the appointment schedule is approved.';
         dashboardData.quickActions = [
-          { label: 'Intake Submissions', link: 'intake-submissions.html' },
           { label: 'Payment Verification', link: 'payments-admin.html' },
-          { label: 'Articles', link: 'articles.html' },
-          { label: 'Meetings', link: 'meetings.html' },
+          { label: 'Teleconference', link: 'meetings.html' },
         ];
         break;
 
       case 'qc_psychometrician':
-        dashboardData.summary = 'Conduct final validation of assessment results before psychologist review.';
+        dashboardData.summary = 'Manage report templates and oversee quality assurance.';
         dashboardData.quickActions = [
-          { label: 'Intake Submissions', link: 'intake-submissions.html' },
-          { label: 'Payment Verification', link: 'payments-admin.html' },
-          { label: 'Articles', link: 'articles.html' },
-          { label: 'Meetings', link: 'meetings.html' },
+          { label: 'Manage Templates', link: 'psych-reports.html#manageTpl' },
+          { label: 'Teleconference', link: 'meetings.html' },
         ];
         break;
 
       case 'psychologist':
-        dashboardData.summary = 'Generate reports, provide diagnoses, and finalize approvals.';
+        dashboardData.summary = 'Generate psychological reports, provide diagnoses, and finalize approvals.';
         dashboardData.quickActions = [
           { label: 'Psych Reports', link: 'psych-reports.html' },
-          { label: 'Intake Submissions', link: 'intake-submissions.html' },
-          { label: 'Payment Verification', link: 'payments-admin.html' },
-          { label: 'Articles', link: 'articles.html' },
-          { label: 'Meetings', link: 'meetings.html' },
+          { label: 'Create Report', link: 'psych-reports.html#create' },
+          { label: 'Teleconference', link: 'meetings.html' },
         ];
         break;
 
@@ -90,10 +85,12 @@ const getDashboard = async (req, res, next) => {
         dashboardData.recentActivity = recentActivity;
         dashboardData.quickActions = [
           { label: 'Psych Reports', link: 'psych-reports.html' },
+          { label: 'Create Report', link: 'psych-reports.html#create' },
+          { label: 'Manage Templates', link: 'psych-reports.html#manageTpl' },
           { label: 'Manage Staff', link: 'staff-management.html' },
-          { label: 'Intake Submissions', link: 'intake-submissions.html' },
+          { label: 'Case Management', link: 'case-dashboard.html' },
           { label: 'Payment Verification', link: 'payments-admin.html' },
-          { label: 'Articles', link: 'articles.html' },
+          { label: 'Teleconference', link: 'meetings.html' },
         ];
         break;
       }

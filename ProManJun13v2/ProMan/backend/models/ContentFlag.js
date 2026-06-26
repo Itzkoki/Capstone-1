@@ -23,13 +23,36 @@ const ContentFlag = {
                 WHEN 'thread'  THEN (SELECT title FROM forum_threads WHERE id = cf.content_id)
                 WHEN 'reply'   THEN (SELECT LEFT(content, 100) FROM forum_replies WHERE id = cf.content_id)
                 WHEN 'faq'     THEN (SELECT LEFT(question, 100) FROM faqs WHERE id = cf.content_id)
-              END AS content_preview
+              END AS content_preview,
+              CASE cf.content_type
+                WHEN 'article' THEN (SELECT content FROM articles WHERE id = cf.content_id)
+                WHEN 'thread'  THEN (SELECT content FROM forum_threads WHERE id = cf.content_id)
+                WHEN 'reply'   THEN (SELECT content FROM forum_replies WHERE id = cf.content_id)
+                WHEN 'faq'     THEN (SELECT answer FROM faqs WHERE id = cf.content_id)
+              END AS content_body
        FROM content_flags cf
        LEFT JOIN users reporter ON reporter.id = cf.reporter_id
        WHERE cf.status = 'pending'
        ORDER BY cf.created_at ASC
        LIMIT $1 OFFSET $2`,
       [limit, offset]
+    );
+    return result.rows;
+  },
+
+  /**
+   * Pending (unreviewed) flags for a specific content item — used to mark the
+   * exact flagged message in the community forum (staff view).
+   */
+  async findPendingByContent(contentType, contentId) {
+    const result = await db.query(
+      `SELECT cf.reason, cf.details, cf.created_at,
+              reporter.full_name AS reporter_name
+       FROM content_flags cf
+       LEFT JOIN users reporter ON reporter.id = cf.reporter_id
+       WHERE cf.status = 'pending' AND cf.content_type = $1 AND cf.content_id = $2
+       ORDER BY cf.created_at DESC`,
+      [contentType, contentId]
     );
     return result.rows;
   },

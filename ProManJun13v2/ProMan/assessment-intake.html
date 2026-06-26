@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="toast.css">
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="captcha.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body class="intake-page assessment-page logged-in">
 
@@ -24,7 +27,7 @@
         <img src="barcarse logo.jpg" alt="BPS Logo">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -45,7 +48,7 @@
     <!-- ============================================ -->
     <div class="select-screen active" id="consent-screen">
       <div class="select-screen__head">
-        <h1 class="select-screen__title">Consent and Acknowledgment</h1>
+        <h1 class="select-screen__title">Data Privacy &amp; Ethics Consent</h1>
         <p class="select-screen__subtitle">Please read and agree to both notices below before starting your assessment intake form.</p>
       </div>
 
@@ -97,8 +100,8 @@
           </label>
         </div>
 
-        <div class="consent-footer">
-          <button type="button" class="select-back-btn" onclick="window.location.href='intakeform.html'">← Back</button>
+        <div class="consent-actions consent-actions--full">
+          <button type="button" class="select-back-btn" onclick="window.history.back()">← Back</button>
           <button type="button" class="btn-consent-continue" id="btn-consent-continue" disabled onclick="agreeConsent()">I Agree &amp; Continue</button>
         </div>
       </div>
@@ -162,12 +165,12 @@
             <div class="field-row">
               <div class="field">
                 <label for="familyName">Family Name (Apelyido) <span class="req">*</span></label>
-                <input type="text" id="familyName" placeholder="e.g. Dela Cruz" required aria-required="true">
+                <input type="text" id="familyName" placeholder="e.g. Dela Cruz" required aria-required="true" oninput="restrictToName(this)">
                 <div class="field__error-msg" id="err-familyName">Family name is required.</div>
               </div>
               <div class="field">
                 <label for="givenName">Given Name (Pangalan) <span class="req">*</span></label>
-                <input type="text" id="givenName" placeholder="e.g. Juan" required aria-required="true">
+                <input type="text" id="givenName" placeholder="e.g. Juan" required aria-required="true" oninput="restrictToName(this)">
                 <div class="field__error-msg" id="err-givenName">Given name is required.</div>
               </div>
             </div>
@@ -175,11 +178,11 @@
             <div class="field-row">
               <div class="field">
                 <label for="middleName">Middle Name (Gitnang Pangalan)</label>
-                <input type="text" id="middleName" placeholder="e.g. Santos">
+                <input type="text" id="middleName" placeholder="e.g. Santos" oninput="restrictToName(this)">
               </div>
               <div class="field">
                 <label for="nickname">Nickname / Palayaw <span class="req">*</span></label>
-                <input type="text" id="nickname" placeholder="e.g. Juan" required aria-required="true">
+                <input type="text" id="nickname" placeholder="e.g. Juan" required aria-required="true" oninput="restrictToName(this)">
                 <div class="field__error-msg" id="err-nickname">Nickname is required.</div>
               </div>
             </div>
@@ -195,8 +198,8 @@
                 <div class="dob-calendar" id="dob-calendar">
                   <div class="dob-cal__header">
                     <div class="dob-cal__selects">
-                      <select id="dob-month-select" aria-label="Month"></select>
-                      <select id="dob-year-select" aria-label="Year"></select>
+                      <select id="dob-month-select" aria-label="Month" data-bps-skip></select>
+                      <select id="dob-year-select" aria-label="Year" data-bps-skip></select>
                     </div>
                   </div>
                   <div class="dob-cal__weekdays">
@@ -235,7 +238,7 @@
             <div class="field-row">
               <div class="field">
                 <label for="contactNumber">Contact Number <span class="req">*</span></label>
-                <input type="tel" id="contactNumber" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required aria-required="true">
+                <input type="tel" id="contactNumber" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required aria-required="true" oninput="restrictToPhone(this)">
                 <div class="field__error-msg" id="err-contactNumber">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
               </div>
               <div class="field">
@@ -293,13 +296,7 @@
                     <span class="opt-desc">Depression, anxiety, trauma, and related concerns.</span>
                   </span>
                 </label>
-                <label class="radio-option">
-                  <input type="radio" name="reasonForReferral" value="Forensic Assessment">
-                  <span class="opt-body">
-                    <span class="opt-title">Forensic Assessment</span>
-                    <span class="opt-desc">VAWC, child adoption, annulment.</span>
-                  </span>
-                </label>
+
                 <label class="radio-option">
                   <input type="radio" name="reasonForReferral" value="Pre-Employment/Neuropsychological">
                   <span class="opt-body">
@@ -339,8 +336,9 @@
 
           <div class="conditional-section" id="assessedBefore-yes-section">
             <div class="field">
-              <label for="assessedBeforeDetails">If yes: Please specify the year and reason / Paki-ilagay kung kailan at anong uri ng pagsusuri</label>
+              <label for="assessedBeforeDetails">If yes: Please specify the year and reason / Paki-ilagay kung kailan at anong uri ng pagsusuri <span class="req">*</span></label>
               <textarea id="assessedBeforeDetails" placeholder="e.g. 2022 — developmental assessment"></textarea>
+              <div class="field__error-msg" id="err-assessedBeforeDetails">Please provide details since you selected Yes.</div>
             </div>
           </div>
 
@@ -356,8 +354,9 @@
 
           <div class="conditional-section" id="diagnoses-yes-section">
             <div class="field">
-              <label for="existingDiagnosesDetails">If yes: Please specify / Paki-ilagay ang detalye</label>
+              <label for="existingDiagnosesDetails">If yes: Please specify / Paki-ilagay ang detalye <span class="req">*</span></label>
               <textarea id="existingDiagnosesDetails" placeholder="Please specify the diagnosis..."></textarea>
+              <div class="field__error-msg" id="err-existingDiagnosesDetails">Please provide details since you selected Yes.</div>
             </div>
           </div>
 
@@ -403,61 +402,88 @@
       <div class="step-panel" id="panel-3">
         <div class="intake-card">
           <h2 class="intake-card__title">Assessment Schedule / Petsa at Oras</h2>
-          <p class="intake-card__lead">Please choose your preferred date and time for the assessment. Kindly note that if your selected slot has already reached maximum capacity, we will automatically place you in the nearest available schedule and notify you via call or message.<br>
-          <em>Piliin po ang nais ninyong petsa at oras. Paalala lang po na kung puno na ang inyong napiling petsa o oras, kayo po ay mailalagay sa pinakamalapit na available na iskedyul at aming ipapaalam ito sa inyo sa pamamagitan ng tawag o mensahe.</em></p>
+          <p class="intake-card__lead">Please choose your preferred assessor, then select your preferred date and time.<br>
+          <em>Piliin po ang nais ninyong psychometrician, pagkatapos ay pumili ng petsa at oras.</em></p>
 
-          <input type="hidden" id="prefSchedule" required>
-          <div class="schedule-layout">
-            <div class="field" style="margin-bottom:0;">
-              <label id="schedule-label">Preferred Date and Time <span class="req">*</span></label>
-              <div class="cal-widget" id="cal-widget" role="group" aria-labelledby="schedule-label">
-                <div class="cal-header">
-                  <button type="button" class="cal-nav" id="cal-prev" title="Previous month" aria-label="Previous month">
-                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
-                  </button>
-                  <div class="cal-title" id="cal-title">May 2026</div>
-                  <button type="button" class="cal-nav" id="cal-next" title="Next month" aria-label="Next month">
-                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
-                  </button>
-                </div>
-                <div class="cal-weekdays">
-                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
-                </div>
-                <div class="cal-grid" id="cal-grid"></div>
-                <div class="cal-time-row">
-                  <label for="cal-time">Time:</label>
-                  <select id="cal-time">
-                    <option value="">Select time</option>
-                    <option value="09:00">9:00 AM</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="13:00">1:00 PM</option>
-                    <option value="14:00">2:00 PM</option>
-                    <option value="15:00">3:00 PM</option>
-                    <option value="16:00">4:00 PM</option>
-                    <option value="17:00">5:00 PM</option>
-                  </select>
-                </div>
-                <div class="cal-availability" id="cal-availability"></div>
-                <div class="cal-selected" id="cal-selected">No date selected</div>
-              </div>
-              <div class="field__error-msg" id="err-prefSchedule">Please select a date and time.</div>
+          <!-- Step 1: Preferred Gender (always visible first) -->
+          <div class="field">
+            <label>Preferred Gender of Assessor/Psychometrician <span class="req">*</span></label>
+            <div class="radio-group" id="counselorGender-group">
+              <label class="radio-option"><input type="radio" name="counselorGender" value="Male"><span>Male</span></label>
+              <label class="radio-option"><input type="radio" name="counselorGender" value="Female"><span>Female</span></label>
+              <label class="radio-option"><input type="radio" name="counselorGender" value="No preference"><span>No preference</span></label>
             </div>
+            <div class="field__error-msg" id="err-counselorGender">Please select an option.</div>
+          </div>
 
-            <div class="schedule-side">
-              <div class="field">
-                <label id="modality-label">Session Modality <span class="req">*</span></label>
-                <div class="radio-group option-stack" id="modality-group" role="radiogroup" aria-labelledby="modality-label">
-                  <label class="radio-option" id="modality-online-option"><input type="radio" name="modality" value="Online"><span>Online</span></label>
-                  <label class="radio-option"><input type="radio" name="modality" value="Face-to-Face"><span>Face-to-Face</span></label>
+          <!-- Step 2: Assessor picker (appears after gender is selected) -->
+          <div class="field staff-field" id="assessor-staff-field">
+            <label for="assessorStaff">Choose an Assessor / Psychometrician <span class="req">*</span></label>
+            <div class="staff-picker">
+              <select id="assessorStaff" class="staff-select" onchange="onAssessorChange()">
+                <option value="">Select a staff member</option>
+              </select>
+              <span class="staff-expertise" id="assessor-expertise"></span>
+            </div>
+            <div class="field__hint" id="assessor-staff-hint">Showing staff matching your preference.</div>
+            <div class="field__error-msg" id="err-assessorStaff">Please choose a staff member.</div>
+          </div>
+
+          <!-- Step 3: Calendar + Modality (appears after assessor is selected) -->
+          <div class="step-reveal" id="schedule-reveal-section">
+            <input type="hidden" id="prefSchedule" required>
+            <div class="schedule-layout">
+              <div class="field" style="margin-bottom:0;">
+                <label id="schedule-label">Preferred Date and Time <span class="req">*</span></label>
+                <div class="cal-widget" id="cal-widget" role="group" aria-labelledby="schedule-label">
+                  <div class="cal-header">
+                    <button type="button" class="cal-nav" id="cal-prev" title="Previous month" aria-label="Previous month">
+                      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
+                    </button>
+                    <div class="cal-title" id="cal-title">June 2026</div>
+                    <button type="button" class="cal-nav" id="cal-next" title="Next month" aria-label="Next month">
+                      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                  <div class="cal-weekdays">
+                    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                  </div>
+                  <div class="cal-grid" id="cal-grid"></div>
+                  <div class="cal-time-row">
+                    <label for="cal-time">Time:</label>
+                    <select id="cal-time">
+                      <option value="">Select time</option>
+                      <option value="09:00">9:00 AM</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="12:00">12:00 PM</option>
+                      <option value="13:00">1:00 PM</option>
+                      <option value="14:00">2:00 PM</option>
+                      <option value="15:00">3:00 PM</option>
+                      <option value="16:00">4:00 PM</option>
+                      <option value="17:00">5:00 PM</option>
+                    </select>
+                  </div>
+                  <div class="cal-availability" id="cal-availability"></div>
+                  <div class="cal-selected" id="cal-selected">No date selected</div>
                 </div>
-                <div class="field__hint" id="modality-hint">Online sessions are unavailable for Neurodevelopmental Assessment (face-to-face only).</div>
-                <div class="field__error-msg" id="err-modality">Please select a session modality.</div>
+                <div class="field__error-msg" id="err-prefSchedule">Please select a date and time.</div>
               </div>
 
-              <div class="schedule-note">
-                <strong>Heads up:</strong> if your chosen slot is already full, we will place you in the nearest available schedule and notify you by call or message.
+              <div class="schedule-side">
+                <div class="field">
+                  <label id="modality-label">Session Modality <span class="req">*</span></label>
+                  <div class="radio-group option-stack" id="modality-group" role="radiogroup" aria-labelledby="modality-label">
+                    <label class="radio-option" id="modality-online-option"><input type="radio" name="modality" value="Online"><span>Online</span></label>
+                    <label class="radio-option"><input type="radio" name="modality" value="Face-to-Face"><span>Face-to-Face</span></label>
+                  </div>
+                  <div class="field__hint" id="modality-hint">Online sessions are unavailable for Neurodevelopmental Assessment (face-to-face only).</div>
+                  <div class="field__error-msg" id="err-modality">Please select a session modality.</div>
+                </div>
+
+                <div class="schedule-note">
+                  <strong>Heads up:</strong> if your chosen slot is already full, we will place you in the nearest available schedule and notify you by call or message.
+                </div>
               </div>
             </div>
           </div>
@@ -495,8 +521,11 @@
   <!-- ===== SCRIPTS ===== -->
   <script src="session.js"></script>
   <script src="toast.js"></script>
+  <script src="captcha.js"></script>
   <script>
     const API_BASE = 'http://localhost:5000';
+    // Assessment intake: only Psychologists are assignable (service=assessment).
+    const STAFF_DIRECTORY_API = 'http://localhost:5000/api/staff-directory/assignable?service=assessment';
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -514,10 +543,15 @@
       document.getElementById('btn-consent-continue').disabled = !(p && e);
     }
 
-    function agreeConsent() {
+    async function agreeConsent() {
       const p = document.getElementById('privacy-consent-checkbox').checked;
       const e = document.getElementById('ethics-consent-checkbox').checked;
       if (!p || !e) return;
+
+      // ── CAPTCHA verification before accessing assessment intake form ──
+      const captchaPassed = await BPSCaptcha.verify('assessment_intake');
+      if (!captchaPassed) return; // user cancelled or failed
+
       assessmentConsent.dataPrivacyConsent = true;
       assessmentConsent.codeOfEthicsConsent = true;
       document.getElementById('consent-screen').classList.remove('active');
@@ -569,11 +603,32 @@
     }
 
     function goToStep(step) {
-      if (step > currentStep && !validateStep(currentStep)) return;
+      if (step > currentStep) {
+        if (!validateStep(currentStep)) { showSectionError(currentStep, true); return; }
+        showSectionError(currentStep, false);
+      }
       currentStep = step;
       updateStepper();
       showPanel(step);
       if (step === 4) buildReview();
+    }
+
+    // Show / hide a "missing or invalid input in this section" banner below the
+    // current step's navigation buttons when the user tries to advance.
+    function showSectionError(step, show) {
+      const panel = document.getElementById('panel-' + step);
+      if (!panel) return;
+      const nav = panel.querySelector('.intake-nav');
+      if (!nav) return;
+      let msg = panel.querySelector('.section-error-msg');
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'section-error-msg';
+        msg.style.cssText = 'margin-top:12px;padding:11px 14px;border-radius:10px;background:#fff1f1;border:1px solid #f3c2c2;color:#b91c1c;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;';
+        msg.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" style="fill:#dc2626;flex:0 0 auto;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><span>Please complete or correct the highlighted fields in this section before continuing.</span>';
+        nav.insertAdjacentElement('afterend', msg);
+      }
+      msg.style.display = show ? 'flex' : 'none';
     }
 
     // ============================================
@@ -604,6 +659,15 @@
 
     const phPhoneRegex = /^(\+63|0)9\d{9}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Strip non-name characters (letters, spaces, hyphens, apostrophes, periods only)
+    function restrictToName(el) {
+      el.value = el.value.replace(/[^a-zA-ZÀ-ÿñÑ\s\-'.]/g, '');
+    }
+    // Strip non-phone characters (digits, +, spaces, hyphens, parentheses only)
+    function restrictToPhone(el) {
+      el.value = el.value.replace(/[^0-9+\s\-()]/g, '');
+    }
 
     // ============================================
     // YES / NO TOGGLE
@@ -687,8 +751,87 @@
           applyModalityRule(radio.value);
         }
         if (radio.name === 'modality') showError('modality', false);
+        if (radio.name === 'counselorGender') {
+          populateAssessorStaff(radio.value);
+          showError('counselorGender', false);
+        }
       });
     });
+
+    async function populateAssessorStaff(preference) {
+      const field    = document.getElementById('assessor-staff-field');
+      const select   = document.getElementById('assessorStaff');
+      const hint     = document.getElementById('assessor-staff-hint');
+      const expertise = document.getElementById('assessor-expertise');
+
+      // Reset downstream sections
+      select.innerHTML = '<option value=””>Loading staff…</option>';
+      expertise.textContent = '';
+      expertise.classList.remove('show');
+      document.getElementById('schedule-reveal-section').classList.remove('show');
+      document.getElementById('prefSchedule').value = '';
+      showError('assessorStaff', false);
+      field.classList.add('show');
+
+      const token = typeof BPSSession !== 'undefined' ? BPSSession.getToken() : sessionStorage.getItem('bps_token');
+      let list = [];
+      try {
+        const qs = (preference === 'Male' || preference === 'Female')
+          ? '&gender=' + encodeURIComponent(preference) : '';
+        const res = await fetch(STAFF_DIRECTORY_API + qs, {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+        });
+        const data = await res.json().catch(() => ({}));
+        list = (data && data.success && Array.isArray(data.data)) ? data.data : [];
+      } catch (_) { list = []; }
+
+      if (preference === 'Male' || preference === 'Female') {
+        hint.textContent = 'Showing ' + preference.toLowerCase() + ' staff. Specialization is shown beside each name.';
+      } else {
+        hint.textContent = 'No preference selected — showing all available staff.';
+      }
+
+      select.innerHTML = '<option value=””>Select a staff member</option>';
+      if (!list.length) {
+        select.innerHTML = '<option value=””>No matching staff available</option>';
+        hint.textContent = 'No staff match your preference right now. Try “No preference”, or contact us for assistance.';
+        return;
+      }
+      list.forEach(s => {
+        const spec = s.specialization || '';
+        const opt = document.createElement('option');
+        opt.value = s.staff_id;
+        opt.textContent = spec ? (s.name + ' — ' + spec) : s.name;
+        opt.dataset.expertise = spec;
+        opt.dataset.staffName = s.name;
+        opt.dataset.schedule = JSON.stringify(s.schedule || []);
+        select.appendChild(opt);
+      });
+    }
+
+    function onAssessorChange() {
+      const select   = document.getElementById('assessorStaff');
+      const expertise = document.getElementById('assessor-expertise');
+      const opt = select.options[select.selectedIndex];
+      const exp = opt ? opt.dataset.expertise : '';
+      if (exp) {
+        expertise.textContent = exp;
+        expertise.classList.add('show');
+      } else {
+        expertise.textContent = '';
+        expertise.classList.remove('show');
+      }
+      showError('assessorStaff', false);
+
+      if (opt && opt.value) {
+        const schedule = JSON.parse(opt.dataset.schedule || '[]');
+        if (window._assessorCalSetSchedule) window._assessorCalSetSchedule(schedule);
+        document.getElementById('schedule-reveal-section').classList.add('show');
+      } else {
+        document.getElementById('schedule-reveal-section').classList.remove('show');
+        document.getElementById('prefSchedule').value = '';
+      }
+    }
 
     // Neurodevelopmental Assessment => face-to-face only (Online grayed out).
     function applyModalityRule(referral) {
@@ -893,7 +1036,15 @@
         const answering = getRadio('answeringFor');
 
         showError('assessedBefore', !assessed); if (!assessed) valid = false;
+        // When "Yes" is selected, the details textarea becomes required.
+        const assessedDetails = document.getElementById('assessedBeforeDetails').value.trim();
+        const assessedNeedsDetails = assessed === 'Yes' && !assessedDetails;
+        showError('assessedBeforeDetails', assessedNeedsDetails); if (assessedNeedsDetails) valid = false;
+
         showError('existingDiagnoses', !diag); if (!diag) valid = false;
+        const diagDetails = document.getElementById('existingDiagnosesDetails').value.trim();
+        const diagNeedsDetails = diag === 'Yes' && !diagDetails;
+        showError('existingDiagnosesDetails', diagNeedsDetails); if (diagNeedsDetails) valid = false;
         showError('interventions', interventions.length === 0); if (interventions.length === 0) valid = false;
         if (interventions.includes('Other') && !document.getElementById('interventionOther').value.trim()) {
           showError('interventions', true); valid = false;
@@ -903,8 +1054,12 @@
       else if (step === 3) {
         const sched = document.getElementById('prefSchedule').value;
         const mod = getRadio('modality');
+        const cg = getRadio('counselorGender');
+        const staffSel = document.getElementById('assessorStaff').value;
         showError('prefSchedule', !sched); if (!sched) valid = false;
         showError('modality', !mod); if (!mod) valid = false;
+        showError('counselorGender', !cg); if (!cg) valid = false;
+        showError('assessorStaff', !staffSel); if (!staffSel) valid = false;
       }
       return valid;
     }
@@ -929,6 +1084,24 @@
       let selectedDate = null;
       let fullDates = new Set();
       let dateAvailabilityCache = {};
+      let assessorSchedule = []; // [{day, start, end}] from selected assessor
+
+      const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+      window._assessorCalSetSchedule = function(schedule) {
+        assessorSchedule = schedule || [];
+        selectedDate = null;
+        hiddenInput.value = '';
+        selectedLabel.textContent = 'No date selected';
+        timeSelect.value = '';
+        availabilityLabel.style.display = 'none';
+        fullDates = new Set();
+        dateAvailabilityCache = {};
+        viewYear = today.getFullYear();
+        viewMonth = today.getMonth();
+        renderCalendar();
+        loadMonthAvailability();
+      };
 
       const ALL_TIME_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
       const TIME_LABELS = {
@@ -993,16 +1166,19 @@
           const isFull = fullDates.has(dateStr);
           const isSelected = selectedDate && selectedDate.getTime() === date.getTime();
           const cached = dateAvailabilityCache[dateStr];
+          const isOnSchedule = assessorSchedule.length === 0
+            || assessorSchedule.some(s => s.day === DAY_NAMES[date.getDay()]);
 
           let cls = 'cal-day';
           if (isToday) cls += ' cal-day--today';
           if (isSelected) cls += ' cal-day--selected';
-          if (isPast) cls += ' cal-day--disabled';
+          if (isPast || !isOnSchedule) cls += ' cal-day--disabled';
           else if (isFull) cls += ' cal-day--full';
 
-          const disabled = isPast || isFull;
+          const disabled = isPast || isFull || !isOnSchedule;
           let titleAttr = '';
-          if (isFull) titleAttr = 'Fully booked (5/5 clients)';
+          if (!isOnSchedule && !isPast) titleAttr = 'Assessor not available on this day';
+          else if (isFull) titleAttr = 'Fully booked (5/5 clients)';
           else if (isPast) titleAttr = 'Past date';
           else if (cached) titleAttr = `${cached.remaining} slot${cached.remaining !== 1 ? 's' : ''} available`;
 
@@ -1028,11 +1204,35 @@
         });
       }
 
+      // Has this slot ('HH:MM') already passed for the selected day? Only the
+      // current calendar day is affected — past days are disabled outright and
+      // future days are always ahead of "now".
+      function isPastSlot(slot) {
+        if (!selectedDate) return false;
+        const now = new Date();
+        const sameDay = selectedDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        if (!sameDay) return false;
+        const [h, m] = slot.split(':').map(Number);
+        const slotDt = new Date(now); slotDt.setHours(h, m, 0, 0);
+        return slotDt <= now;
+      }
+
       function updateTimeSlots(avail) {
+        let schedStart = null;
+        let schedEnd = null;
+        if (assessorSchedule.length > 0 && selectedDate) {
+          const entry = assessorSchedule.find(s => s.day === DAY_NAMES[selectedDate.getDay()]);
+          if (entry) { schedStart = entry.start; schedEnd = entry.end; }
+        }
+
         let html = '<option value="">Select time</option>';
         ALL_TIME_SLOTS.forEach(slot => {
+          if (schedStart && slot < schedStart) return;
+          if (schedEnd && slot >= schedEnd) return;
           const isBooked = avail && avail.bookedSlots && avail.bookedSlots.includes(slot);
-          if (isBooked) html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Booked</option>`;
+          const isPast = isPastSlot(slot);
+          if (isPast) html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Unavailable</option>`;
+          else if (isBooked) html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Booked</option>`;
           else html += `<option value="${slot}">${TIME_LABELS[slot]}</option>`;
         });
         timeSelect.innerHTML = html;
@@ -1084,8 +1284,7 @@
       });
       timeSelect.addEventListener('change', updateHiddenInput);
 
-      renderCalendar();
-      loadMonthAvailability();
+      // Calendar renders when an assessor is selected via _assessorCalSetSchedule()
     })();
 
     // ============================================
@@ -1116,6 +1315,8 @@
         answeringFor: getRadio('answeringFor'),
         prefSchedule: document.getElementById('prefSchedule').value,
         modality: getRadio('modality'),
+        counselorGender: getRadio('counselorGender'),
+        counselorStaffId: document.getElementById('assessorStaff') ? document.getElementById('assessorStaff').value : '',
         dataPrivacyConsent: assessmentConsent.dataPrivacyConsent,
         codeOfEthicsConsent: assessmentConsent.codeOfEthicsConsent,
         submittedAt: new Date().toISOString(),
@@ -1125,6 +1326,9 @@
     function buildReview() {
       const d = collectData();
       const schedVal = d.prefSchedule ? new Date(d.prefSchedule).toLocaleString('en-PH') : '';
+      const staffSel = document.getElementById('assessorStaff');
+      const staffOpt = staffSel && staffSel.selectedIndex >= 0 ? staffSel.options[staffSel.selectedIndex] : null;
+      const staffName = staffOpt ? (staffOpt.dataset.staffName || staffOpt.textContent) : '';
       const fullName = [d.givenName, d.middleName, d.familyName].filter(Boolean).join(' ');
 
       const sections = [
@@ -1156,6 +1360,8 @@
         { title: 'Assessment Schedule', rows: [
           ['Preferred Date & Time', schedVal || '—'],
           ['Session Modality', d.modality || '—'],
+          ['Preferred Gender of Assessor', d.counselorGender || '—'],
+          ['Assessor / Psychometrician', staffName || '—'],
         ]},
       ];
 

@@ -1,13 +1,66 @@
+const db           = require('../config/db');
 const ContentFlag  = require('../models/ContentFlag');
 const ForumThread  = require('../models/ForumThread');
 const ForumReply   = require('../models/ForumReply');
 const Article      = require('../models/Article');
+const FAQ          = require('../models/FAQ');
 const ModerationKeyword = require('../models/ModerationKeyword');
 const notificationService = require('../services/notificationService');
 const profanityFilter = require('../services/profanityFilter');
+const securityEvents = require('../services/securityEvents');
+const contentAnalyzer = require('../services/communityContentAnalyzer');
 
 const VALID_TYPES   = ['article', 'thread', 'reply', 'faq'];
 const VALID_REASONS = ['inappropriate', 'spam', 'harassment', 'misinformation', 'crisis_content', 'other'];
+
+// Map a moderation flag reason to a security event (module + eventType).
+// Crisis & Safety is merged into the Community Forum module.
+const FLAG_EVENT = {
+  harassment:     ['community', 'harassment'],
+  spam:           ['community', 'spam_posting'],
+  inappropriate:  ['community', 'prohibited_content'],
+  misinformation: ['community', 'prohibited_content'],
+  crisis_content: ['community', 'crisis_detected'],
+};
+
+// Fetch the actual text of the reported item so the incident shows WHAT was said.
+async function fetchContentText(contentType, contentId) {
+  try {
+    let q;
+    if (contentType === 'thread')  q = await db.query(`SELECT title, content FROM forum_threads WHERE id = $1`, [contentId]);
+    else if (contentType === 'reply')   q = await db.query(`SELECT content FROM forum_replies WHERE id = $1`, [contentId]);
+    else if (contentType === 'article') q = await db.query(`SELECT title, content FROM articles WHERE id = $1`, [contentId]);
+    else if (contentType === 'faq')     q = await db.query(`SELECT question AS title, answer AS content FROM faqs WHERE id = $1`, [contentId]);
+    if (!q || !q.rowCount) return '';
+    const row = q.rows[0];
+    return [row.title, row.content].filter(Boolean).join(' — ');
+  } catch (_) { return ''; }
+}
+
+// Build a rich incident detail: the reported content + the specific offending
+// word(s) detected by the profanity/keyword filter, plus the reporter's note.
+async function buildFlagDetails(contentType, contentId, reason, reporterNote) {
+  const text = await fetchContentText(contentType, contentId);
+  let parts = [`${contentType} #${contentId} reported as "${reason}".`];
+  if (text) {
+    const excerpt = text.length > 400 ? text.slice(0, 400) + '…' : text;
+    parts.push(`Content: "${excerpt}"`);
+  }
+  if (reporterNote && String(reporterNote).trim()) {
+    parts.push(`Reporter note: ${String(reporterNote).trim()}`);
+  }
+  try {
+    const result = contentAnalyzer.analyze(text);
+    if (result.flagged) {
+      const cats = result.categories.join(', ');
+      const cues = result.matches.map(m => `"${m.term}" (${m.category}/${m.severity})`).join(', ');
+      parts.push(`Auto-analysis — categories: ${cats}; severity: ${result.severity}; triggered by: ${cues}.`);
+    } else {
+      parts.push('No automatic match — manual report (reporter judgement).');
+    }
+  } catch (_) {}
+  return parts.join(' ');
+}
 
 // POST /api/moderation/flags â€” any user reports content
 const reportContent = async (req, res, next) => {
@@ -31,6 +84,20 @@ const reportContent = async (req, res, next) => {
     }
 
     const flag = await ContentFlag.create(req.user.id, content_type, content_id, reason, details);
+
+    // Flag the security event so the CD can track it in the Action Center.
+    // Include the actual content + the specific detected word(s) so the CD sees
+    // exactly what was reported and why, not just the reason.
+    const mapped = FLAG_EVENT[reason];
+    if (mapped) {
+      const richDetails = await buildFlagDetails(content_type, content_id, reason, details);
+      securityEvents.record({
+        module: mapped[0], eventType: mapped[1],
+        userId: req.user.id, subjectKind: req.user.type === 'staff' ? 'staff' : 'user', ip: req.ip,
+        targetType: content_type, targetId: content_id,
+        details: richDetails,
+      });
+    }
 
     // Notify staff
     try {
@@ -66,6 +133,28 @@ const getStats = async (req, res, next) => {
       : 0;
     const keywordCount = await ModerationKeyword.getCount();
 
+    // Content overview counts
+    const totalFaqs        = await FAQ.getCount();
+    const totalArticles    = await Article.getCount();
+    const totalDiscussions = await ForumThread.getApprovedCount();
+    const totalContent     = totalFaqs + totalArticles + totalDiscussions;
+
+    // Approved today (threads + articles updated to 'approved' since midnight)
+    const approvedTodayRes = await db.query(
+      `SELECT
+         (SELECT COUNT(*) FROM forum_threads WHERE status = 'approved' AND updated_at >= CURRENT_DATE) +
+         (SELECT COUNT(*) FROM articles      WHERE status = 'approved' AND updated_at >= CURRENT_DATE) AS c`
+    );
+    const approvedToday = parseInt(approvedTodayRes.rows[0].c, 10) || 0;
+
+    // Rejected content (threads + articles) for the status breakdown.
+    const rejectedRes = await db.query(
+      `SELECT
+         (SELECT COUNT(*) FROM forum_threads WHERE status = 'rejected') +
+         (SELECT COUNT(*) FROM articles      WHERE status = 'rejected') AS c`
+    );
+    const rejectedCount = parseInt(rejectedRes.rows[0].c, 10) || 0;
+
     return res.json({
       success: true,
       data: {
@@ -74,9 +163,43 @@ const getStats = async (req, res, next) => {
         totalFlags: pendingFlags + flaggedThreads,
         pendingThreads,
         pendingArticles,
+        pendingReview: pendingThreads + pendingArticles,
         keywordCount,
+        totalFaqs,
+        totalArticles,
+        totalDiscussions,
+        totalContent,
+        approvedToday,
+        rejectedCount,
       },
     });
+  } catch (error) { next(error); }
+};
+
+// GET /api/moderation/recent?status=approved|rejected — recently moderated
+// threads + articles, merged and sorted by most recent.
+const getRecent = async (req, res, next) => {
+  try {
+    const status = ['approved', 'rejected'].includes(req.query.status) ? req.query.status : 'approved';
+    const limit = parseInt(req.query.limit, 10) || 15;
+
+    const threads  = await ForumThread.findByStatus(status, limit);
+    const articles = await Article.findByStatus(status, limit);
+
+    const items = [
+      ...threads.map(t => ({
+        id: t.id, type: 'thread', title: t.title,
+        author_name: t.is_anonymous ? 'Anonymous' : (t.author_name || 'Unknown'),
+        status: t.status, updated_at: t.updated_at,
+      })),
+      ...articles.map(a => ({
+        id: a.id, type: 'article', title: a.title,
+        author_name: a.author_name || 'Unknown',
+        status: a.status, updated_at: a.updated_at,
+      })),
+    ].sort((x, y) => new Date(y.updated_at) - new Date(x.updated_at)).slice(0, limit);
+
+    return res.json({ success: true, data: items });
   } catch (error) { next(error); }
 };
 
@@ -217,7 +340,7 @@ const seedKeywords = async (req, res, next) => {
 };
 
 module.exports = {
-  reportContent, getPendingFlags, getStats, reviewFlag,
+  reportContent, getPendingFlags, getStats, getRecent, reviewFlag,
   getKeywords, addKeyword, removeKeyword, testFilter, seedKeywords,
 };
 

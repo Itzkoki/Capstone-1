@@ -53,18 +53,18 @@ body h1, body h2, body h3,
 .navbar__logo svg{ fill:#fff !important; }
 .navbar__logo::after{ border-color:rgba(255,255,255,.35) !important; }
 
-.navbar__links a{ color:rgba(255,255,255,.82) !important; font-weight:500; }
-.navbar__links a:hover{ color:#fff !important; }
-.navbar__links a::after{ background:var(--gold) !important; }
+.navbar__links > li > a{ color:rgba(255,255,255,.82) !important; font-weight:500; }
+.navbar__links > li > a:hover{ color:#fff !important; }
+.navbar__links > li > a::after{ background:var(--gold) !important; }
 /* current page link (inline style color override target) */
-.navbar__links a[style*="green-primary"],
-.navbar__links a[style*="1E3A8A"],
-.navbar__links a.active{
+.navbar__links > li > a[style*="green-primary"],
+.navbar__links > li > a[style*="1E3A8A"],
+.navbar__links > li > a.active{
   color:#fff !important; font-weight:600;
 }
-.navbar__links a[style*="green-primary"]::after,
-.navbar__links a[style*="1E3A8A"]::after,
-.navbar__links a.active::after{ width:100% !important; background:var(--gold) !important; }
+.navbar__links > li > a[style*="green-primary"]::after,
+.navbar__links > li > a[style*="1E3A8A"]::after,
+.navbar__links > li > a.active::after{ width:100% !important; background:var(--gold) !important; }
 
 /* "Get Started" CTA button on logged-out pages → gold pill on the blue bar */
 .navbar__cta{

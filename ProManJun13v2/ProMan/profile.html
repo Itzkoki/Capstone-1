@@ -10,9 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="profile.css">
+  <link rel="stylesheet" href="audit.css">
   <link rel="stylesheet" href="toast.css">
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <script src="fingerprint.js"></script>
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body class="profile-page logged-in">
 
@@ -23,7 +27,7 @@
         <img src="barcarse logo.jpg" alt="BPS Logo">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -54,7 +58,11 @@
         <a href="#" class="active" data-section="profile-info">Profile Information</a>
         <a href="#" data-section="my-requests" id="sidebar-my-requests">My Requests</a>
         <a href="#" data-section="reports" id="sidebar-reports">Generated Reports</a>
+        <a href="#" data-section="my-cases">My Cases</a>
         <a href="#" data-section="transactions">Transaction History</a>
+        <a href="#" data-section="audit-trail" id="sidebar-audit-trail" style="display:none;">Audit Trail</a>
+        <a href="#" data-section="audit-logs" id="sidebar-audit-logs" style="display:none;">Audit Logs</a>
+        <a href="#" data-section="action-center" id="sidebar-action-center" style="display:none;">Action Center</a>
         <a href="#" id="logout-link" style="color:#e53935;margin-top:12px;">Log Out</a>
         <a href="#" id="delete-account-link" style="color:#b71c1c;margin-top:4px;">Delete Account</a>
       </nav>
@@ -122,6 +130,10 @@
                 <span>A verification code has been sent to your new email. Enter it below to confirm the change.</span>
               </div>
               <div class="otp-verify-card__body">
+                <div class="otp-spam-note" style="display:flex;gap:8px;align-items:flex-start;background:#fffaf0;border:1px solid #fbd38d;color:#9c5b15;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:0.86rem;line-height:1.45;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                  <span>If the verification code is not visible in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.</span>
+                </div>
                 <div class="otp-input-group">
                   <input type="text" id="otpInput" maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric">
                   <button type="button" class="btn-verify-otp" id="verify-otp-btn" disabled>Verify</button>
@@ -150,7 +162,7 @@
               </div>
               <div class="form-field">
                 <label for="dob">Date of Birth</label>
-                <input type="date" id="dob">
+                <input type="date" id="dob" max="2099-12-31" oninput="clampDateYear(this)">
               </div>
             </div>
 
@@ -256,6 +268,300 @@
         </div>
       </section>
 
+      <!-- ─ SECTION: My Cases ─ -->
+      <section id="section-my-cases" class="profile-section">
+        <h2 class="section__title">My Cases</h2>
+        <p style="color:#718096;font-size:13.5px;margin-bottom:16px;">Track the progress of your clinical case from intake to report release.</p>
+        <div id="my-cases-list" style="display:grid;gap:14px;">Loading…</div>
+      </section>
+
+      <!-- ■■■ SECTION: Audit Trail (Clinical Director only) ■■■ -->
+      <section id="section-audit-trail" class="profile-section audit-wrap">
+        <div class="audit-head">
+          <div class="audit-head__left">
+            <div class="audit-head__icon">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            </div>
+            <div>
+              <h1 class="audit-head__title">Audit Trail</h1>
+              <p class="audit-head__subtitle">Focus on tracking business processes and record histories.</p>
+            </div>
+          </div>
+          <div class="audit-head__actions">
+            <div class="audit-export" id="trail-export">
+              <button type="button" class="audit-btn" data-export-toggle>
+                <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                Export
+                <svg viewBox="0 0 24 24" width="12"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="audit-export__menu">
+                <button type="button" data-export="csv">Export as CSV</button>
+              </div>
+            </div>
+            <button type="button" class="audit-btn" id="trail-refresh">
+              <svg viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="audit-filters">
+          <div class="audit-field audit-field--search">
+            <label for="trail-q">Search</label>
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            <input type="text" id="trail-q" placeholder="Search by action, module, or record ID…">
+          </div>
+          <div class="audit-field">
+            <label for="trail-module">Module</label>
+            <select id="trail-module">
+              <option value="all">All Modules</option>
+              <option>Client Intake &amp; Appointment</option>
+              <option>Payment Verification</option>
+              <option>Report Generation</option>
+              <option>Privacy Controls</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="trail-action">Action</label>
+            <input type="text" id="trail-action" placeholder="e.g. APPROVED, REPORT">
+          </div>
+          <div class="audit-field">
+            <label for="trail-start">From</label>
+            <input type="date" id="trail-start">
+          </div>
+          <div class="audit-field">
+            <label for="trail-end">To</label>
+            <input type="date" id="trail-end">
+          </div>
+          <div class="audit-filters__btns">
+            <button type="button" class="audit-btn" id="trail-clear">Clear</button>
+            <button type="button" class="audit-btn audit-btn--primary" id="trail-filter">Filter</button>
+          </div>
+        </div>
+
+        <div class="audit-card">
+          <div class="audit-table-scroll">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th><th>Module</th><th>Action Performed</th>
+                  <th>Affected Record ID</th><th>User</th>
+                  <th>Previous Value</th><th>New Value</th><th>Reason / Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="trail-tbody"></tbody>
+            </table>
+          </div>
+          <div id="trail-state" class="audit-state">Loading audit trail…</div>
+          <div class="audit-foot">
+            <div class="audit-foot__info" id="trail-info">—</div>
+            <div class="audit-pager" id="trail-pager"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ■■■ SECTION: Audit Logs (Clinical Director only) ■■■ -->
+      <section id="section-audit-logs" class="profile-section audit-wrap">
+        <div class="audit-head">
+          <div class="audit-head__left">
+            <div class="audit-head__icon">
+              <svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14-4-4 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
+            </div>
+            <div>
+              <h1 class="audit-head__title">Audit Logs</h1>
+              <p class="audit-head__subtitle">Focus on security monitoring and user activities.</p>
+            </div>
+          </div>
+          <div class="audit-head__actions">
+            <div class="audit-export" id="logs-export">
+              <button type="button" class="audit-btn" data-export-toggle>
+                <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                Export
+                <svg viewBox="0 0 24 24" width="12"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="audit-export__menu">
+                <button type="button" data-export="csv">Export as CSV</button>
+              </div>
+            </div>
+            <button type="button" class="audit-btn" id="logs-refresh">
+              <svg viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="audit-filters">
+          <div class="audit-field audit-field--search">
+            <label for="logs-q">Search</label>
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            <input type="text" id="logs-q" placeholder="Search by user, action, or IP address…">
+          </div>
+          <div class="audit-field">
+            <label for="logs-role">User Role</label>
+            <select id="logs-role">
+              <option value="all">All Roles</option>
+              <option value="client">Client</option>
+              <option value="psychometrician">Psychometrician</option>
+              <option value="supervising_psychometrician">Supervising Psychometrician</option>
+              <option value="qc_psychometrician">QC Psychometrician</option>
+              <option value="psychologist">Psychologist</option>
+              <option value="clinical_director">Clinical Director</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="logs-action">Action</label>
+            <input type="text" id="logs-action" placeholder="e.g. Login, Profile">
+          </div>
+          <div class="audit-field">
+            <label for="logs-status">Status</label>
+            <select id="logs-status">
+              <option value="all">All Status</option>
+              <option value="Success">Success</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="logs-start">From</label>
+            <input type="date" id="logs-start">
+          </div>
+          <div class="audit-field">
+            <label for="logs-end">To</label>
+            <input type="date" id="logs-end">
+          </div>
+          <div class="audit-filters__btns">
+            <button type="button" class="audit-btn" id="logs-clear">Clear</button>
+            <button type="button" class="audit-btn audit-btn--primary" id="logs-filter">Filter</button>
+          </div>
+        </div>
+
+        <div class="audit-card">
+          <div class="audit-table-scroll">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th><th>User</th><th>Role</th><th>Action Performed</th>
+                  <th>Status</th><th>IP Address</th><th>Location</th>
+                  <th>Device Information</th><th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+          <div id="logs-state" class="audit-state">Loading audit logs…</div>
+          <div class="audit-foot">
+            <div class="audit-foot__info" id="logs-info">—</div>
+            <div class="audit-pager" id="logs-pager"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ■■■ SECTION: Action Center (Clinical Director only) ■■■ -->
+      <section id="section-action-center" class="profile-section audit-wrap">
+        <div class="audit-head">
+          <div class="audit-head__left">
+            <div class="audit-head__icon">
+              <svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14-4-4 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
+            </div>
+            <div>
+              <h1 class="audit-head__title">Action Center</h1>
+              <p class="audit-head__subtitle">Manage security incidents, alerts, escalations, and resolution workflows.</p>
+            </div>
+          </div>
+          <div class="audit-head__actions">
+            <div class="audit-export" id="ac-export">
+              <button type="button" class="audit-btn" data-export-toggle>
+                <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                Export
+                <svg viewBox="0 0 24 24" width="12"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="audit-export__menu">
+                <button type="button" data-export="csv">Export as CSV</button>
+              </div>
+            </div>
+            <button type="button" class="audit-btn" id="ac-refresh">
+              <svg viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="audit-filters">
+          <div class="audit-field audit-field--search">
+            <label for="ac-q">Search Incident</label>
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            <input type="text" id="ac-q" placeholder="Search by ID, event, user, IP…">
+          </div>
+          <div class="audit-field">
+            <label for="ac-severity">Severity</label>
+            <select id="ac-severity">
+              <option value="all">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="ac-status">Status</label>
+            <select id="ac-status">
+              <option value="all">All Statuses</option>
+              <option value="open">Open</option>
+              <option value="acknowledged">Acknowledged</option>
+              <option value="investigating">Investigating</option>
+              <option value="escalated">Escalated</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+              <option value="reopened">Reopened</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="ac-module">Module</label>
+            <select id="ac-module"><option value="all">All Modules</option></select>
+          </div>
+          <div class="audit-field">
+            <label for="ac-start">From</label>
+            <input type="date" id="ac-start">
+          </div>
+          <div class="audit-field">
+            <label for="ac-end">To</label>
+            <input type="date" id="ac-end">
+          </div>
+          <div class="audit-filters__btns">
+            <button type="button" class="audit-btn" id="ac-clear">Clear</button>
+            <button type="button" class="audit-btn audit-btn--primary" id="ac-filter">Filter</button>
+          </div>
+        </div>
+
+        <div class="audit-card">
+          <div class="audit-table-scroll">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th><th>Incident ID</th><th>Module</th><th>Event Type</th>
+                  <th>Severity</th><th>Status</th><th>Source IP</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ac-tbody"></tbody>
+            </table>
+          </div>
+          <div id="ac-state" class="audit-state">Loading incidents…</div>
+          <div class="audit-foot">
+            <div class="audit-foot__info" id="ac-info">—</div>
+            <div class="audit-pager" id="ac-pager"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Action Center — Incident Detail Modal -->
+      <div class="modal-overlay" id="ac-modal">
+        <div class="modal-card ac-modal-card">
+          <button type="button" class="ac-modal__close" id="ac-modal-close" aria-label="Close">&times;</button>
+          <div id="ac-modal-body" class="ac-modal__body">
+            <div class="audit-state">Loading…</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Password Prompt Modal (for email change) -->
       <div class="modal-overlay" id="password-modal">
         <div class="modal-card">
@@ -300,6 +606,12 @@
   <script src="session.js"></script>
   <script src="toast.js"></script>
   <script>
+    function clampDateYear(el) {
+      if (!el.value) return;
+      const parts = el.value.split('-');
+      if (parts[0] && parts[0].length > 4) { parts[0] = parts[0].slice(0, 4); el.value = parts.join('-'); }
+    }
+
     // ── Config ────────────────────────────────────────────
     const API_BASE = 'http://localhost:5000/api';
     const TOKEN = BPSSession.getToken();
@@ -475,8 +787,12 @@
         list.innerHTML = tickets.map(t => {
           const isConcern = t.nature === 'report_concern';
           const nature = t.nature === 'additional_copies' ? 'Additional Report Copies' : 'Report Concern';
-          // Report-request / report-concern display status (from backend publicRow)
-          const displayStatus = isConcern ? (t.concern_status || '') : (t.report_request_status || '');
+          // Report-request / report-concern display status (from backend publicRow).
+          // Legacy requests still being identity-verified show that stage first.
+          const inLegacyVerify = t.is_legacy && (t.legacy_status === 'Records Verification' || t.legacy_status === 'Rejected');
+          const displayStatus = inLegacyVerify
+            ? t.legacy_status
+            : (isConcern ? (t.concern_status || '') : (t.report_request_status || ''));
           let payAction = '';
           // Payment action only: show a button to proceed to payment when a fee is
           // due (awaiting payment, or after a rejected proof). Payment status
@@ -524,9 +840,9 @@
     // Client submits the additional information the Clinical Director requested
     // on a report concern (a remark and/or an optional file).
     async function submitConcernInfo(id) {
-      const message = prompt('Describe the additional information for the Clinical Director:');
+      const message = await BPSModal.prompt('Describe the additional information for the Clinical Director:', { title: 'Additional information', placeholder: 'Type your remark…', confirmText: 'Continue' });
       if (message === null) return;
-      const wantFile = confirm('Attach a file as well? (OK = choose a file, Cancel = text only)');
+      const wantFile = await BPSModal.confirm('Would you like to attach a file as well?', { title: 'Attach a file?', confirmText: 'Choose a file', cancelText: 'Text only' });
       const send = async (attachment, attachmentName) => {
         try {
           const res = await fetch(`${API_BASE}/requests/${id}/concern-info`, {
@@ -575,15 +891,33 @@
       const empty = document.getElementById('gr-empty');
       const list = document.getElementById('gr-list');
       try {
-        const res = await fetch(`${API_BASE}/requests/released-reports`, { headers: authHeaders });
-        const json = await res.json();
+        // Two sources: request/concern released files, and psychological reports
+        // released to this client through the signature/release workflow.
+        const [reqRes, psyRes] = await Promise.all([
+          fetch(`${API_BASE}/requests/released-reports`, { headers: authHeaders }).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/reports/my-released`, { headers: authHeaders }).then(r => r.json()).catch(() => ({})),
+        ]);
         loading.style.display = 'none';
-        if (!json.success || !Array.isArray(json.data) || !json.data.length) {
+
+        const reqRows = (reqRes && reqRes.success && Array.isArray(reqRes.data)) ? reqRes.data : [];
+        const psyRows = (psyRes && psyRes.success && Array.isArray(psyRes.reports)) ? psyRes.reports : [];
+
+        if (!reqRows.length && !psyRows.length) {
           empty.style.display = 'block';
           return;
         }
         list.style.display = 'block';
-        list.innerHTML = json.data.map(r => `
+
+        const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const psyHtml = psyRows.map(r => `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--theme-line,#E4E7EC);flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;font-size:13.5px;color:var(--theme-ink,#101828);">Psychological Report${r.report_code ? ' — ' + esc(r.report_code) : ''}</div>
+              <div style="font-size:12px;color:var(--theme-ink-faint,#98A2B3);margin-top:2px;">${r.case_id ? 'Case ' + esc(r.case_id) + ' · ' : ''}Released ${txnFmtDate(r.released_at)}</div>
+            </div>
+            <button class="txn-receipt-btn" style="border:none;cursor:pointer;" onclick="downloadReleasedReport(${r.id})">Download</button>
+          </div>`).join('');
+        const reqHtml = reqRows.map(r => `
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--theme-line,#E4E7EC);flex-wrap:wrap;">
             <div>
               <div style="font-weight:700;font-size:13.5px;color:var(--theme-ink,#101828);">${(r.report_filename || 'Report').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
@@ -591,11 +925,31 @@
             </div>
             <button class="txn-receipt-btn" style="border:none;cursor:pointer;" onclick="downloadGeneratedReport(${r.id})">Download</button>
           </div>`).join('');
+        list.innerHTML = psyHtml + reqHtml;
       } catch (err) {
         loading.style.display = 'none';
         empty.style.display = 'block';
         grLoaded = false;
       }
+    }
+
+    // Download a released psychological report's final signed PDF.
+    async function downloadReleasedReport(id) {
+      try {
+        const res = await fetch(`${API_BASE}/reports/${id}/client-pdf`, { headers: authHeaders });
+        if (!res.ok) {
+          let msg = 'Report unavailable.';
+          try { const j = await res.json(); msg = j.message || msg; } catch (_) {}
+          showToast(msg, 'error');
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `psychological-report-${id}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (e) { showToast('Could not download the report.', 'error'); }
     }
 
     async function downloadGeneratedReport(id) {
@@ -628,6 +982,9 @@
         if (sectionId === 'transactions') loadTransactions();
         if (sectionId === 'reports') loadGeneratedReports();
         if (sectionId === 'my-requests') loadMyRequests();
+        if (sectionId === 'audit-trail') Audit.trail.first();
+        if (sectionId === 'audit-logs') Audit.logs.first();
+        if (sectionId === 'action-center') ActionCenter.first();
       });
     });
 
@@ -641,6 +998,13 @@
           if (reportsLink) reportsLink.style.display = 'none';
           const reportsSection = document.getElementById('section-reports');
           if (reportsSection) reportsSection.style.display = 'none';
+          // Audit Trail & Audit Logs are Clinical-Director only.
+          const at = document.getElementById('sidebar-audit-trail');
+          const al = document.getElementById('sidebar-audit-logs');
+          const ac = document.getElementById('sidebar-action-center');
+          if (at) at.style.display = '';
+          if (al) al.style.display = '';
+          if (ac) ac.style.display = '';
         }
       } catch(e) {}
     }
@@ -653,7 +1017,8 @@
       const target = p.get('section');
       if (target) {
         const link = document.querySelector(`.sidebar__nav a[data-section="${target === 'requests' ? 'my-requests' : target}"]`);
-        if (link) link.click();
+        // Defer so handlers defined later in this script (e.g. Audit) are initialized.
+        if (link) setTimeout(() => link.click(), 0);
       }
     })();
 
@@ -972,37 +1337,551 @@
     });
 
     // ── CHANGE PASSWORD ─────────────────────────────────
-    document.getElementById('change-password-btn').addEventListener('click', async () => {
+    // ── CHANGE PASSWORD (rate limited: one request, then a 2-minute cooldown) ──
+    (function () {
       const btn = document.getElementById('change-password-btn');
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
+      const COOLDOWN_MS = 120000;            // 2 minutes
+      const LS_KEY = 'bps_change_pw_until';  // persists the cooldown across refreshes
+      let cdTimer = null;
 
-      try {
-        const res = await fetch(`${API_BASE}/profile/change-password`, {
-          method: 'POST',
-          headers: authHeaders,
-        });
-
-        const json = await res.json();
-
-        if (res.ok && json.success) {
-          showToast(json.message || 'Password reset link sent to your email!');
-        } else {
-          showToast(json.message || 'Failed to send reset link.', 'error');
-        }
-      } catch (err) {
-        showToast('Network error. Please try again.', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Change Password';
+      function startCooldown(until) {
+        if (cdTimer) clearInterval(cdTimer);
+        const tick = () => {
+          const remaining = Math.ceil((until - Date.now()) / 1000);
+          if (remaining <= 0) {
+            clearInterval(cdTimer); cdTimer = null;
+            try { localStorage.removeItem(LS_KEY); } catch (_) {}
+            btn.disabled = false;
+            btn.textContent = 'Change Password';
+            return;
+          }
+          btn.disabled = true;
+          const m = Math.floor(remaining / 60);
+          const s = remaining % 60;
+          btn.textContent = `Try again in ${m}:${String(s).padStart(2, '0')}`;
+        };
+        tick();
+        cdTimer = setInterval(tick, 1000);
       }
-    });
+
+      // Resume an in-progress cooldown if the page was refreshed.
+      try {
+        const until = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+        if (until && until > Date.now()) startCooldown(until);
+      } catch (_) {}
+
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;            // cooldown still active
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+        try {
+          const res = await fetch(`${API_BASE}/profile/change-password`, {
+            method: 'POST',
+            headers: authHeaders,
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
+            showToast(json.message || 'Password reset link sent to your email!');
+          } else {
+            showToast(json.message || 'Failed to send reset link.', 'error');
+          }
+          // The request reached the server — start the 2-minute cooldown.
+          const until = Date.now() + COOLDOWN_MS;
+          try { localStorage.setItem(LS_KEY, String(until)); } catch (_) {}
+          startCooldown(until);
+        } catch (err) {
+          // Network error (request never reached the server) — allow an immediate retry.
+          showToast('Network error. Please try again.', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Change Password';
+        }
+      });
+    })();
 
     // ── LOGOUT ───────────────────────────────────────────
     document.getElementById('logout-link').addEventListener('click', (e) => {
       e.preventDefault();
-      BPSSession.logout();
+      // Best-effort: record the Logout in the audit log before the token is cleared.
+      try {
+        fetch(`${API_BASE}/audit/event`, {
+          method: 'POST', headers: authHeaders, keepalive: true,
+          body: JSON.stringify({ action: 'Logout' }),
+        }).catch(() => {});
+      } catch (_) {}
+      setTimeout(() => BPSSession.logout(), 150);
     });
+
+    // ════════════════════════════════════════════════════════════════
+    //  AUDIT TRAIL & AUDIT LOGS (Clinical-Director only)
+    // ════════════════════════════════════════════════════════════════
+    const Audit = (() => {
+      const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const fmtTime = (iso) => {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        if (isNaN(d)) return esc(iso);
+        const date = d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+        const time = d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+        return `<span class="a-time">${date}<small>${time}</small></span>`;
+      };
+      const moduleClass = (m) => {
+        if (/payment/i.test(m)) return 'm-payment';
+        if (/report/i.test(m)) return 'm-report';
+        if (/privacy/i.test(m)) return 'm-privacy';
+        return '';
+      };
+
+      // Generic paged data view. `cfg` wires DOM ids + endpoint + row renderer.
+      function makeView(cfg) {
+        let page = 1, loaded = false;
+        const $ = (id) => document.getElementById(cfg.prefix + '-' + id);
+
+        function buildQuery() {
+          const p = new URLSearchParams();
+          p.set('page', page); p.set('limit', 10);
+          cfg.collectFilters($, p);
+          return p.toString();
+        }
+
+        async function load() {
+          const tbody = $('tbody'), state = $('state');
+          state.style.display = 'block'; state.textContent = 'Loading…';
+          tbody.innerHTML = '';
+          try {
+            const res = await fetch(`${API_BASE}/audit/${cfg.endpoint}?${buildQuery()}`, { headers: authHeaders });
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.message || 'Failed to load');
+            const rows = json.data || [];
+            if (!rows.length) {
+              state.textContent = 'No records found for the selected filters.';
+              $('info').textContent = '0 entries';
+              $('pager').innerHTML = '';
+              return;
+            }
+            state.style.display = 'none';
+            tbody.innerHTML = rows.map(cfg.renderRow).join('');
+            renderFoot(json.pagination);
+          } catch (err) {
+            state.style.display = 'block';
+            state.textContent = 'Could not load data. ' + (err.message || '');
+          }
+        }
+
+        function renderFoot(pg) {
+          const from = (pg.page - 1) * pg.limit + 1;
+          const to = Math.min(pg.page * pg.limit, pg.total);
+          $('info').textContent = `Showing ${from} to ${to} of ${pg.total} entries`;
+          const pager = $('pager');
+          pager.innerHTML = '';
+          const mk = (label, target, opts = {}) => {
+            const b = document.createElement('button');
+            b.innerHTML = label;
+            if (opts.active) b.classList.add('is-active');
+            if (opts.disabled) b.disabled = true;
+            else b.addEventListener('click', () => { page = target; load(); });
+            pager.appendChild(b);
+          };
+          mk('‹', pg.page - 1, { disabled: pg.page <= 1 });
+          const win = [];
+          for (let i = Math.max(1, pg.page - 2); i <= Math.min(pg.pages, pg.page + 2); i++) win.push(i);
+          if (win[0] > 1) { mk('1', 1); if (win[0] > 2) pager.insertAdjacentHTML('beforeend', '<span style="padding:0 4px;color:#9aa3b2;">…</span>'); }
+          win.forEach(i => mk(String(i), i, { active: i === pg.page }));
+          if (win[win.length - 1] < pg.pages) {
+            if (win[win.length - 1] < pg.pages - 1) pager.insertAdjacentHTML('beforeend', '<span style="padding:0 4px;color:#9aa3b2;">…</span>');
+            mk(String(pg.pages), pg.pages);
+          }
+          mk('›', pg.page + 1, { disabled: pg.page >= pg.pages });
+        }
+
+        function applyFilters() { page = 1; load(); }
+        function first() { if (!loaded) { loaded = true; wire(); load(); } }
+
+        function wire() {
+          $('filter').addEventListener('click', applyFilters);
+          $('refresh').addEventListener('click', () => load());
+          $('clear').addEventListener('click', () => { cfg.clearFilters($); page = 1; load(); });
+          $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
+          // Export dropdown
+          const exp = $('export');
+          exp.querySelector('[data-export-toggle]').addEventListener('click', (e) => {
+            e.stopPropagation(); exp.classList.toggle('open');
+          });
+          exp.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
+            exp.classList.remove('open'); doExport();
+          }));
+          document.addEventListener('click', () => exp.classList.remove('open'));
+        }
+
+        async function doExport() {
+          const p = new URLSearchParams(); cfg.collectFilters($, p);
+          try {
+            const res = await fetch(`${API_BASE}/audit/${cfg.endpoint}/export?${p.toString()}`, { headers: authHeaders });
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${cfg.endpoint === 'logs' ? 'audit-logs' : 'audit-trail'}.csv`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            showToast('Export ready.', 'success');
+          } catch (_) { showToast('Export failed.', 'error'); }
+        }
+
+        return { first, load };
+      }
+
+      // ── Audit Trail view ──
+      const trail = makeView({
+        prefix: 'trail', endpoint: 'trail',
+        collectFilters: ($, p) => {
+          const q = $('q').value.trim(); if (q) p.set('q', q);
+          const m = $('module').value; if (m && m !== 'all') p.set('module', m);
+          const a = $('action').value.trim(); if (a) p.set('action', a);
+          const s = $('start').value; if (s) p.set('startDate', s);
+          const e = $('end').value; if (e) p.set('endDate', e);
+        },
+        clearFilters: ($) => { $('q').value=''; $('module').value='all'; $('action').value=''; $('start').value=''; $('end').value=''; },
+        renderRow: (r) => `<tr>
+          <td>${fmtTime(r.timestamp)}</td>
+          <td><span class="a-pill a-pill--module ${moduleClass(r.module)}">${esc(r.module)}</span></td>
+          <td>${esc(r.action)}</td>
+          <td class="a-muted">${esc(r.record_id)}</td>
+          <td>${esc(r.user)}</td>
+          <td class="a-muted">${esc(r.previous_value)}</td>
+          <td>${esc(r.new_value)}</td>
+          <td class="a-muted">${esc(r.remarks)}</td>
+        </tr>`,
+      });
+
+      // ── Audit Logs view ──
+      const logs = makeView({
+        prefix: 'logs', endpoint: 'logs',
+        collectFilters: ($, p) => {
+          const q = $('q').value.trim(); if (q) p.set('q', q);
+          const r = $('role').value; if (r && r !== 'all') p.set('role', r);
+          const a = $('action').value.trim(); if (a) p.set('action', a);
+          const s = $('status').value; if (s && s !== 'all') p.set('status', s);
+          const sd = $('start').value; if (sd) p.set('startDate', sd);
+          const ed = $('end').value; if (ed) p.set('endDate', ed);
+        },
+        clearFilters: ($) => { $('q').value=''; $('role').value='all'; $('action').value=''; $('status').value='all'; $('start').value=''; $('end').value=''; },
+        renderRow: (r) => {
+          const st = /fail/i.test(r.status) ? 'failed' : 'success';
+          return `<tr>
+            <td>${fmtTime(r.timestamp)}</td>
+            <td>${esc(r.user)}</td>
+            <td class="a-muted">${esc(r.role)}</td>
+            <td>${esc(r.action)}</td>
+            <td><span class="a-status a-status--${st}">${esc(r.status)}</span></td>
+            <td class="a-muted">${esc(r.ip_address)}</td>
+            <td class="a-muted">${esc(r.location || '—')}</td>
+            <td class="a-muted">${esc(r.device)}</td>
+            <td class="a-muted">${esc(r.details)}</td>
+          </tr>`;
+        },
+      });
+
+      return { trail, logs };
+    })();
+
+    // ── ACTION CENTER (Audit Action Management — CD only) ─────────────────
+    const ActionCenter = (() => {
+      const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const fmtTime = (iso) => {
+        if (!iso) return '—';
+        const d = new Date(iso); if (isNaN(d)) return esc(iso);
+        return `<span class="a-time">${d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}` +
+               `<small>${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</small></span>`;
+      };
+      const sevBadge = (s) => `<span class="ac-sev ac-sev--${esc(s)}">${esc((s||'').toUpperCase())}</span>`;
+      const statusBadge = (s) => `<span class="ac-status ac-status--${esc(s)}">${esc((s||'').replace(/_/g,' '))}</span>`;
+      const titleCase = (s) => String(s||'').replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      const $ = (id) => document.getElementById('ac-' + id);
+      let page = 1, loaded = false, currentId = null;
+
+      function buildQuery() {
+        const p = new URLSearchParams();
+        p.set('page', page); p.set('limit', 8);
+        collect(p);
+        return p.toString();
+      }
+      function collect(p) {
+        const q = $('q').value.trim(); if (q) p.set('q', q);
+        const sv = $('severity').value; if (sv && sv !== 'all') p.set('severity', sv);
+        const st = $('status').value; if (st && st !== 'all') p.set('status', st);
+        const m = $('module').value; if (m && m !== 'all') p.set('module', m);
+        const s = $('start').value; if (s) p.set('startDate', s);
+        const e = $('end').value; if (e) p.set('endDate', e);
+      }
+
+      async function loadCatalog() {
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents/catalog`, { headers: authHeaders });
+          const json = await res.json();
+          if (json.success) {
+            const sel = $('module');
+            json.modules.forEach(m => {
+              const o = document.createElement('option');
+              o.value = m.key; o.textContent = m.label; sel.appendChild(o);
+            });
+          }
+        } catch (_) {}
+      }
+
+      async function load() {
+        const tbody = $('tbody'), state = $('state');
+        state.style.display = 'block'; state.textContent = 'Loading…';
+        tbody.innerHTML = '';
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents?${buildQuery()}`, { headers: authHeaders });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+          const rows = json.data || [];
+          if (!rows.length) {
+            state.textContent = 'No incidents found for the selected filters.';
+            $('info').textContent = '0 entries'; $('pager').innerHTML = '';
+            return;
+          }
+          state.style.display = 'none';
+          tbody.innerHTML = rows.map(renderRow).join('');
+          tbody.querySelectorAll('[data-open]').forEach(b =>
+            b.addEventListener('click', () => openDetail(b.getAttribute('data-open'))));
+          renderFoot(json.pagination);
+        } catch (err) {
+          state.style.display = 'block';
+          state.textContent = 'Could not load incidents. ' + (err.message || '');
+        }
+      }
+
+      function renderRow(r) {
+        return `<tr>
+          <td>${fmtTime(r.timestamp)}</td>
+          <td class="ac-code">${esc(r.incident_code)}</td>
+          <td><span class="a-pill a-pill--module">${esc(r.module_label)}</span></td>
+          <td>${esc(r.title || titleCase(r.event_type))}</td>
+          <td>${sevBadge(r.severity)}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td class="a-muted">${esc(r.ip_address)}</td>
+          <td><button type="button" class="ac-row-btn" data-open="${r.id}" title="Manage">Manage</button></td>
+        </tr>`;
+      }
+
+      function renderFoot(pg) {
+        const from = (pg.page - 1) * pg.limit + 1;
+        const to = Math.min(pg.page * pg.limit, pg.total);
+        $('info').textContent = `Showing ${from} to ${to} of ${pg.total} entries`;
+        const pager = $('pager'); pager.innerHTML = '';
+        const mk = (label, target, opts = {}) => {
+          const b = document.createElement('button');
+          b.innerHTML = label;
+          if (opts.active) b.classList.add('is-active');
+          if (opts.disabled) b.disabled = true;
+          else b.addEventListener('click', () => { page = target; load(); });
+          pager.appendChild(b);
+        };
+        mk('‹', pg.page - 1, { disabled: pg.page <= 1 });
+        const win = [];
+        for (let i = Math.max(1, pg.page - 2); i <= Math.min(pg.pages, pg.page + 2); i++) win.push(i);
+        if (win[0] > 1) { mk('1', 1); if (win[0] > 2) pager.insertAdjacentHTML('beforeend', '<span style="padding:0 4px;color:#9aa3b2;">…</span>'); }
+        win.forEach(i => mk(String(i), i, { active: i === pg.page }));
+        if (win[win.length - 1] < pg.pages) {
+          if (win[win.length - 1] < pg.pages - 1) pager.insertAdjacentHTML('beforeend', '<span style="padding:0 4px;color:#9aa3b2;">…</span>');
+          mk(String(pg.pages), pg.pages);
+        }
+        mk('›', pg.page + 1, { disabled: pg.page >= pg.pages });
+      }
+
+      // ── Detail modal ──
+      const modal = document.getElementById('ac-modal');
+      const modalBody = document.getElementById('ac-modal-body');
+      function closeModal() { modal.classList.remove('active'); currentId = null; }
+
+      async function openDetail(id) {
+        currentId = id;
+        modal.classList.add('active');
+        modalBody.innerHTML = '<div class="audit-state">Loading…</div>';
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents/${id}`, { headers: authHeaders });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+          renderDetail(json.incident);
+        } catch (err) {
+          modalBody.innerHTML = `<div class="audit-state">Could not load incident. ${esc(err.message||'')}</div>`;
+        }
+      }
+
+      function renderDetail(inc) {
+        const isClosed = inc.status === 'closed';
+        const procedure = (inc.resolution_procedure || '').split(' → ').filter(Boolean);
+        const tl = (inc.timeline || []).map(t => {
+          const label = t.action_type === 'action' ? `Action: ${esc(t.label)}`
+                      : t.action_type === 'status_change' ? `Status → ${esc((t.to_value||'').replace(/_/g,' '))}`
+                      : t.action_type === 'escalate' ? `Escalated ${esc(t.from_value)} → ${esc(t.to_value)}`
+                      : t.action_type === 'close' ? 'Incident closed'
+                      : t.action_type === 'created' ? 'Incident opened'
+                      : 'Note';
+          return `<li class="ac-tl__item">
+            <div class="ac-tl__dot ac-tl__dot--${esc(t.action_type)}"></div>
+            <div class="ac-tl__content">
+              <div class="ac-tl__head"><strong>${label}</strong><span>${fmtTime(t.timestamp)}</span></div>
+              ${t.note ? `<p>${esc(t.note)}</p>` : ''}
+              <small>by ${esc(t.actor)}</small>
+            </div></li>`;
+        }).join('') || '<li class="ac-tl__item"><div class="ac-tl__content a-muted">No activity yet.</div></li>';
+
+        // Module-specific action buttons.
+        const actionBtns = (inc.actions || []).map(a =>
+          `<button type="button" class="ac-act-btn ${a.tier === 'executable' ? 'ac-act-btn--exec' : ''}"
+             data-action="${esc(a.key)}" ${isClosed ? 'disabled' : ''}>${esc(a.label)}</button>`
+        ).join('');
+
+        // Workflow controls (CD-only, no assignment).
+        const wf = [];
+        if (!isClosed) {
+          if (inc.status === 'open') wf.push(['acknowledge', 'Acknowledge']);
+          if (inc.status === 'open' || inc.status === 'acknowledged') wf.push(['investigate', 'Start Investigation']);
+          if (inc.severity !== 'critical') wf.push(['escalate', 'Escalate Severity']);
+          if (inc.status !== 'resolved') wf.push(['resolve', 'Mark Resolved']);
+          wf.push(['close', 'Close Incident']);
+        } else {
+          wf.push(['reopen', 'Reopen Incident']);
+        }
+        const wfBtns = wf.map(([k, l]) =>
+          `<button type="button" class="ac-wf-btn ac-wf-btn--${k}" data-wf="${k}">${l}</button>`).join('');
+
+        modalBody.innerHTML = `
+          <div class="ac-d__head">
+            <div>
+              <div class="ac-d__code">${esc(inc.incident_code)} · ${sevBadge(inc.severity)} ${statusBadge(inc.status)}</div>
+              <h2 class="ac-d__title">${esc(inc.title)}</h2>
+              <p class="ac-d__meta">${esc(inc.module_label)} · ${esc(titleCase(inc.event_type))} · ${fmtTime(inc.timestamp)}</p>
+            </div>
+          </div>
+          <div class="ac-d__grid">
+            <div class="ac-d__cell"><span>Subject</span><strong>${esc(inc.subject)}</strong></div>
+            <div class="ac-d__cell"><span>Source IP</span><strong>${esc(inc.ip_address)}</strong></div>
+            <div class="ac-d__cell ac-d__cell--wide"><span>Escalation Path</span><strong>${esc(inc.escalation_path||'—')}</strong></div>
+          </div>
+
+          <div class="ac-d__section">
+            <h3>Recommended Response Actions</h3>
+            <div class="ac-act-grid">${actionBtns || '<span class="a-muted">No module actions defined.</span>'}</div>
+          </div>
+
+          <div class="ac-d__section">
+            <h3>Resolution Procedure</h3>
+            <ol class="ac-proc">${procedure.map(s => `<li>${esc(s)}</li>`).join('') || '<li class="a-muted">—</li>'}</ol>
+          </div>
+
+          <div class="ac-d__section">
+            <h3>Add Note / Resolution Details</h3>
+            <textarea id="ac-note" class="ac-note" rows="2" placeholder="Document a finding, action taken, or resolution note…" ${isClosed ? 'disabled' : ''}></textarea>
+            ${!isClosed ? '<button type="button" class="audit-btn" id="ac-note-save">Save Note</button>' : ''}
+            ${inc.resolution_notes ? `<div class="ac-resnote"><strong>Resolution notes:</strong> ${esc(inc.resolution_notes)}</div>` : ''}
+          </div>
+
+          <div class="ac-d__section">
+            <h3>Workflow</h3>
+            <div class="ac-wf">${wfBtns}</div>
+          </div>
+
+          <div class="ac-d__section">
+            <h3>Activity Timeline</h3>
+            <ul class="ac-tl">${tl}</ul>
+          </div>`;
+
+        // Wire actions.
+        const noteVal = () => (document.getElementById('ac-note')?.value || '').trim();
+        modalBody.querySelectorAll('[data-action]').forEach(b =>
+          b.addEventListener('click', () => post(`action`, { actionKey: b.getAttribute('data-action'), note: noteVal() })));
+        const noteSave = document.getElementById('ac-note-save');
+        if (noteSave) noteSave.addEventListener('click', () => {
+          const n = noteVal(); if (!n) return showToast('Enter a note first.', 'error');
+          post('note', { note: n });
+        });
+        modalBody.querySelectorAll('[data-wf]').forEach(b =>
+          b.addEventListener('click', () => runWorkflow(b.getAttribute('data-wf'), inc, noteVal())));
+      }
+
+      async function post(path, body) {
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents/${currentId}/${path}`, {
+            method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+          showToast(json.message || 'Done.', (json.executed === false && json.message) ? 'info' : 'success');
+          await openDetail(currentId); load();
+        } catch (err) { showToast(err.message || 'Action failed.', 'error'); }
+      }
+
+      async function patchStatus(status, note) {
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents/${currentId}/status`, {
+            method: 'PATCH', headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, note }),
+          });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+          showToast('Status updated.', 'success');
+          await openDetail(currentId); load();
+        } catch (err) { showToast(err.message || 'Failed.', 'error'); }
+      }
+
+      function runWorkflow(kind, inc, note) {
+        if (kind === 'acknowledge') return patchStatus('acknowledged', note);
+        if (kind === 'investigate') return patchStatus('investigating', note);
+        if (kind === 'resolve')     return patchStatus('resolved', note);
+        if (kind === 'escalate')    return post('escalate', { note });
+        if (kind === 'reopen')      return post('reopen', { note });
+        if (kind === 'close') {
+          if (inc.severity === 'critical' && !note) {
+            return showToast('Critical incidents require resolution notes (use the note field above) before closing.', 'error');
+          }
+          return post('close', { resolution_notes: note });
+        }
+      }
+
+      async function doExport() {
+        const p = new URLSearchParams(); collect(p);
+        try {
+          const res = await fetch(`${API_BASE}/audit/incidents/export?${p.toString()}`, { headers: authHeaders });
+          if (!res.ok) throw new Error();
+          const blob = await res.blob(); const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'action-center.csv';
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+          showToast('Export ready.', 'success');
+        } catch (_) { showToast('Export failed.', 'error'); }
+      }
+
+      function wire() {
+        $('filter').addEventListener('click', () => { page = 1; load(); });
+        $('refresh').addEventListener('click', () => load());
+        $('clear').addEventListener('click', () => {
+          $('q').value=''; $('severity').value='all'; $('status').value='all';
+          $('module').value='all'; $('start').value=''; $('end').value=''; page = 1; load();
+        });
+        $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { page = 1; load(); } });
+        const exp = $('export');
+        exp.querySelector('[data-export-toggle]').addEventListener('click', (e) => { e.stopPropagation(); exp.classList.toggle('open'); });
+        exp.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => { exp.classList.remove('open'); doExport(); }));
+        document.addEventListener('click', () => exp.classList.remove('open'));
+        document.getElementById('ac-modal-close').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+      }
+
+      function first() {
+        if (!loaded) { loaded = true; wire(); loadCatalog(); load(); }
+        // Deep-link: open a specific incident from a CD notification link.
+        const incId = new URLSearchParams(location.search).get('incident');
+        if (incId) setTimeout(() => openDetail(incId), 300);
+      }
+
+      return { first };
+    })();
 
     // ── DELETE ACCOUNT (with password) ───────────────────
     const deleteModal      = document.getElementById('delete-modal');
@@ -1077,6 +1956,45 @@
         deleteConfirmBtn.textContent = 'Delete Account';
       }
     });
+
+    // ── My Cases ──
+    (async function loadMyCases() {
+      const container = document.getElementById('my-cases-list');
+      if (!container) return;
+      try {
+        const res = await fetch(API + '/cases', { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (!data.success || !data.data.length) {
+          container.innerHTML = '<p style="color:#a0aec0;font-style:italic">No cases found.</p>';
+          return;
+        }
+        container.innerHTML = data.data.map(c => {
+          const sc = (s => {
+            if (!s) return '';
+            const l = s.toLowerCase();
+            if (l.includes('rejected')) return 'background:#fecaca;color:#991b1b';
+            if (l.includes('closed')) return 'background:#e2e8f0;color:#475569';
+            if (l.includes('released')) return 'background:#e9d5ff;color:#6b21a8';
+            if (l.includes('approved') || l.includes('ready')) return 'background:#a7f3d0;color:#047857';
+            if (l.includes('completed')) return 'background:#d1fae5;color:#065f46';
+            if (l.includes('progress') || l.includes('scheduled')) return 'background:#dbeafe;color:#1e40af';
+            if (l.includes('drafting')) return 'background:#e0e7ff;color:#3730a3';
+            return 'background:#fef3c7;color:#92400e';
+          })(c.status);
+          return '<div style="background:#fff;border:1px solid #e6eaf1;border-radius:14px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.04)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+              '<strong style="color:#667eea;font-size:15px">' + c.case_id + '</strong>' +
+              '<span style="font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:20px;' + sc + '">' + c.status + '</span>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#475569">' +
+              'Staff: ' + (c.psychologist_name || 'Unassigned') + ' &middot; Intake: ' + new Date(c.intake_date).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) +
+            '</div>' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<p style="color:#e53e3e">Failed to load cases.</p>';
+      }
+    })();
   </script>
   <script src="navbar.js"></script>
 </body>

@@ -1,0 +1,132 @@
+/* ══════════════════════════════════════════════════════════════════
+   PSYGEN SIDEBAR — shared sidebar visual language
+   Reskins the Case Management (.cm-sidebar) and Community Moderation
+   (.md-side) sidebars to match the PsyGen Report Module sidebar:
+   soft white→mint gradient, rounded nav pills, blue gradient active
+   state with a left accent bar, and uppercase section titles.
+   Link this AFTER each page's own <style> so it wins the cascade.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --psg-primary: #1E3A8A;
+  --psg-primary-dark: #15306E;
+  --psg-sidebar-bg: linear-gradient(180deg, #ffffff 0%, #f0faf3 100%);
+  --psg-border: rgba(30, 58, 138, 0.12);
+  --psg-text: #1B2230;
+  --psg-text-secondary: #525E72;
+  --psg-text-muted: #6b8f6b;
+  --psg-hover: rgba(30, 58, 138, 0.08);
+  --psg-active: linear-gradient(135deg, rgba(30, 58, 138, 0.15), rgba(30, 58, 138, 0.08));
+}
+
+/* Brand header shared by both reskinned sidebars */
+.psg-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid var(--psg-border);
+  margin-bottom: 8px;
+}
+.psg-brand__logo { width: 46px; height: 46px; object-fit: contain; flex-shrink: 0; }
+.psg-brand__text { display: flex; flex-direction: column; line-height: 1.1; }
+.psg-brand__text h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; margin: 0; }
+.psg-brand__text h1 .brand-psy { color: var(--psg-primary); }
+.psg-brand__text h1 .brand-gen { color: #0B6E3B; }
+.psg-brand__text p {
+  font-size: 10px;
+  color: var(--psg-text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+/* Collapsed Case Management sidebar: hide the brand text, center the logo */
+.cm-layout.sidebar-collapsed .psg-brand { padding: 14px 6px; justify-content: center; }
+.cm-layout.sidebar-collapsed .psg-brand__text { display: none; }
+.cm-layout.sidebar-collapsed .psg-brand__logo { width: 34px; height: 34px; }
+
+/* ── Case Management sidebar ─────────────────────────────────────── */
+.cm-sidebar {
+  background: var(--psg-sidebar-bg) !important;
+  border-right: 1px solid var(--psg-border) !important;
+  backdrop-filter: blur(20px);
+}
+.cm-sidebar-body { padding: 8px 12px 24px !important; }
+
+/* Toggle header reads like the brand row */
+.cm-toggle {
+  border-bottom: 1px solid var(--psg-border) !important;
+  color: var(--psg-text) !important;
+}
+.cm-toggle:hover { background: var(--psg-hover) !important; }
+
+/* Section labels */
+.cm-sb-label {
+  font-size: 10px !important;
+  letter-spacing: 2px !important;
+  color: var(--psg-text-muted) !important;
+  font-weight: 600 !important;
+  padding: 16px 12px 8px !important;
+}
+
+/* Nav pills (service + section buttons) */
+.cm-svc-btn,
+.cm-sec-btn {
+  border-radius: 8px !important;
+  color: var(--psg-text-secondary) !important;
+  margin-bottom: 1px;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, color 0.2s, border-color 0.2s !important;
+}
+.cm-svc-btn:hover,
+.cm-sec-btn:hover {
+  background: var(--psg-hover) !important;
+  color: var(--psg-text) !important;
+}
+.cm-svc-btn.active,
+.cm-sec-btn.active {
+  background: var(--psg-active) !important;
+  color: var(--psg-primary-dark) !important;
+  border-left: 3px solid var(--psg-primary) !important;
+  font-weight: 600 !important;
+}
+.cm-badge { background: var(--psg-primary) !important; }
+
+/* ── Community Moderation sidebar ────────────────────────────────── */
+.md-side {
+  background: var(--psg-sidebar-bg) !important;
+  border-right: 1px solid var(--psg-border) !important;
+  backdrop-filter: blur(20px);
+  padding: 0 12px 22px !important;
+}
+.md-side__label {
+  font-size: 10px !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase;
+  color: var(--psg-text-muted) !important;
+  font-weight: 600 !important;
+  padding: 16px 12px 8px !important;
+  margin-bottom: 0 !important;
+}
+.md-nav {
+  border-radius: 8px !important;
+  color: var(--psg-text-secondary) !important;
+  font-size: 13px !important;
+  padding: 8px 14px !important;
+  margin-bottom: 1px;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, color 0.2s, border-color 0.2s !important;
+}
+.md-nav:hover {
+  background: var(--psg-hover) !important;
+  color: var(--psg-text) !important;
+}
+.md-nav.active {
+  background: var(--psg-active) !important;
+  color: var(--psg-primary-dark) !important;
+  border-left: 3px solid var(--psg-primary) !important;
+  font-weight: 600 !important;
+}
+.md-nav__badge { background: var(--psg-primary) !important; }

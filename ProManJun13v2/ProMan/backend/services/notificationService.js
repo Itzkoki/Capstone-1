@@ -1,6 +1,7 @@
 const sgMail = require('@sendgrid/mail');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Staff = require('../models/Staff');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -13,12 +14,29 @@ const notificationService = {
   },
 
   /**
-   * Send in-app notifications to all users with a given role.
+   * Send in-app notifications to everyone holding a given role — in BOTH the
+   * legacy `users` table and the dedicated `staff` table. Staff accounts moved
+   * to the `staff` table would otherwise never receive role broadcasts.
    */
   async notifyRole(role, type, title, message, link = null) {
     const users = await User.findByRole(role);
-    const promises = users.map(u => Notification.create(u.id, type, title, message, link));
-    return Promise.all(promises);
+    await Promise.all(users.map(u => Notification.create(u.id, type, title, message, link)));
+    // Also reach staff-table accounts holding this role.
+    await this.notifyStaffRole(role, type, title, message, link);
+  },
+
+  /**
+   * Send a notification to EACH of several roles (users + staff tables). Use
+   * this to assign a workflow notification to exactly the role(s) responsible
+   * for it, so other roles never receive (or can see) it. A user holds a single
+   * role, so there are no cross-role duplicates.
+   * @param {string[]|string} roles
+   */
+  async notifyRoles(roles, type, title, message, link = null) {
+    const list = Array.isArray(roles) ? roles : [roles];
+    for (const role of list) {
+      await this.notifyRole(role, type, title, message, link);
+    }
   },
 
   /**
@@ -48,13 +66,37 @@ const notificationService = {
       'psychometrician', 'supervising_psychometrician',
       'qc_psychometrician', 'psychologist', 'clinical_director',
     ];
-    const allPromises = staffRoles.map(role =>
+    // Legacy users-table staff.
+    const userPromises = staffRoles.map(role =>
       User.findByRole(role).then(users => {
         const targets = excludeUserId ? users.filter(u => u.id !== excludeUserId) : users;
         return Promise.all(targets.map(u => Notification.create(u.id, type, title, message, link)));
       })
     );
-    return Promise.all(allPromises);
+    // Dedicated staff-table accounts (all active clinical staff).
+    const staffRows = (await Staff.findAll({})).filter(s => s.is_active);
+    const staffTargets = excludeUserId
+      ? staffRows.filter(s => s.staff_id !== excludeUserId)
+      : staffRows;
+    const staffPromises = staffTargets.map(s => Notification.create(s.staff_id, type, title, message, link));
+
+    return Promise.all([...userPromises, ...staffPromises]);
+  },
+
+  /**
+   * Send in-app notifications to STAFF-TABLE accounts holding a given role.
+   * Staff now live in the dedicated `staff` table (staff_id), separate from the
+   * `users` table that notifyRole/notifyStaff target. Use this alongside
+   * notifyRole when a role (e.g. clinical_director) may exist in either table,
+   * so the recipient is notified regardless of which table their account is in.
+   * Only active staff are notified.
+   */
+  async notifyStaffRole(role, type, title, message, link = null) {
+    const staff = await Staff.findAll({ role });
+    const targets = staff.filter(s => s.is_active);
+    return Promise.all(
+      targets.map(s => Notification.create(s.staff_id, type, title, message, link))
+    );
   },
 
   /**

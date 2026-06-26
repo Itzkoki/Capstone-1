@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="staff-management.css">
   <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="captcha.css">
   <style>
     .pay-container { max-width: 1200px; margin: 100px auto 40px; padding: 0 24px; }
     .pay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 12px; }
@@ -90,12 +91,13 @@
   </style>
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 
 <body class="articles-page logged-in">
   <nav class="navbar"><a href="landingpage.html" class="navbar__brand">
-      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse
-        Psychological Services</span>
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -152,8 +154,49 @@
     </div>
   </div>
 
+  <script src="icons.js"></script>
   <script src="session.js"></script>
+  <script src="role-guard.js"></script>
   <script src="toast.js"></script>
+  <script src="captcha.js"></script>
+
+  <!-- ── Payment Verification page-load EMAIL OTP gate ──────────────────
+       A 6-digit code emailed to the staff member must be verified before the
+       payments list is accessible. Verified once per browser session.        -->
+  <script>
+    (function () {
+      const MODULE = 'payment_verification';
+      if (BPSModuleOtp.isVerified(MODULE)) return;
+      const gate = document.createElement('div');
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          </div>
+          <h2 class="bps-community-gate__title">Email Verification</h2>
+          <p class="bps-community-gate__desc">For your security, please verify your email with a one-time code before accessing Payment Verification.</p>
+          <div class="bps-community-gate__error" id="_bps_pay_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_pay_btn">
+            <span id="_bps_pay_label">Send Code &amp; Verify</span>
+          </button>
+        </div>`;
+      document.body.appendChild(gate);
+      document.getElementById('_bps_pay_btn').addEventListener('click', async function () {
+        const btn = this, label = document.getElementById('_bps_pay_label'), errEl = document.getElementById('_bps_pay_err');
+        btn.disabled = true; label.textContent = 'Sending code…'; errEl.style.display = 'none';
+        const ok = await BPSModuleOtp.verify(MODULE);
+        if (ok) {
+          gate.style.transition = 'opacity 0.3s ease'; gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          btn.disabled = false; label.textContent = 'Send Code & Verify';
+        }
+      });
+    })();
+  </script>
   <script>
     const API = 'http://localhost:5000/api';
     const token = BPSSession.getToken();
@@ -209,8 +252,8 @@
         let actions = '';
         if (p.status === 'under_review') {
           actions = `<div class="pcard__actions">
-            <button class="pbtn pbtn--approve" onclick="approve(${p.id})">✓ Approve &amp; Verify</button>
-            <button class="pbtn pbtn--reject" onclick="openReject(${p.id})">✕ Reject</button>
+            <button class="pbtn pbtn--approve" onclick="approve(${p.id})">${ICON.check} Approve &amp; Verify</button>
+            <button class="pbtn pbtn--reject" onclick="openReject(${p.id})">${ICON.x} Reject</button>
           </div>`;
         }
 
@@ -227,6 +270,7 @@
               <div class="pcard__client">${esc(p.client_name || 'Unknown')}</div>
               <div class="pcard__email">${esc(p.client_email || '')}</div>
               <div class="pcard__ref">${esc(p.reference_number)}</div>
+              ${p.case_id ? '<div style="font-size:12px;color:#667eea;font-weight:700;margin-top:2px">' + esc(p.case_id) + '</div>' : ''}
             </div>
             <span class="pstatus pstatus--${p.status}">${statusLabel(p.status)}</span>
           </div>
@@ -283,7 +327,7 @@
     }
 
     async function approve(id) {
-      const note = prompt('Optional note to the client (e.g. confirmation message). Leave blank to skip:', '');
+      const note = await BPSModal.prompt('Optional note to the client (e.g. confirmation message). Leave blank to skip:', { title: 'Approve payment', placeholder: 'Confirmation message…', confirmText: 'Approve' });
       if (note === null) return; // cancelled
       const res = await apiFetch(`/payments/${id}/verify`, {
         method: 'PUT', body: JSON.stringify({ action: 'approve', note: note || null }),
@@ -322,7 +366,37 @@
       m.addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
     });
 
-    loadPayments();
+    // Auto-open a specific payment if ?paymentId= is in the URL (e.g. from SupPsy notification link)
+    async function autoOpenPaymentFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('paymentId');
+      if (!targetId) return;
+
+      // Find the payment in allPayments (already loaded) and open its proof viewer
+      const target = allPayments.find(p => String(p.id) === String(targetId));
+      if (!target) return;
+
+      // Switch to "All" filter to make the card visible regardless of current filter
+      filterBy('all', document.querySelector('.filter-btn'));
+
+      // Highlight and scroll to the specific card
+      setTimeout(() => {
+        const cards = document.querySelectorAll('.pcard');
+        for (const card of cards) {
+          if (card.innerHTML.includes(esc(target.reference_number))) {
+            card.style.outline = '3px solid #1E3A8A';
+            card.style.boxShadow = '0 0 0 4px rgba(30,58,138,0.15)';
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+          }
+        }
+      }, 150);
+
+      // Automatically open the proof viewer so the SupPsy can verify immediately
+      viewProof(Number(targetId));
+    }
+
+    loadPayments().then(autoOpenPaymentFromUrl);
   </script>
   <script src="navbar.js"></script>
 </body>

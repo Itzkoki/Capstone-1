@@ -3,252 +3,725 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moderation | Barcarse Psychological Services</title>
+  <title>Moderation Dashboard | Barcarse Psychological Services</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="common.css">
-  <style>
-    .mod-container { max-width: 960px; margin: 80px auto 40px; padding: 0 24px; }
-    .mod-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .mod-header h1 { font-size: 24px; font-weight: 800; color: var(--text-dark); }
-    .mod-stats { display: flex; gap: 16px; margin-bottom: 28px; }
-    .mod-stat { background: #fff; border-radius: 14px; padding: 18px 24px; flex: 1; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-    .mod-stat__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8A93A4; margin-bottom: 4px; }
-    .mod-stat__val { font-size: 28px; font-weight: 800; color: var(--text-dark); }
-    .mod-stat--danger .mod-stat__val { color: #e53e3e; }
-    .mod-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-    .mod-tab { padding: 8px 20px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer; font-weight: 600; font-size: 14px; color: #4a5568; transition: all 0.2s; }
-    .mod-tab.active { border-color: var(--green-primary); color: var(--green-primary); background: rgba(30,58,138,0.06); }
-    .mod-card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-left: 4px solid #e2e8f0; }
-    .mod-card--crisis { border-left-color: #e53e3e; background: #fff5f5; }
-    .mod-card--pending { border-left-color: #ecc94b; }
-    .mod-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .mod-card__type { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 8px; }
-    .mod-card__type--thread { background: rgba(30,58,138,0.1); color: var(--green-primary); }
-    .mod-card__type--article { background: rgba(30,58,138,0.1); color: #1E3A8A; }
-    .mod-card__type--flag { background: rgba(229,62,62,0.1); color: #e53e3e; }
-    .mod-card__title { font-weight: 700; font-size: 15px; color: var(--text-dark); margin-bottom: 6px; }
-    .mod-card__meta { font-size: 12px; color: #8A93A4; margin-bottom: 10px; }
-    .mod-card__content { font-size: 13px; color: var(--text-body); line-height: 1.6; margin-bottom: 14px; padding: 12px; background: #f8faf8; border-radius: 8px; }
-    .mod-card__actions { display: flex; gap: 8px; }
-    .btn-mod { padding: 7px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; }
-    .btn-mod--approve { background: #1E3A8A; color: #fff; }
-    .btn-mod--approve:hover { background: #2da44e; }
-    .btn-mod--reject { background: #e53e3e; color: #fff; }
-    .btn-mod--reject:hover { background: #c53030; }
-    .btn-mod--dismiss { background: #e2e8f0; color: #4a5568; }
-    .btn-mod--dismiss:hover { background: #cbd5e0; }
-    .empty-mod { text-align: center; padding: 60px 20px; color: #8A93A4; }
-    .empty-mod svg { width: 48px; height: 48px; fill: #c6d6c6; margin-bottom: 12px; }
-  </style>
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <style>
+    :root { --md-navy:#13357a; --md-blue:#2563eb; --md-green:#16a34a; --md-amber:#f59e0b; --md-red:#dc2626; --md-ink:#1f2937; --md-muted:#6b7280; --md-line:#e5e7eb; --md-bg:#f6f8fb; }
+    body { background: var(--md-bg); }
+    .md-layout { display:block; padding-top:64px; min-height:100vh; }
+
+    /* ===== Sidebar — pinned flush to the page's left corner, full height ===== */
+    .md-side { background:#fff; border-right:1px solid var(--md-line); padding:22px 14px; position:fixed; left:0; top:64px; bottom:0; width:248px; overflow-y:auto; z-index:20; }
+    .md-side__group { margin-bottom:22px; }
+    .md-side__label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9aa3b2; padding:0 12px; margin-bottom:8px; }
+    .md-nav { display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:none; background:none; border-radius:10px; cursor:pointer; font:inherit; font-size:14px; font-weight:600; color:#475467; text-align:left; transition:.15s; }
+    .md-nav svg { width:18px; height:18px; fill:currentColor; flex:0 0 auto; }
+    .md-nav:hover { background:#f1f5fb; color:var(--md-navy); }
+    .md-nav.active { background:#e8f0fe; color:var(--md-blue); }
+    .md-nav__badge { margin-left:auto; background:#f59e0b; color:#fff; font-size:11px; font-weight:700; border-radius:999px; min-width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; padding:0 6px; }
+    .md-nav__badge.is-zero { display:none; }
+
+    /* ===== Main — offset to clear the fixed left sidebar ===== */
+    .md-main { margin-left:248px; padding:30px 34px 60px; max-width:1312px; }
+    .md-h1 { font-size:26px; font-weight:800; color:var(--md-ink); margin:0; }
+    .md-sub { color:var(--md-muted); margin:4px 0 24px; font-size:14px; }
+
+    .md-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+    .md-stat { background:#fff; border:1px solid var(--md-line); border-radius:14px; padding:18px; }
+    .md-stat__top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .md-stat__ic { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+    .md-stat__ic svg { width:20px; height:20px; }
+    .md-stat__name { font-size:13px; font-weight:600; color:#475467; }
+    .md-stat__val { font-size:30px; font-weight:800; color:var(--md-ink); line-height:1; }
+    .md-stat__hint { font-size:12px; color:var(--md-muted); margin-top:6px; }
+    .ic-blue { background:#e8f0fe; } .ic-blue svg { fill:var(--md-blue); }
+    .ic-amber { background:#fef3e2; } .ic-amber svg { fill:var(--md-amber); }
+    .ic-green { background:#e7f6ec; } .ic-green svg { fill:var(--md-green); }
+    .ic-violet { background:#efeafe; } .ic-violet svg { fill:#7c3aed; }
+
+    .md-grid { display:grid; grid-template-columns:1fr 340px; gap:22px; align-items:start; }
+    @media (max-width:1180px){ .md-grid{ grid-template-columns:1fr; } }
+
+    .md-panel { background:#fff; border:1px solid var(--md-line); border-radius:14px; padding:20px 22px; margin-bottom:22px; }
+    .md-panel__title { font-size:16px; font-weight:700; color:var(--md-ink); margin:0 0 14px; }
+
+    .md-tabs { display:flex; gap:24px; border-bottom:1px solid var(--md-line); margin-bottom:6px; }
+    .md-tab { background:none; border:none; padding:10px 2px 12px; font:inherit; font-size:14px; font-weight:600; color:var(--md-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .md-tab.active { color:var(--md-blue); border-bottom-color:var(--md-blue); }
+
+    .md-item { display:flex; align-items:center; gap:14px; padding:16px 4px; border-bottom:1px solid #f1f3f6; }
+    .md-item:last-child { border-bottom:none; }
+    .md-item__ic { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .md-item__ic svg { width:20px; height:20px; }
+    .md-item__body { flex:1; min-width:0; }
+    .md-tagline { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+    .md-type { font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:6px; }
+    .t-discussion { background:#e8f0fe; color:var(--md-blue); }
+    .t-article { background:#e7f6ec; color:var(--md-green); }
+    .t-faq { background:#efeafe; color:#7c3aed; }
+    .t-flag { background:#fde8e8; color:var(--md-red); }
+    .md-item__title { font-size:15px; font-weight:700; color:var(--md-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .md-item__meta { font-size:12.5px; color:var(--md-muted); margin-top:2px; }
+    .md-pill { font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+    .p-pending { background:#fef3e2; color:#b45309; }
+    .p-approved { background:#e7f6ec; color:#15803d; }
+    .p-rejected { background:#fde8e8; color:#b91c1c; }
+    .md-item__actions { display:flex; gap:8px; flex:0 0 auto; }
+    .md-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; border:1px solid transparent; background:#fff; transition:.15s; }
+    .md-btn svg { width:14px; height:14px; fill:currentColor; }
+    .md-btn--approve { color:var(--md-blue); border-color:#bcd0fb; } .md-btn--approve:hover{ background:#eff5ff; }
+    .md-btn--reject { color:var(--md-red); border-color:#f3c2c2; } .md-btn--reject:hover{ background:#fef2f2; }
+    .md-btn--ghost { color:#475467; border-color:var(--md-line); } .md-btn--ghost:hover{ background:#f7f9fc; }
+    .md-btn--primary { background:var(--md-navy); color:#fff; border-color:var(--md-navy); justify-content:center; } .md-btn--primary:hover{ background:#0f2a63; }
+    .md-btn--block { width:100%; justify-content:center; }
+    .md-btn--outline { background:#fff; color:var(--md-blue); border-color:#bcd0fb; justify-content:center; } .md-btn--outline:hover{ background:#eff5ff; }
+
+    .md-link { display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--md-blue); font-weight:600; font-size:14px; text-decoration:none; }
+    .md-flag-card { border:1px solid var(--md-line); border-left:3px solid var(--md-red); border-radius:12px; padding:16px 18px; margin-bottom:14px; background:#fff; }
+    .md-flag-content { margin-top:10px; padding:12px 14px; background:#f8fafc; border:1px solid #eef1f5; border-radius:10px; font-size:13.5px; line-height:1.6; color:#334155; white-space:pre-wrap; max-height:240px; overflow:auto; }
+    .md-empty { text-align:center; padding:46px 16px; color:var(--md-muted); }
+    .md-empty svg { width:42px; height:42px; fill:#cbd5e1; margin-bottom:10px; }
+
+    /* right column */
+    .qa-btns { display:flex; flex-direction:column; gap:10px; }
+    .ov-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f3f6; font-size:14px; color:#475467; }
+    .ov-row:last-child { border-bottom:none; }
+    .ov-row span:first-child { display:flex; align-items:center; gap:9px; }
+    .ov-row svg { width:16px; height:16px; fill:var(--md-muted); }
+    .ov-row b { color:var(--md-ink); font-weight:700; }
+    .donut-wrap { display:flex; align-items:center; gap:18px; }
+    .donut { width:120px; height:120px; border-radius:50%; position:relative; flex:0 0 auto; }
+    .donut::after { content:''; position:absolute; inset:18px; background:#fff; border-radius:50%; }
+    .donut__center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1; }
+    .donut__num { font-size:24px; font-weight:800; color:var(--md-ink); }
+    .donut__lbl { font-size:11px; color:var(--md-muted); }
+    .legend { font-size:13px; }
+    .legend__row { display:flex; align-items:center; gap:8px; margin-bottom:8px; color:#475467; }
+    .legend__dot { width:10px; height:10px; border-radius:3px; }
+    .act-row { display:flex; gap:10px; padding:11px 0; border-bottom:1px solid #f1f3f6; }
+    .act-row:last-child { border-bottom:none; }
+    .act-ic { width:26px; height:26px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; }
+    .act-ic svg { width:14px; height:14px; fill:#fff; }
+    .act-row__txt { font-size:13px; color:#475467; }
+    .act-row__txt b { color:var(--md-ink); }
+    .act-row__time { font-size:11.5px; color:#9aa3b2; }
+
+    /* modal */
+    .md-modal { position:fixed; inset:0; background:rgba(15,23,42,.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+    .md-modal.show { display:flex; }
+    .md-modal__box { background:#fff; border-radius:16px; width:100%; max-width:560px; max-height:90vh; overflow:auto; padding:26px; }
+    .md-modal__title { font-size:19px; font-weight:800; color:var(--md-ink); margin:0 0 16px; }
+    .md-field { margin-bottom:14px; }
+    .md-field label { display:block; font-size:13px; font-weight:600; color:var(--md-ink); margin-bottom:6px; }
+    .md-field input, .md-field textarea, .md-field select { width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid var(--md-line); border-radius:10px; font:inherit; font-size:14px; color:var(--md-ink); background:#fff; }
+    .md-field textarea { min-height:120px; resize:vertical; }
+    .md-modal__actions { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+    .hidden { display:none !important; }
+    @media (max-width:900px){ .md-side{ position:static; width:auto; top:auto; bottom:auto; height:auto; overflow:visible; } .md-main{ margin-left:0; max-width:none; } .md-stats{ grid-template-columns:1fr 1fr; } }
+  </style>
+  <!-- Shared PsyGen sidebar design (overrides the sidebar styles above) -->
+  <link rel="stylesheet" href="psygen-sidebar.css">
 </head>
 <body class="logged-in">
-  <nav class="navbar"><a href="landingpage.html" class="navbar__brand"><div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><span class="navbar__title">Barcarse Psychological Services</span></a>
-    <div class="navbar__right"><ul class="navbar__links"></ul><a href="profile.html" class="navbar__profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg></a></div>
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand"><div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div><h3 class="navbar__title">Barcarse Psychological Services</h3></a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><span class="navbar__notif-badge" id="notif-badge">0</span></a>
+      <a href="profile.html" class="navbar__profile" title="My Profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></a>
+    </div>
   </nav>
 
-  <div class="mod-container">
-    <div class="mod-header">
-      <h1><svg viewBox="0 0 24 24" width="24" height="24" style="fill:currentColor;vertical-align:middle;margin-right:6px;"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Moderation Dashboard</h1>
-    </div>
+  <div class="md-layout">
+    <!-- ===== Sidebar ===== -->
+    <aside class="md-side">
+      <div class="psg-brand">
+        <img src="PsyGen-Logo.png" class="psg-brand__logo" alt="Logo">
+        <div class="psg-brand__text">
+          <h1><span class="brand-psy">Mod</span><span class="brand-gen">Hub</span></h1>
+          <p>Moderation</p>
+        </div>
+      </div>
+      <div class="md-side__group">
+        <div class="md-side__label">Moderation</div>
+        <button class="md-nav active" data-view="dashboard"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</button>
+        <button class="md-nav" data-view="pending"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg>Pending Review<span class="md-nav__badge is-zero" id="sb-pending">0</span></button>
+        <button class="md-nav" data-view="faqs"><svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>Manage FAQs</button>
+        <button class="md-nav" data-view="articles"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>Manage Articles</button>
+        <button class="md-nav" data-view="discussions"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>Manage Discussions</button>
+      </div>
+      <div class="md-side__group">
+        <div class="md-side__label">Content Moderation</div>
+        <button class="md-nav" data-view="all"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>All Posts</button>
+        <button class="md-nav" data-view="flagged"><svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>Flagged Content<span class="md-nav__badge is-zero" id="sb-flags">0</span></button>
+      </div>
+    </aside>
 
-    <div class="mod-stats">
-      <div class="mod-stat mod-stat--danger"><div class="mod-stat__label">Pending Flags</div><div class="mod-stat__val" id="stat-flags">0</div></div>
-      <div class="mod-stat"><div class="mod-stat__label">Pending Threads</div><div class="mod-stat__val" id="stat-threads">0</div></div>
-      <div class="mod-stat"><div class="mod-stat__label">Pending Articles</div><div class="mod-stat__val" id="stat-articles">0</div></div>
-    </div>
+    <!-- ===== Main ===== -->
+    <main class="md-main">
+      <h1 class="md-h1" id="view-title">Moderation Dashboard</h1>
+      <p class="md-sub" id="view-sub">Overview of community content and moderation activities.</p>
 
-    <div class="mod-tabs">
-      <button class="mod-tab active" onclick="switchModTab('threads', this)">Pending Threads</button>
-      <button class="mod-tab" onclick="switchModTab('flags', this)">Flagged Content</button>
-      <button class="mod-tab" onclick="switchModTab('articles', this)">Pending Articles</button>
-    </div>
+      <!-- Stat cards -->
+      <div class="md-stats" id="md-stats">
+        <div class="md-stat"><div class="md-stat__top"><div class="md-stat__ic ic-blue"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="md-stat__name">Pending Review</div></div><div class="md-stat__val" id="st-pending">0</div><div class="md-stat__hint">Posts awaiting review</div></div>
+        <div class="md-stat"><div class="md-stat__top"><div class="md-stat__ic ic-amber"><svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></div><div class="md-stat__name">Flagged Content</div></div><div class="md-stat__val" id="st-flags">0</div><div class="md-stat__hint">Requires attention</div></div>
+        <div class="md-stat"><div class="md-stat__top"><div class="md-stat__ic ic-green"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div class="md-stat__name">Approved Today</div></div><div class="md-stat__val" id="st-approved">0</div><div class="md-stat__hint">Posts approved</div></div>
+        <div class="md-stat"><div class="md-stat__top"><div class="md-stat__ic ic-violet"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg></div><div class="md-stat__name">Total Content</div></div><div class="md-stat__val" id="st-total">0</div><div class="md-stat__hint">All published content</div></div>
+      </div>
 
-    <div id="mod-list"></div>
+      <div class="md-grid">
+        <!-- center column -->
+        <div>
+          <!-- Dashboard / list panel -->
+          <div class="md-panel" id="list-panel">
+            <div class="md-tabs" id="dash-tabs">
+              <button class="md-tab active" data-tab="pending">Pending Review</button>
+              <button class="md-tab" data-tab="approved">Recently Approved</button>
+              <button class="md-tab" data-tab="rejected">Recently Rejected</button>
+            </div>
+            <div id="list-body"></div>
+            <a href="#" class="md-link hidden" id="view-all-link" onclick="goView('pending');return false;">View all pending <svg width="18" height="18" viewBox="0 0 24 24" style="fill:currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></a>
+          </div>
+        </div>
+
+        <!-- right column -->
+        <aside id="md-right">
+          <div class="md-panel">
+            <h3 class="md-panel__title">Quick Actions</h3>
+            <div class="qa-btns">
+              <button class="md-btn md-btn--primary md-btn--block" onclick="openFaqModal()">+ Add FAQ</button>
+              <button class="md-btn md-btn--outline md-btn--block" onclick="openArticleModal()">+ Add Article</button>
+              <button class="md-btn md-btn--outline md-btn--block" onclick="openThreadModal()">+ Start Discussion</button>
+            </div>
+          </div>
+          <div class="md-panel">
+            <h3 class="md-panel__title">Content Overview</h3>
+            <div class="ov-row"><span><svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>FAQs</span><b id="ov-faqs">0</b></div>
+            <div class="ov-row"><span><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg>Articles</span><b id="ov-articles">0</b></div>
+            <div class="ov-row"><span><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Discussions</span><b id="ov-discussions">0</b></div>
+            <div class="ov-row"><span><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 110-9 4.5 4.5 0 010 9z"/></svg>Flagged Items</span><b id="ov-flags">0</b></div>
+          </div>
+          <div class="md-panel">
+            <h3 class="md-panel__title">Content Status</h3>
+            <div class="donut-wrap">
+              <div class="donut" id="donut"><div class="donut__center"><div class="donut__num" id="donut-total">0</div><div class="donut__lbl">Total</div></div></div>
+              <div class="legend" id="donut-legend"></div>
+            </div>
+          </div>
+          <div class="md-panel">
+            <h3 class="md-panel__title">Recent Activity</h3>
+            <div id="activity-body"><div class="md-empty" style="padding:20px"><p>No recent activity.</p></div></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== Modals ===== -->
+  <div class="md-modal" id="faq-modal">
+    <div class="md-modal__box">
+      <h3 class="md-modal__title" id="faq-modal-title">Add FAQ</h3>
+      <input type="hidden" id="faq-id">
+      <div class="md-field"><label>Question</label><input type="text" id="faq-q" placeholder="Enter the question"></div>
+      <div class="md-field"><label>Answer</label><textarea id="faq-a" placeholder="Enter the answer"></textarea></div>
+      <div class="md-field"><label>Category</label><input type="text" id="faq-cat" placeholder="e.g. Services, Payments, General"></div>
+      <div class="md-modal__actions"><button class="md-btn md-btn--ghost" onclick="closeModal('faq-modal')">Cancel</button><button class="md-btn md-btn--primary" onclick="saveFaq()">Save FAQ</button></div>
+    </div>
+  </div>
+
+  <div class="md-modal" id="article-modal">
+    <div class="md-modal__box">
+      <h3 class="md-modal__title" id="article-modal-title">Add Article</h3>
+      <input type="hidden" id="article-id">
+      <div class="md-field"><label>Title</label><input type="text" id="article-title" placeholder="Article title"></div>
+      <div class="md-field"><label>Category</label><input type="text" id="article-cat" placeholder="e.g. Anxiety, Self-Care"></div>
+      <div class="md-field">
+        <label>Thumbnail Image URL <span style="font-weight:400;color:var(--md-muted)">(optional)</span></label>
+        <input type="text" id="article-image" placeholder="https://example.com/photo.jpg" oninput="updateArticleThumb()">
+      </div>
+      <div class="md-field" id="article-thumb-wrap" style="display:none;">
+        <label>Thumbnail Preview</label>
+        <img id="article-thumb" alt="Thumbnail preview" style="display:block;max-width:100%;max-height:180px;border-radius:10px;border:1px solid #e5e7eb;object-fit:cover;">
+      </div>
+      <div class="md-field"><label>Content</label><textarea id="article-content" placeholder="Write the article..."></textarea></div>
+      <div class="md-modal__actions"><button class="md-btn md-btn--ghost" onclick="closeModal('article-modal')">Cancel</button><button class="md-btn md-btn--primary" onclick="saveArticle()">Publish</button></div>
+    </div>
+  </div>
+
+  <!-- Import article from link -->
+  <div class="md-modal" id="import-modal">
+    <div class="md-modal__box">
+      <h3 class="md-modal__title">Add Article via Link</h3>
+      <div class="md-field">
+        <label>Article URL</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="import-url" placeholder="https://example.com/article" style="flex:1;">
+          <button class="md-btn md-btn--primary" id="import-fetch-btn" onclick="fetchImportPreview()">Fetch</button>
+        </div>
+        <div id="import-hint" style="font-size:12.5px;color:var(--md-muted);margin-top:6px;">Paste a link and we'll pull in the title and content for you to review before publishing.</div>
+      </div>
+
+      <div id="import-preview" class="hidden">
+        <div class="md-field"><label>Title</label><input type="text" id="import-title" placeholder="Article title"></div>
+        <div class="md-field"><label>Category</label><input type="text" id="import-cat" placeholder="e.g. Anxiety, Self-Care"></div>
+        <div class="md-field">
+          <label>Thumbnail Image URL <span style="font-weight:400;color:var(--md-muted)">(optional)</span></label>
+          <input type="text" id="import-image" placeholder="https://example.com/photo.jpg" oninput="updateImportThumb()">
+        </div>
+        <div class="md-field" id="import-thumb-wrap" style="display:none;">
+          <label>Thumbnail Preview</label>
+          <img id="import-thumb" alt="Thumbnail preview" style="display:block;max-width:100%;max-height:180px;border-radius:10px;border:1px solid #e5e7eb;object-fit:cover;">
+        </div>
+        <div class="md-field"><label>Content</label><textarea id="import-content" placeholder="Article content..." style="min-height:160px;"></textarea></div>
+        <input type="hidden" id="import-source">
+        <input type="hidden" id="import-author">
+        <input type="hidden" id="import-date">
+      </div>
+
+      <div class="md-modal__actions">
+        <button class="md-btn md-btn--ghost" onclick="closeModal('import-modal')">Cancel</button>
+        <button class="md-btn md-btn--primary hidden" id="import-publish-btn" onclick="publishImport()">Publish Article</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="md-modal" id="thread-modal">
+    <div class="md-modal__box">
+      <h3 class="md-modal__title">Start Discussion</h3>
+      <div class="md-field"><label>Title</label><input type="text" id="thread-title" placeholder="Discussion title"></div>
+      <div class="md-field"><label>Message</label><textarea id="thread-content" placeholder="Share something with the community..."></textarea></div>
+      <div class="md-modal__actions"><button class="md-btn md-btn--ghost" onclick="closeModal('thread-modal')">Cancel</button><button class="md-btn md-btn--primary" onclick="saveThread()">Post</button></div>
+    </div>
   </div>
 
   <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script src="bps-ui.js"></script>
   <script>
     const API = 'http://localhost:5000/api';
     const token = BPSSession.getToken();
     const user = BPSSession.getUser();
-    if (!user.role || user.role === 'client') window.location.href = 'community.html';
+    if (!token) { window.location.href = 'staff-login.html'; }
+    if (!user.role || user.role === 'client') { window.location.href = 'community.html'; }
 
-    let currentModTab = 'threads';
+    let currentView = 'dashboard';
+    let currentTab = 'pending';
+
+    function toast(type, msg) { if (window.BPSToast) BPSToast[type](msg); else BPSModal.alert(msg); }
+    function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+    function timeAgo(d){ const diff=Date.now()-new Date(d).getTime(); const m=Math.floor(diff/60000); if(m<1)return 'just now'; if(m<60)return m+'m ago'; const h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
 
     async function apiFetch(url, opts = {}) {
-      const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers } });
-      if (res.status === 401) window.location.href = 'login.html';
-      return res.json();
+      const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+      if (res.status === 401) { window.location.href = 'staff-login.html'; return {}; }
+      return res.json().catch(() => ({}));
     }
 
-    function timeAgo(d) {
-      const diff = Date.now() - new Date(d).getTime();
-      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
-      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
-      return Math.floor(h / 24) + 'd ago';
+    // ---------- sidebar nav ----------
+    document.querySelectorAll('.md-nav').forEach(b => b.addEventListener('click', () => goView(b.dataset.view)));
+    function goView(view) {
+      currentView = view;
+      document.querySelectorAll('.md-nav').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+      const right = document.getElementById('md-right');
+      const tabs = document.getElementById('dash-tabs');
+      const viewAll = document.getElementById('view-all-link');
+      const titles = {
+        dashboard:['Moderation Dashboard','Overview of community content and moderation activities.'],
+        pending:['Pending Review','Posts awaiting your review and approval.'],
+        faqs:['Manage FAQs','Create, edit, and remove community FAQs.'],
+        articles:['Manage Articles','Review and manage community articles.'],
+        discussions:['Manage Discussions','Review and manage community discussions.'],
+        all:['All Posts','Every piece of community content.'],
+        flagged:['Flagged Content','Reported and auto-flagged content requiring attention.'],
+      };
+      document.getElementById('view-title').textContent = titles[view][0];
+      document.getElementById('view-sub').textContent = titles[view][1];
+
+      const isDash = view === 'dashboard';
+      right.classList.toggle('hidden', !isDash);
+      tabs.classList.toggle('hidden', !isDash);
+      viewAll.classList.toggle('hidden', !isDash);
+      document.querySelector('.md-grid').style.gridTemplateColumns = isDash ? '' : '1fr';
+
+      if (view === 'dashboard') { currentTab = 'pending'; setTab('pending'); }
+      else if (view === 'pending') renderList(loadPending());
+      else if (view === 'faqs') loadFaqs();
+      else if (view === 'articles') loadArticles();
+      else if (view === 'discussions') loadDiscussions();
+      else if (view === 'all') loadAll();
+      else if (view === 'flagged') loadFlagged();
     }
 
-    function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-
-    function switchModTab(tab, btn) {
-      currentModTab = tab;
-      document.querySelectorAll('.mod-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadModContent();
+    // ---------- dashboard tabs ----------
+    document.querySelectorAll('.md-tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.md-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      if (tab === 'pending') renderList(loadPending());
+      else renderList(loadRecent(tab));
     }
 
-    async function loadStats() {
-      try {
-        const json = await apiFetch('/moderation/stats');
-        if (json.success) {
-          document.getElementById('stat-flags').textContent = json.data.totalFlags;
-          document.getElementById('stat-threads').textContent = json.data.pendingThreads;
-          document.getElementById('stat-articles').textContent = json.data.pendingArticles;
-        }
-      } catch (err) { console.error('Stats failed:', err); }
+    // ---------- item rendering ----------
+    function typeIcon(type) {
+      if (type === 'article') return '<div class="md-item__ic ic-green"><svg viewBox="0 0 24 24" style="fill:#16a34a"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg></div>';
+      if (type === 'faq') return '<div class="md-item__ic ic-violet"><svg viewBox="0 0 24 24" style="fill:#7c3aed"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></div>';
+      if (type === 'flag') return '<div class="md-item__ic" style="background:#fde8e8"><svg viewBox="0 0 24 24" style="fill:#dc2626"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></div>';
+      return '<div class="md-item__ic ic-blue"><svg viewBox="0 0 24 24" style="fill:#2563eb"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>';
     }
-
-    function getThreadBadge(t) {
-      if (t.status === 'flagged') return '<span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> CRISIS / FLAGGED</span>';
-      return '<span class="mod-card__type mod-card__type--thread"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg> PENDING REVIEW</span>';
+    function typeTag(type) {
+      const map = { thread:['DISCUSSION','t-discussion'], article:['ARTICLE','t-article'], faq:['FAQ','t-faq'], flag:['FLAG','t-flag'] };
+      const m = map[type] || map.thread; return `<span class="md-type ${m[1]}">${m[0]}</span>`;
     }
-
-    function getThreadClass(t) {
-      if (t.status === 'flagged') return 'mod-card--crisis';
-      return 'mod-card--pending';
+    function statusPill(status) {
+      const cls = status==='approved'?'p-approved':status==='rejected'?'p-rejected':'p-pending';
+      return `<span class="md-pill ${cls}">${esc(status)}</span>`;
     }
-
-    async function loadModContent() {
-      const list = document.getElementById('mod-list');
-      if (currentModTab === 'threads') {
-        const json = await apiFetch('/forums/queue/pending');
-        if (!json.success || !json.data.length) { list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending threads. All clear!</p></div>'; return; }
-        list.innerHTML = json.data.map(t => `
-          <div class="mod-card mod-card--pending">
-            <div class="mod-card__header">
-              <span class="mod-card__type mod-card__type--thread"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zM13 9V3.5L18.5 9H13z"/></svg> PENDING REVIEW</span>
-              <span style="font-size:12px;color:#8A93A4;">${timeAgo(t.created_at)}</span>
-            </div>
-            <div class="mod-card__title">${esc(t.title)}</div>
-            <div class="mod-card__meta">By ${esc(t.author_name || 'Unknown')} ${t.is_anonymous ? '(posted anonymously)' : ''} · Status: <strong>${esc(t.status)}</strong></div>
-            <div class="mod-card__content">${esc((t.content || '').substring(0, 400))}${(t.content?.length || 0) > 400 ? '...' : ''}</div>
-            <div class="mod-card__actions">
-              <button class="btn-mod btn-mod--approve" onclick="approveThread(${t.id})">✓ Approve</button>
-              <button class="btn-mod btn-mod--reject" onclick="rejectThread(${t.id})">✕ Reject</button>
-            </div>
-          </div>
-        `).join('');
-      } else if (currentModTab === 'flags') {
-        // Load both user-reported flags AND crisis/flagged threads
-        let flagsHtml = '';
-        let totalItems = 0;
-
-        // 1. Load flagged/crisis threads
-        try {
-          const flaggedJson = await apiFetch('/forums/queue/flagged');
-          if (flaggedJson.success && flaggedJson.data.length) {
-            totalItems += flaggedJson.data.length;
-            flagsHtml += flaggedJson.data.map(t => `
-              <div class="mod-card mod-card--crisis">
-                <div class="mod-card__header">
-                  <span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> CRISIS / FLAGGED THREAD</span>
-                  <span style="font-size:12px;color:#8A93A4;">${timeAgo(t.created_at)}</span>
-                </div>
-                <div class="mod-card__title">${esc(t.title)}</div>
-                <div class="mod-card__meta">By ${esc(t.author_name || 'Unknown')} ${t.is_anonymous ? '(posted anonymously)' : ''} · Auto-flagged by system</div>
-                <div class="mod-card__content">${esc((t.content || '').substring(0, 400))}${(t.content?.length || 0) > 400 ? '...' : ''}</div>
-                <div class="mod-card__actions">
-                  <button class="btn-mod btn-mod--approve" onclick="approveThread(${t.id})">✓ Approve (Safe)</button>
-                  <button class="btn-mod btn-mod--reject" onclick="rejectThread(${t.id})">✕ Reject & Remove</button>
-                </div>
-              </div>
-            `).join('');
-          }
-        } catch (err) { console.error('Flagged threads failed:', err); }
-
-        // 2. Load user-reported flags
-        try {
-          const flagsJson = await apiFetch('/moderation/flags');
-          if (flagsJson.success && flagsJson.data.length) {
-            totalItems += flagsJson.data.length;
-            flagsHtml += flagsJson.data.map(f => `
-              <div class="mod-card ${f.reason === 'crisis_content' ? 'mod-card--crisis' : ''}">
-                <div class="mod-card__header">
-                  <span class="mod-card__type mod-card__type--flag"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg> FLAG: ${esc(f.reason.replace(/_/g, ' ').toUpperCase())}</span>
-                  <span style="font-size:12px;color:#8A93A4;">${timeAgo(f.created_at)}</span>
-                </div>
-                <div class="mod-card__title">${esc(f.content_type)} #${f.content_id}</div>
-                <div class="mod-card__meta">Reported by ${esc(f.reporter_name || 'Anonymous')}${f.details ? ` — "${esc(f.details)}"` : ''}</div>
-                <div class="mod-card__content">${esc(f.content_preview || 'Content not available')}</div>
-                <div class="mod-card__actions">
-                  <button class="btn-mod btn-mod--reject" onclick="actionFlag(${f.id})"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:#fff;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/></svg> Remove Content</button>
-                  <button class="btn-mod btn-mod--dismiss" onclick="dismissFlag(${f.id})">Dismiss</button>
-                </div>
-              </div>
-            `).join('');
-          }
-        } catch (err) { console.error('Content flags failed:', err); }
-
-        if (!totalItems) {
-          list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending flags. All clear!</p></div>';
-        } else {
-          list.innerHTML = flagsHtml;
-        }
-      } else if (currentModTab === 'articles') {
-        const json = await apiFetch('/articles/pending');
-        if (!json.success || !json.data.length) { list.innerHTML = '<div class="empty-mod"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>No pending articles. All clear!</p></div>'; return; }
-        list.innerHTML = json.data.map(a => `
-          <div class="mod-card mod-card--pending">
-            <div class="mod-card__header">
-              <span class="mod-card__type mod-card__type--article"><svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;vertical-align:middle;margin-right:3px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg> ARTICLE</span>
-              <span style="font-size:12px;color:#8A93A4;">${timeAgo(a.created_at)}</span>
-            </div>
-            <div class="mod-card__title">${esc(a.title)}</div>
-            <div class="mod-card__meta">By ${esc(a.author_name || 'Unknown')}</div>
-            <div class="mod-card__content">${esc((a.content || '').substring(0, 300))}${(a.content?.length || 0) > 300 ? '...' : ''}</div>
-            <div class="mod-card__actions">
-              <button class="btn-mod btn-mod--approve" onclick="approveArticle(${a.id})">✓ Approve</button>
-              <button class="btn-mod btn-mod--reject" onclick="rejectArticle(${a.id})">✕ Reject</button>
-            </div>
-          </div>
-        `).join('');
+    function actionsFor(it) {
+      // Any staff can permanently remove an article in any state.
+      const del = it.type === 'article'
+        ? `<button class="md-btn md-btn--reject" onclick="deleteArticle(${it.id})" title="Delete article"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Delete</button>`
+        : '';
+      if (it.status === 'pending' || it.status === 'flagged') {
+        return `<div class="md-item__actions">
+          <button class="md-btn md-btn--approve" onclick="approve('${it.type}',${it.id})"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Approve</button>
+          <button class="md-btn md-btn--reject" onclick="reject('${it.type}',${it.id})"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>Reject</button>
+          ${del}
+        </div>`;
       }
+      return `<div class="md-item__actions">${statusPill(it.status)}${del}</div>`;
+    }
+    function itemRow(it) {
+      return `<div class="md-item">
+        ${typeIcon(it.type)}
+        <div class="md-item__body">
+          <div class="md-tagline">${typeTag(it.type)}${(it.status==='pending'||it.status==='flagged')?'<span class="md-pill p-pending">'+esc(it.status)+'</span>':''}</div>
+          <div class="md-item__title">${esc(it.title)}</div>
+          <div class="md-item__meta">By ${esc(it.author_name||'Unknown')} · ${timeAgo(it.updated_at||it.created_at)}</div>
+        </div>
+        ${actionsFor(it)}
+      </div>`;
+    }
+    function emptyState(msg) {
+      return `<div class="md-empty"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>${msg}</p></div>`;
+    }
+    async function renderList(promise) {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const items = await promise;
+      body.innerHTML = items.length ? items.map(itemRow).join('') : emptyState('Nothing here. All clear!');
     }
 
-    async function approveThread(id) {
-      await apiFetch(`/forums/${id}/approve`, { method: 'PUT' });
-      loadStats(); loadModContent();
+    // ---------- data loaders ----------
+    async function loadPending() {
+      const out = [];
+      const [threads, articles] = await Promise.all([apiFetch('/forums/queue/pending'), apiFetch('/articles/pending')]);
+      if (threads.success) threads.data.forEach(t => out.push({ type:'thread', id:t.id, title:t.title, author_name:t.is_anonymous?'Anonymous':t.author_name, status:'pending', created_at:t.created_at }));
+      if (articles.success) articles.data.forEach(a => out.push({ type:'article', id:a.id, title:a.title, author_name:a.author_name, status:'pending', created_at:a.created_at }));
+      out.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+      return out;
     }
-    async function rejectThread(id) {
-      if (!confirm('Reject this thread?')) return;
-      await apiFetch(`/forums/${id}/reject`, { method: 'PUT' });
-      loadStats(); loadModContent();
+    async function loadRecent(status) {
+      const json = await apiFetch(`/moderation/recent?status=${status}`);
+      return json.success ? json.data : [];
     }
-    async function approveArticle(id) {
-      await apiFetch(`/articles/${id}/approve`, { method: 'PUT' });
-      loadStats(); loadModContent();
+    function contentBox(text) {
+      const t = (text || '').trim();
+      if (!t) return '';
+      return `<div class="md-flag-content">${esc(t)}</div>`;
     }
-    async function rejectArticle(id) {
-      if (!confirm('Reject this article?')) return;
-      await apiFetch(`/articles/${id}/reject`, { method: 'PUT' });
-      loadStats(); loadModContent();
+    async function loadFlagged() {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const [flagged, flags] = await Promise.all([apiFetch('/forums/queue/flagged'), apiFetch('/moderation/flags')]);
+      let html = '';
+
+      // Auto-flagged / crisis threads — show the full thread content, not just title.
+      if (flagged.success && flagged.data.length) {
+        html += flagged.data.map(t => `
+          <div class="md-flag-card">
+            <div class="md-tagline">${typeTag('thread')}<span class="md-pill p-rejected">FLAGGED</span></div>
+            <div class="md-item__title">${esc(t.title)}</div>
+            <div class="md-item__meta">By ${esc(t.is_anonymous ? 'Anonymous' : (t.author_name||'Unknown'))} · ${timeAgo(t.created_at)}</div>
+            ${contentBox(t.content)}
+            <div class="md-item__actions" style="margin-top:10px">
+              <button class="md-btn md-btn--approve" onclick="approve('thread',${t.id})">Approve (Safe)</button>
+              <button class="md-btn md-btn--reject" onclick="reject('thread',${t.id})">Reject &amp; Remove</button>
+            </div>
+          </div>`).join('');
+      }
+
+      // User-reported flags — show reason, reporter, and the reported content body.
+      if (flags.success && flags.data.length) {
+        html += flags.data.map(f => `
+          <div class="md-flag-card">
+            <div class="md-tagline">${typeTag('flag')}<span class="md-pill p-pending">${esc(f.reason.replace(/_/g,' '))}</span></div>
+            <div class="md-item__title">${esc(f.content_preview || (f.content_type + ' #' + f.content_id))}</div>
+            <div class="md-item__meta">${esc(f.content_type)} #${f.content_id} · Reported by ${esc(f.reporter_name||'Anonymous')}${f.details?' · "'+esc(f.details)+'"':''}</div>
+            ${contentBox(f.content_body || f.content_preview)}
+            <div class="md-item__actions" style="margin-top:10px">
+              <button class="md-btn md-btn--reject" onclick="actionFlag(${f.id})">Remove Content</button>
+              <button class="md-btn md-btn--ghost" onclick="dismissFlag(${f.id})">Dismiss</button>
+            </div>
+          </div>`).join('');
+      }
+
+      body.innerHTML = html || emptyState('No flagged content. All clear!');
+    }
+    async function loadFaqs() {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const json = await apiFetch('/faqs?limit=100');
+      const faqs = json.success ? json.data : [];
+      body.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="md-btn md-btn--primary" onclick="openFaqModal()">+ Add FAQ</button></div>` +
+        (faqs.length ? faqs.map(f => `<div class="md-item">${typeIcon('faq')}
+          <div class="md-item__body"><div class="md-tagline">${typeTag('faq')}<span class="md-pill p-approved">${esc(f.category||'General')}</span></div>
+          <div class="md-item__title">${esc(f.question)}</div>
+          <div class="md-item__meta">${esc((f.answer||'').slice(0,120))}${(f.answer||'').length>120?'…':''}</div></div>
+          <div class="md-item__actions"><button class="md-btn md-btn--ghost" onclick='editFaq(${JSON.stringify(JSON.stringify(f))})'>Edit</button><button class="md-btn md-btn--reject" onclick="deleteFaq(${f.id})">Delete</button></div></div>`).join('') : emptyState('No FAQs yet. Add one to get started.'));
+    }
+    async function loadArticles() {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const [approved, pending, rejected] = await Promise.all([apiFetch('/articles?limit=1000'), apiFetch('/articles/pending?limit=1000'), apiFetch('/moderation/recent?status=rejected')]);
+      let rows = [];
+      if (pending.success) rows = rows.concat(pending.data.map(a => ({ type:'article', id:a.id, title:a.title, author_name:a.author_name, status:'pending', created_at:a.created_at })));
+      if (approved.success) rows = rows.concat(approved.data.map(a => ({ type:'article', id:a.id, title:a.title, author_name:a.author_name, status:'approved', updated_at:a.updated_at })));
+      const toolbar = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px">
+        <button class="md-btn md-btn--outline" onclick="openImportModal()"><svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg> Add via Link</button>
+        <button class="md-btn md-btn--primary" onclick="openArticleModal()">+ Add Article</button>
+      </div>`;
+      body.innerHTML = toolbar + (rows.length ? rows.map(itemRow).join('') : emptyState('No articles yet.'));
+    }
+    async function loadDiscussions() {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const [approved, pending] = await Promise.all([apiFetch('/forums?limit=100'), apiFetch('/forums/queue/pending')]);
+      let rows = [];
+      if (pending.success) rows = rows.concat(pending.data.map(t => ({ type:'thread', id:t.id, title:t.title, author_name:t.is_anonymous?'Anonymous':t.author_name, status:'pending', created_at:t.created_at })));
+      if (approved.success) rows = rows.concat(approved.data.map(t => ({ type:'thread', id:t.id, title:t.title, author_name:t.is_anonymous?'Anonymous':t.author_name, status:'approved', updated_at:t.updated_at||t.created_at })));
+      body.innerHTML = rows.length ? rows.map(itemRow).join('') : emptyState('No discussions yet.');
+    }
+    async function loadAll() {
+      const body = document.getElementById('list-body');
+      body.innerHTML = '<div class="md-empty"><p>Loading…</p></div>';
+      const [pending, approvedT, approvedA] = await Promise.all([loadPending(), apiFetch('/forums?limit=50'), apiFetch('/articles?limit=50')]);
+      let rows = [...pending];
+      if (approvedT.success) rows = rows.concat(approvedT.data.map(t => ({ type:'thread', id:t.id, title:t.title, author_name:t.is_anonymous?'Anonymous':t.author_name, status:'approved', updated_at:t.updated_at||t.created_at })));
+      if (approvedA.success) rows = rows.concat(approvedA.data.map(a => ({ type:'article', id:a.id, title:a.title, author_name:a.author_name, status:'approved', updated_at:a.updated_at })));
+      body.innerHTML = rows.length ? rows.map(itemRow).join('') : emptyState('No content yet.');
+    }
+
+    // ---------- approve / reject ----------
+    async function approve(type, id) {
+      const ep = type === 'article' ? `/articles/${id}/approve` : `/forums/${id}/approve`;
+      const r = await apiFetch(ep, { method: 'PUT' });
+      if (r.success) { toast('success','Approved.'); refreshCurrent(); loadStats(); }
+      else toast('error', r.message || 'Failed to approve.');
+    }
+    async function reject(type, id) {
+      if (!await BPSModal.confirm('Reject this item?', { title:'Reject item', confirmText:'Reject', danger:true })) return;
+      const ep = type === 'article' ? `/articles/${id}/reject` : `/forums/${id}/reject`;
+      const r = await apiFetch(ep, { method: 'PUT' });
+      if (r.success) { toast('success','Rejected.'); refreshCurrent(); loadStats(); }
+      else toast('error', r.message || 'Failed to reject.');
     }
     async function actionFlag(id) {
-      if (!confirm('Remove the flagged content?')) return;
-      await apiFetch(`/moderation/flags/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'actioned', review_note: 'Content removed by moderator.' }) });
-      loadStats(); loadModContent();
+      if (!await BPSModal.confirm('Remove the flagged content?', { title:'Remove content', confirmText:'Remove', danger:true })) return;
+      await apiFetch(`/moderation/flags/${id}`, { method:'PUT', body: JSON.stringify({ status:'actioned', review_note:'Removed by moderator.' }) });
+      loadFlagged(); loadStats();
     }
     async function dismissFlag(id) {
-      await apiFetch(`/moderation/flags/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'dismissed', review_note: 'Flag dismissed.' }) });
-      loadStats(); loadModContent();
+      await apiFetch(`/moderation/flags/${id}`, { method:'PUT', body: JSON.stringify({ status:'dismissed', review_note:'Dismissed.' }) });
+      loadFlagged(); loadStats();
+    }
+    function refreshCurrent() {
+      if (currentView === 'dashboard') setTab(currentTab);
+      else if (currentView === 'pending') renderList(loadPending());
+      else if (currentView === 'articles') loadArticles();
+      else if (currentView === 'discussions') loadDiscussions();
+      else if (currentView === 'all') loadAll();
+      else if (currentView === 'flagged') loadFlagged();
     }
 
+    // ---------- modals ----------
+    function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+    function openFaqModal(){ document.getElementById('faq-modal-title').textContent='Add FAQ'; document.getElementById('faq-id').value=''; document.getElementById('faq-q').value=''; document.getElementById('faq-a').value=''; document.getElementById('faq-cat').value=''; document.getElementById('faq-modal').classList.add('show'); }
+    function editFaq(json){ const f=JSON.parse(json); document.getElementById('faq-modal-title').textContent='Edit FAQ'; document.getElementById('faq-id').value=f.id; document.getElementById('faq-q').value=f.question; document.getElementById('faq-a').value=f.answer; document.getElementById('faq-cat').value=f.category||''; document.getElementById('faq-modal').classList.add('show'); }
+    async function saveFaq(){
+      const id=document.getElementById('faq-id').value;
+      const question=document.getElementById('faq-q').value.trim();
+      const answer=document.getElementById('faq-a').value.trim();
+      const category=document.getElementById('faq-cat').value.trim()||null;
+      if(!question||!answer){ toast('error','Question and answer are required.'); return; }
+      const r = id ? await apiFetch(`/faqs/${id}`, { method:'PUT', body: JSON.stringify({ question, answer, category }) })
+                   : await apiFetch('/faqs', { method:'POST', body: JSON.stringify({ question, answer, category }) });
+      if(r.success){ toast('success', id?'FAQ updated.':'FAQ added.'); closeModal('faq-modal'); if(currentView==='faqs') loadFaqs(); loadStats(); }
+      else toast('error', r.message || 'Failed to save FAQ.');
+    }
+    async function deleteFaq(id){ if(!await BPSModal.confirm('Delete this FAQ?', { title:'Delete FAQ', confirmText:'Delete', danger:true })) return; const r=await apiFetch(`/faqs/${id}`, { method:'DELETE' }); if(r.success){ toast('success','FAQ deleted.'); loadFaqs(); loadStats(); } else toast('error', r.message||'Failed.'); }
+
+    function openArticleModal(){
+      document.getElementById('article-modal-title').textContent='Add Article';
+      document.getElementById('article-id').value='';
+      document.getElementById('article-title').value='';
+      document.getElementById('article-cat').value='';
+      document.getElementById('article-image').value='';
+      document.getElementById('article-content').value='';
+      updateArticleThumb();
+      document.getElementById('article-modal').classList.add('show');
+    }
+    // Live thumbnail preview for the Add Article modal.
+    function updateArticleThumb(){
+      const url = document.getElementById('article-image').value.trim();
+      const wrap = document.getElementById('article-thumb-wrap');
+      const img = document.getElementById('article-thumb');
+      if(url){ img.src = url; wrap.style.display=''; img.onerror = () => { wrap.style.display='none'; }; }
+      else { wrap.style.display='none'; img.removeAttribute('src'); }
+    }
+    async function saveArticle(){
+      const title=document.getElementById('article-title').value.trim();
+      const content=document.getElementById('article-content').value.trim();
+      const category=document.getElementById('article-cat').value.trim()||null;
+      const featured_image=document.getElementById('article-image').value.trim()||null;
+      if(!title||!content){ toast('error','Title and content are required.'); return; }
+      const r=await apiFetch('/articles', { method:'POST', body: JSON.stringify({ title, content, category, featured_image }) });
+      if(r.success){ toast('success','Article published.'); closeModal('article-modal'); refreshCurrent(); loadStats(); }
+      else toast('error', r.message||'Failed to publish article.');
+    }
+    // Delete an article (staff). Backend allows any staff to remove any article.
+    async function deleteArticle(id){
+      if(!await BPSModal.confirm('Delete this article permanently? This cannot be undone.', { title:'Delete article', confirmText:'Delete', danger:true })) return;
+      const r=await apiFetch(`/articles/${id}`, { method:'DELETE' });
+      if(r.success){ toast('success','Article deleted.'); refreshCurrent(); loadStats(); }
+      else toast('error', r.message||'Failed to delete article.');
+    }
+    // ---------- Import article from a pasted link ----------
+    function openImportModal(){
+      document.getElementById('import-url').value = '';
+      document.getElementById('import-preview').classList.add('hidden');
+      document.getElementById('import-publish-btn').classList.add('hidden');
+      document.getElementById('import-thumb-wrap').style.display = 'none';
+      document.getElementById('import-hint').textContent = "Paste a link and we'll pull in the title and content for you to review before publishing.";
+      document.getElementById('import-modal').classList.add('show');
+    }
+    // Live thumbnail preview for the Import modal.
+    function updateImportThumb(){
+      const url = document.getElementById('import-image').value.trim();
+      const wrap = document.getElementById('import-thumb-wrap');
+      const img = document.getElementById('import-thumb');
+      if(url){ img.src = url; wrap.style.display=''; img.onerror = () => { wrap.style.display='none'; }; }
+      else { wrap.style.display='none'; img.removeAttribute('src'); }
+    }
+    async function fetchImportPreview(){
+      const url = document.getElementById('import-url').value.trim();
+      if(!url){ toast('error','Please paste an article URL.'); return; }
+      const btn = document.getElementById('import-fetch-btn');
+      const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Fetching…';
+      try {
+        const r = await apiFetch('/articles/import/preview', { method:'POST', body: JSON.stringify({ url }) });
+        if(!r.success){ toast('error', r.message || 'Could not fetch that link.'); return; }
+        const d = r.data || {};
+        document.getElementById('import-title').value = d.title || '';
+        document.getElementById('import-content').value = d.content || '';
+        document.getElementById('import-cat').value = d.category || '';
+        document.getElementById('import-source').value = d.source_url || url;
+        document.getElementById('import-image').value = d.featured_image || '';
+        document.getElementById('import-author').value = d.original_author || '';
+        document.getElementById('import-date').value = d.published_date || '';
+        updateImportThumb();
+        document.getElementById('import-preview').classList.remove('hidden');
+        document.getElementById('import-publish-btn').classList.remove('hidden');
+        document.getElementById('import-hint').textContent = 'Review and edit the imported content, then publish.';
+      } catch(e){ toast('error','Could not fetch that link.'); }
+      finally { btn.disabled = false; btn.textContent = orig; }
+    }
+    async function publishImport(){
+      const title = document.getElementById('import-title').value.trim();
+      const content = document.getElementById('import-content').value.trim();
+      const source_url = document.getElementById('import-source').value.trim();
+      if(!title || !content){ toast('error','Title and content are required.'); return; }
+      if(!source_url){ toast('error','Source URL is missing — please fetch a link first.'); return; }
+      const r = await apiFetch('/articles/import/publish', { method:'POST', body: JSON.stringify({
+        title, content, source_url,
+        category: document.getElementById('import-cat').value.trim() || null,
+        featured_image: document.getElementById('import-image').value.trim() || null,
+        original_author: document.getElementById('import-author').value.trim() || null,
+        published_date: document.getElementById('import-date').value.trim() || null,
+      }) });
+      if(r.success){ toast('success','Article imported and published.'); closeModal('import-modal'); if(currentView==='articles') loadArticles(); else refreshCurrent(); loadStats(); }
+      else toast('error', r.message || 'Failed to publish imported article.');
+    }
+
+    function openThreadModal(){ document.getElementById('thread-title').value=''; document.getElementById('thread-content').value=''; document.getElementById('thread-modal').classList.add('show'); }
+    async function saveThread(){
+      const title=document.getElementById('thread-title').value.trim();
+      const content=document.getElementById('thread-content').value.trim();
+      if(!title||!content){ toast('error','Title and message are required.'); return; }
+      const r=await apiFetch('/forums', { method:'POST', body: JSON.stringify({ title, content }) });
+      if(r.success){ toast('success','Discussion posted.'); closeModal('thread-modal'); refreshCurrent(); loadStats(); }
+      else toast('error', r.message||'Failed to post.');
+    }
+
+    // ---------- stats + right column ----------
+    async function loadStats() {
+      const json = await apiFetch('/moderation/stats');
+      if (!json.success) return;
+      const d = json.data;
+      document.getElementById('st-pending').textContent = d.pendingReview;
+      document.getElementById('st-flags').textContent = d.totalFlags;
+      document.getElementById('st-approved').textContent = d.approvedToday;
+      document.getElementById('st-total').textContent = d.totalContent;
+      document.getElementById('ov-faqs').textContent = d.totalFaqs;
+      document.getElementById('ov-articles').textContent = d.totalArticles;
+      document.getElementById('ov-discussions').textContent = d.totalDiscussions;
+      document.getElementById('ov-flags').textContent = d.totalFlags;
+      const sbP = document.getElementById('sb-pending'); sbP.textContent = d.pendingReview; sbP.classList.toggle('is-zero', !d.pendingReview);
+      const sbF = document.getElementById('sb-flags'); sbF.textContent = d.totalFlags; sbF.classList.toggle('is-zero', !d.totalFlags);
+      drawDonut(d.totalContent, d.pendingReview, d.rejectedCount);
+    }
+    function drawDonut(approved, pending, rejected) {
+      const total = approved + pending + rejected;
+      document.getElementById('donut-total').textContent = total;
+      const donut = document.getElementById('donut');
+      if (!total) { donut.style.background = '#e5e7eb'; document.getElementById('donut-legend').innerHTML = '<div class="legend__row">No content yet</div>'; return; }
+      const aPct = approved/total*100, pPct = pending/total*100;
+      donut.style.background = `conic-gradient(#16a34a 0 ${aPct}%, #f59e0b ${aPct}% ${aPct+pPct}%, #dc2626 ${aPct+pPct}% 100%)`;
+      const pct = n => total ? Math.round(n/total*100) : 0;
+      document.getElementById('donut-legend').innerHTML =
+        `<div class="legend__row"><span class="legend__dot" style="background:#16a34a"></span>Approved <b style="margin-left:auto">${approved} (${pct(approved)}%)</b></div>
+         <div class="legend__row"><span class="legend__dot" style="background:#f59e0b"></span>Pending <b style="margin-left:auto">${pending} (${pct(pending)}%)</b></div>
+         <div class="legend__row"><span class="legend__dot" style="background:#dc2626"></span>Rejected <b style="margin-left:auto">${rejected} (${pct(rejected)}%)</b></div>`;
+    }
+    async function loadActivity() {
+      const [approved, rejected] = await Promise.all([loadRecent('approved'), loadRecent('rejected')]);
+      const items = [...approved.map(i=>({...i,act:'approved'})), ...rejected.map(i=>({...i,act:'rejected'}))]
+        .sort((a,b)=> new Date(b.updated_at)-new Date(a.updated_at)).slice(0,6);
+      const body = document.getElementById('activity-body');
+      if (!items.length) { body.innerHTML = '<div class="md-empty" style="padding:20px"><p>No recent activity.</p></div>'; return; }
+      body.innerHTML = items.map(i => {
+        const color = i.act==='approved' ? '#16a34a' : '#dc2626';
+        const icon = i.act==='approved' ? '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>' : '<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>';
+        return `<div class="act-row"><div class="act-ic" style="background:${color}"><svg viewBox="0 0 24 24">${icon}</svg></div>
+          <div><div class="act-row__txt">${i.type==='article'?'Article':'Discussion'} <b>"${esc((i.title||'').slice(0,32))}"</b> ${i.act}</div>
+          <div class="act-row__time">${timeAgo(i.updated_at)}</div></div></div>`;
+      }).join('');
+    }
+
+    // close modal on backdrop click
+    document.querySelectorAll('.md-modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+
+    // init
     loadStats();
-    loadModContent();
+    loadActivity();
+    setTab('pending');
   </script>
   <script src="navbar.js"></script>
 </body>

@@ -6,8 +6,10 @@ const Verification = {
    * Deletes any existing OTPs for this user first (single-use enforcement).
    */
   async create(userId, otpHash, expiresAt) {
-    // Remove any previous OTPs for this user
-    await db.query('DELETE FROM email_verifications WHERE user_id = $1', [userId]);
+    // Remove only EXPIRED codes — keep recent ones so the resend rate limiter
+    // (resendStatus) can count how many were sent in the cooldown window.
+    // findByUserId/verify always use the most recent code, so older ones are inert.
+    await db.query('DELETE FROM email_verifications WHERE user_id = $1 AND expires_at < NOW()', [userId]);
 
     const result = await db.query(
       `INSERT INTO email_verifications (user_id, otp_hash, expires_at)
@@ -16,6 +18,25 @@ const Verification = {
       [userId, otpHash, expiresAt]
     );
     return result.rows[0];
+  },
+
+  /**
+   * Resend rate limit with a "first resend free" allowance (matches the
+   * Teleconference OTP workflow): the initial code + one resend are allowed
+   * immediately; after that a cooldown applies, timed from the latest code.
+   * Returns { allowed, retryAfter } (retryAfter in seconds).
+   */
+  async resendStatus(userId, windowSeconds = 120) {
+    const r = await db.query(
+      `SELECT created_at FROM email_verifications
+       WHERE user_id = $1 AND created_at > NOW() - ($2 * interval '1 second')
+       ORDER BY created_at DESC`,
+      [userId, windowSeconds]
+    );
+    if (r.rows.length < 2) return { allowed: true, retryAfter: 0 };
+    const latest = new Date(r.rows[0].created_at).getTime();
+    const remaining = Math.ceil(windowSeconds - (Date.now() - latest) / 1000);
+    return remaining > 0 ? { allowed: false, retryAfter: remaining } : { allowed: true, retryAfter: 0 };
   },
 
   /**

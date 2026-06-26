@@ -7,13 +7,13 @@ const ctrl = require('../controllers/reportTemplateController');
 // All routes require authentication
 router.use(authenticate);
 
-// ── Read (Psychologist + Clinical Director) ────────────────────
-router.get('/',     authorizeMinRole('psychologist'), ctrl.listTemplates);
-router.get('/:id', authorizeMinRole('psychologist'), ctrl.getTemplate);
+// ── Read (Sup.Psy and above) — SupPsy creates reports using templates ──
+router.get('/',     authorizeMinRole('supervising_psychometrician'), ctrl.listTemplates);
+router.get('/:id', authorizeMinRole('supervising_psychometrician'), ctrl.getTemplate);
 
-// ── CRUD (Clinical Director only) ──────────────────────────────
-router.post('/',    authorize('clinical_director'), ctrl.createTemplate);
-router.put('/:id', authorize('clinical_director'), ctrl.updateTemplate);
-router.delete('/:id', authorize('clinical_director'), ctrl.deleteTemplate);
+// ── CRUD (QC Psychometrician + Clinical Director) ──────────────
+router.post('/',    authorize('qc_psychometrician', 'clinical_director'), ctrl.createTemplate);
+router.put('/:id', authorize('qc_psychometrician', 'clinical_director'), ctrl.updateTemplate);
+router.delete('/:id', authorize('qc_psychometrician', 'clinical_director'), ctrl.deleteTemplate);
 
 module.exports = router;

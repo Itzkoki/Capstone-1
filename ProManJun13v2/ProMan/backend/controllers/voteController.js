@@ -1,4 +1,8 @@
 const Vote = require('../models/Vote');
+const ForumThread = require('../models/ForumThread');
+const Article = require('../models/Article');
+const User = require('../models/User');
+const notificationService = require('../services/notificationService');
 
 const VALID_TYPES = ['article', 'faq', 'thread', 'reply'];
 
@@ -17,8 +21,37 @@ const castVote = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'vote_value must be 1 (upvote) or -1 (downvote).' });
     }
 
+    // Detect whether this is a *new* upvote so the author is only notified once
+    // per like (not on repeated/idempotent calls or downvotes).
+    let prevVote = null;
+    if (vote_value === 1 && (content_type === 'thread' || content_type === 'article')) {
+      prevVote = await Vote.getUserVote(req.user.id, content_type, content_id);
+    }
+
     const vote = await Vote.upsert(req.user.id, content_type, content_id, vote_value);
     const score = await Vote.getScore(content_type, content_id);
+
+    // Notify the post's author that someone liked their content.
+    if (vote_value === 1 && prevVote !== 1 && (content_type === 'thread' || content_type === 'article')) {
+      try {
+        const item = content_type === 'thread'
+          ? await ForumThread.findById(content_id)
+          : await Article.findById(content_id);
+        if (item && item.author_id && item.author_id !== req.user.id) {
+          const liker = await User.findById(req.user.id);
+          const likerName = liker ? liker.full_name : 'Someone';
+          const link = content_type === 'thread'
+            ? `community.html?tab=discussion&thread=${content_id}`
+            : 'community.html?tab=articles';
+          await notificationService.notifyUser(
+            item.author_id, 'community',
+            content_type === 'thread' ? 'Your Discussion Got a Like' : 'Your Article Got a Like',
+            `${likerName} liked your ${content_type === 'thread' ? 'discussion' : 'article'} "${item.title}".`,
+            link
+          );
+        }
+      } catch (err) { console.error('Like notification failed:', err.message); }
+    }
 
     return res.json({ success: true, data: { vote, score } });
   } catch (error) { next(error); }

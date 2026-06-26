@@ -13,11 +13,15 @@ const ReportAuditService = {
   async log({ reportId, userId, action, details, req }) {
     const ip = req ? (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '') : '';
     const ua = req ? (req.headers['user-agent'] || '') : '';
-    await db.query(
-      `INSERT INTO report_audit_logs (report_id, user_id, action, details, ip_address, user_agent)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [reportId, userId, action, details, ip, ua]
-    );
+    try {
+      await db.query(
+        `INSERT INTO report_audit_logs (report_id, user_id, action, details, ip_address, user_agent)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [reportId, userId, action, details, ip, ua]
+      );
+    } catch (e) {
+      console.warn('ReportAudit.log skipped:', action, e.message);
+    }
   },
 
   /**

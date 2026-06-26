@@ -67,7 +67,8 @@ function contentFilter(...fields) {
           // Notify staff asynchronously
           try {
             const categories = [...new Set(result.detections.map(d => d.category))].join(', ');
-            await notificationService.notifyStaff(
+            await notificationService.notifyRole(
+              'clinical_director',
               'community',
               '🚨 Harmful Content Detected',
               `A post by user #${req.user?.id || '?'} was flagged for: ${categories}. ` +

@@ -55,7 +55,7 @@
   <nav class="navbar" id="navbar">
     <a href="landingpage.html" class="navbar__brand">
       <div class="navbar__logo"><img src="barcarse logo.jpg" alt="Barcarse logo" class="hero__illustration"></div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links" id="nav-links"></ul>
@@ -196,7 +196,14 @@
         <div class="section-head">Upload Proof of Payment</div>
         <div class="upload-section">
           <label>Screenshot or photo of your GCash receipt *</label>
-          <input type="file" id="proof-file" accept="image/jpeg,image/png,application/pdf">
+          <label class="file-pick" for="proof-file">
+            <input type="file" id="proof-file" accept="image/jpeg,image/png,application/pdf" style="display:none" onchange="this.closest('.file-pick').querySelector('.file-pick__name').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+            <span class="file-pick__btn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+              Choose File
+            </span>
+            <span class="file-pick__name">No file chosen</span>
+          </label>
           <div class="hint">JPG, PNG, or PDF &mdash; max 5&nbsp;MB</div>
         </div>
 

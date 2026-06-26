@@ -25,8 +25,9 @@ const TPL_ICONS = {
   default: '<svg viewBox="0 0 24 24" width="24" height="24" fill="var(--primary)"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>'
 };
 
-// Allowed roles for this module
-const ALLOWED_ROLES = ['psychologist', 'clinical_director'];
+// Allowed roles for this module. QC Psychometricians are admitted but are
+// scoped to template management only (see applyRoleScope).
+const ALLOWED_ROLES = ['psychologist', 'qc_psychometrician', 'clinical_director'];
 
 function headers() { return { 'Content-Type':'application/json','Authorization':'Bearer '+TOKEN }; }
 
@@ -80,8 +81,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (USER.role==='clinical_director') document.getElementById('directorNav').classList.remove('hidden');
   if (USER.role==='clinical_director') { try { await refreshReportRequestBadge(); } catch(e){} }
   if (USER.role==='clinical_director') { try { await refreshReportConcernBadge(); } catch(e){} }
+
+  // QC Psychometrician is scoped to Manage Templates ONLY — no reports list.
+  if (USER.role === 'qc_psychometrician') {
+    applyQcTemplateScope();
+    showView('manageTpl');
+    return;
+  }
+
+  // Honour a deep-link hash (e.g. #create, #manageTpl) from the navbar/dashboard.
+  var hash = (location.hash || '').replace('#','');
+  if (hash && document.getElementById('view-' + hash)) { showView(hash); return; }
+
   await loadDashboard();
 });
+
+// Restrict the sidebar to the Manage Templates item for QC Psychometricians.
+function applyQcTemplateScope() {
+  var dn = document.getElementById('directorNav');
+  if (dn) dn.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(function (n) {
+    if (n.getAttribute('data-view') !== 'manageTpl') n.style.display = 'none';
+  });
+  var title = document.querySelector('#directorNav .nav-section-title');
+  if (title) title.style.display = 'none';
+}
 
 // ── Views ───────────────────────────────────────────────────
 function showView(name) {
@@ -141,7 +165,7 @@ function renderReportTable(reports) {
   e.classList.add('hidden');
   b.innerHTML = reports.map(r=>`<tr class="report-row" onclick="openReport(${r.id})">
     <td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" class="report-check" value="${r.id}" onchange="syncBulkBar()"></td>
-    <td><strong>${esc(r.client_name)}</strong></td>
+    <td><strong>${esc(r.client_name)}</strong>${r.case_id ? ' <span style="font-size:10px;color:#667eea;font-weight:700;background:#eef1fa;padding:2px 6px;border-radius:6px;margin-left:6px">' + esc(r.case_id) + '</span>' : ''}</td>
     <td>${esc(r.template_name||r.template_type||'')}</td>
     <td><span class="badge-status badge-${r.status}"><span class="badge-dot"></span>${r.status}</span></td>
     <td>${fmtDate(r.created_at)}</td>
@@ -318,7 +342,12 @@ async function loadIntakeClients() {
     intakeClients = d.clients || [];
     const sel = document.getElementById('cClientSelect');
     sel.innerHTML = '<option value="">— Select a client —</option>' +
-      intakeClients.map((c,i) => `<option value="${i}">${esc(c.full_name || c.account_name || 'Unknown')} — ${esc(c.email || c.account_email || '')} (Intake #${c.intake_id})</option>`).join('');
+      intakeClients.map((c,i) => {
+        const caseLabel = c.case_id || `Intake #${c.intake_id}`;
+        const typeLabel = c.service_type === 'assessment' ? 'Assessment' : c.service_type === 'counseling' ? 'Counseling' : '';
+        const tag = typeLabel ? `${caseLabel} · ${typeLabel}` : caseLabel;
+        return `<option value="${i}">${esc(c.full_name || c.account_name || 'Unknown')} — ${esc(c.email || c.account_email || '')} (${esc(tag)})</option>`;
+      }).join('');
   } catch(e) {
     console.error('Failed to load intake clients:', e);
     toast('Could not load clients from intake forms', 'error');
@@ -488,9 +517,11 @@ async function loadSectionsEditor() {
       } catch(e) { console.warn('Auto-fill identifying info failed:', e); }
     }
 
-    document.getElementById('sectionsEditor').innerHTML = sections.map(s=>`
-      <div class="section-block"><div class="section-header"><h4>${esc(s.section_title)}</h4><span class="save-indicator" id="save-${s.section_key}">✓ Saved</span></div>
-        <div class="section-body"><textarea class="section-textarea" data-key="${s.section_key}" oninput="autoSaveSection(this)">${esc(s.content||'')}</textarea></div></div>`).join('');
+    document.getElementById('sectionsEditor').innerHTML = sections
+      .filter(s => s.section_key !== 'prepared_approved_by')
+      .map(s => `<div class="section-block"><div class="section-header"><h4>${esc(s.section_title)}</h4><span class="save-indicator" id="save-${s.section_key}">${ICON.check} Saved</span></div>
+        <div class="section-body"><textarea class="section-textarea" data-key="${s.section_key}" oninput="autoSaveSection(this)">${esc(s.content||'')}</textarea></div></div>`)
+      .join('');
   } catch(e) { console.error(e); }
 }
 
@@ -526,20 +557,20 @@ async function openReport(id) {
     let btns = '';
     // PDF available for all statuses
     if (USER.role==='clinical_director'||r.psychologist_id===USER.id)
-      btns += `<button class="btn btn-primary btn-sm" onclick="downloadPdf(${r.id})">📥 PDF</button> `;
+      btns += `<button class="btn btn-primary btn-sm" onclick="downloadPdf(${r.id})">${ICON.download} PDF</button> `;
     if (r.status==='submitted'&&USER.role==='clinical_director')
       btns += `<button class="btn btn-success btn-sm" onclick="showApprovalModal(${r.id})">Review</button> `;
     if (r.status==='approved'&&USER.role==='clinical_director')
-      btns += `<button class="btn btn-primary btn-sm" onclick="finalizeRpt(${r.id})">🔒 Finalize</button> `;
+      btns += `<button class="btn btn-primary btn-sm" onclick="finalizeRpt(${r.id})">${ICON.lock} Finalize</button> `;
     if ((r.status==='draft'||r.status==='rejected')&&r.psychologist_id===USER.id)
-      btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">✏️ Edit</button> `;
+      btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">${ICON.pencil} Edit</button> `;
     // Finalized reports can be re-opened for editing, but only by the Clinical
     // Director. Once viewable/finalized, the Director gets the same three
     // options as a draft: PDF, Edit, and Delete.
     if (r.status==='finalized'&&USER.role==='clinical_director')
-      btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">✏️ Edit</button> `;
+      btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">${ICON.pencil} Edit</button> `;
     if (canDeleteReport(r))
-      btns += `<button class="btn btn-danger btn-sm" onclick="deleteReport(${r.id})">🗑️ Delete</button> `;
+      btns += `<button class="btn btn-danger btn-sm" onclick="deleteReport(${r.id})">${ICON.trash} Delete</button> `;
     document.getElementById('detailActions').innerHTML = btns;
     showDetailTab('info',d); showView('detail');
   } catch(e) { toast(e.message,'error'); } hideLoading();
@@ -570,10 +601,16 @@ async function loadDetailSections(c) {
 async function loadDetailVersions(c) {
   try { const d = await api('/reports/'+currentReport.id+'/versions'); const v = d.versions||[];
     if (!v.length) { c.innerHTML='<div class="empty-state"><h4>No versions</h4></div>'; return; }
-    c.innerHTML = `<div class="version-timeline">`+v.map(x=>`<div class="version-item"><div class="v-num">v${x.version_number}</div>
-      <div class="v-meta">${esc(x.editor_name||'')} — ${fmtDate(x.created_at)}</div>
-      <div class="v-changes">${esc(x.change_summary||'')}</div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="restoreVersion(${currentReport.id},${x.id})">Restore</button></div>`).join('')+`</div>`;
+    c.innerHTML = `<div class="version-timeline">`+v.map(x=>{
+      const titles = Array.isArray(x.modified_section_titles) && x.modified_section_titles.length
+        ? x.modified_section_titles : [];
+      const sectionTag = titles.length
+        ? `<span class="v-sections-tag">Modified: ${esc(titles.join(', '))}</span>` : '';
+      return `<div class="version-item">
+        <div class="v-num">v${x.version_number} ${sectionTag}</div>
+        <div class="v-meta">${esc(x.editor_name||'')} — ${fmtDate(x.created_at)}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="restoreVersion(${currentReport.id},${x.id})">Restore</button></div>`;
+    }).join('')+`</div>`;
   } catch(e) { c.innerHTML='<p>Error</p>'; }
 }
 
@@ -713,7 +750,7 @@ async function launchEsignBuilder() {
     // Show the e-sign panel and mount the builder
     document.getElementById('pdfPreviewContainer').classList.add('hidden');
     document.getElementById('esignContainer').classList.remove('hidden');
-    setEsignLabel('✍️ Drag the Signature field where you want it, then click Save');
+    setEsignLabel('Drag the Signature field where you want it, then click Save');
     mountDocusealBuilder(d.builder_token);
     toast('Place your signature field on the document, then Save.');
   } catch (e) {
@@ -766,7 +803,7 @@ async function proceedToSigning() {
     if (!res.ok) throw new Error(d.message || 'Failed to start signing');
 
     if (d.signing_url) {
-      setEsignLabel('✍️ Sign the document below');
+      setEsignLabel('Sign the document below');
       mountDocusealForm(d.signing_url);
       toast('Now sign the document.');
     } else {
@@ -1102,8 +1139,16 @@ async function handleApproval(action) {
   } catch(e) { toast(e.message,'error'); } hideLoading();
 }
 
-async function finalizeRpt(id) {
-  if (!confirm('Finalize? Report will be locked.')) return; showLoading();
+let _finalizeRptId = null;
+function finalizeRpt(id) {
+  _finalizeRptId = id;
+  openModal('finalizeModal');
+}
+async function _doFinalizeRpt() {
+  closeModal('finalizeModal');
+  if (!_finalizeRptId) return;
+  const id = _finalizeRptId; _finalizeRptId = null;
+  showLoading();
   try { await api('/reports/'+id+'/finalize',{method:'POST'}); toast('Finalized!'); openReport(id); }
   catch(e) { toast(e.message,'error'); } hideLoading();
 }
@@ -1396,10 +1441,16 @@ async function showVersionModal() {
   try {
     const d = await api('/reports/'+currentReport.id+'/versions'); const v = d.versions||[];
     document.getElementById('versionTimeline').innerHTML = v.length?
-      v.map(x=>`<div class="version-item"><div class="v-num">v${x.version_number}</div>
-        <div class="v-meta">${esc(x.editor_name||'')} — ${fmtDate(x.created_at)}</div>
-        <div class="v-changes">${esc(x.change_summary||'')}</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="restoreVersion(${currentReport.id},${x.id})">Restore</button></div>`).join('')
+      v.map(x=>{
+        const titles = Array.isArray(x.modified_section_titles) && x.modified_section_titles.length
+          ? x.modified_section_titles : [];
+        const sectionTag = titles.length
+          ? `<span class="v-sections-tag">Modified: ${esc(titles.join(', '))}</span>` : '';
+        return `<div class="version-item">
+          <div class="v-num">v${x.version_number} ${sectionTag}</div>
+          <div class="v-meta">${esc(x.editor_name||'')} — ${fmtDate(x.created_at)}</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="restoreVersion(${currentReport.id},${x.id})">Restore</button></div>`;
+      }).join('')
       :'<p style="color:var(--text-muted)">No versions yet.</p>';
     openModal('versionModal');
   } catch(e) { toast(e.message,'error'); }
@@ -1616,7 +1667,10 @@ function renderReportRequests() {
     if (r.status === 'Under Review')
       actions += `<button class="btn btn-primary btn-sm" onclick="openRrReview(${r.id})">Review</button> `;
     else if (r.status === 'Payment Submitted')
-      actions += `<button class="btn btn-primary btn-sm" onclick="openRrPayment(${r.id})">Verify Payment</button> `;
+      // Payment verification was relocated to the Payment Verification module
+      // (handled by the Supervising Psychometrician). This section no longer
+      // verifies payments — link out instead of opening the in-section modal.
+      actions += `<a class="btn btn-outline btn-sm" href="payments-admin.html" title="Report-request payments are verified by the Supervising Psychometrician in the Payment Verification module">Verify in Payment Verification</a> `;
     else if (r.status === 'Payment Verified' || r.status === 'Resolved')
       actions += `<button class="btn btn-success btn-sm" onclick="rrSend(${r.id})">Send</button> `;
     else if (r.status === 'Sent')
@@ -2102,10 +2156,25 @@ let pdfEd = {
 // only the Identifying Information section. The Director edits it, can "Check
 // PDF" to preview, and "Save Version" to store a corrected report version —
 // which then enables Resolve Concern → Resolve with Revised Report.
-const rcIdentCache = {};   // concernId -> last edited identifying-info text
+
+// Standard report sections shown in the concern edit modal (comprehensive set
+// covering all three template types). The Director fills/edits what is relevant.
+const RC_DEFAULT_SECTIONS = [
+  { key: 'identifying_information',   title: 'Identifying Information' },
+  { key: 'reason_for_referral',       title: 'Reason for Referral' },
+  { key: 'background_history',        title: 'Background / History' },
+  { key: 'behavioral_observations',   title: 'Behavioral Observations and Mental Status Exam' },
+  { key: 'assessment_tools',          title: 'Assessment Tools / Procedures' },
+  { key: 'results_interpretation',    title: 'Results and Interpretation' },
+  { key: 'findings_formulation',      title: 'Findings / Summary Formulation' },
+  { key: 'recommendations',           title: 'Recommendations' },
+  { key: 'prepared_approved_by',      title: 'Prepared By and Approved By' },
+];
+
+// Stores the Director's edits across sections for the current concern: key → text.
+const rcSectionCache = {};   // concernId -> { sectionKey: text, … }
 
 function rcIdentPrefill(row) {
-  if (rcIdentCache[row.id]) return rcIdentCache[row.id];
   const fullName = [row.client_given_name, row.client_mi, row.client_family_name]
     .filter(Boolean).join(' ').trim() || row.client_account_name || 'N/A';
   const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
@@ -2128,14 +2197,29 @@ function rcIdentPrefill(row) {
 
 async function rcEditReport(id) {
   rcCurrentId = id;
-  // Ensure we have the full concern row (rcCurrentRow is set by openRcReview).
   if (!rcCurrentRow || rcCurrentRow.id !== id) {
     try { const d = await api('/requests/'+id); rcCurrentRow = d.data; } catch(e){}
   }
   const row = rcCurrentRow || { id };
   document.getElementById('rcEditTitle').textContent =
     'Edit Report Sections — ' + (row.ticket_number || ('#'+id));
-  document.getElementById('rcIdentText').value = rcIdentPrefill(row);
+
+  // Restore any previous edits for this concern, or seed Identifying Information.
+  const saved = rcSectionCache[id] || {};
+  const container = document.getElementById('rcSectionsContainer');
+  container.innerHTML = RC_DEFAULT_SECTIONS.filter(sec => sec.key !== 'prepared_approved_by').map(sec => {
+    let content = saved[sec.key] !== undefined
+      ? saved[sec.key]
+      : (sec.key === 'identifying_information' ? rcIdentPrefill(row) : '');
+    const escaped = content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="section-block" style="margin-bottom:12px;">
+      <div class="section-header"><h4>${sec.title}</h4></div>
+      <div class="section-body">
+        <textarea class="section-textarea" data-rc-key="${sec.key}" rows="5" style="min-height:100px">${escaped}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+
   document.getElementById('rcEditModal').classList.add('active');
 }
 
@@ -2143,59 +2227,111 @@ function rcCloseEdit() {
   document.getElementById('rcEditModal').classList.remove('active');
 }
 
-// Build a clean corrected-report PDF (pdf-lib) from the identifying-info text.
-async function rcBuildIdentPdfBytes(identText, row) {
+// Collect all section values from the edit modal and cache them.
+function rcCollectSections() {
+  const out = {};
+  document.querySelectorAll('#rcSectionsContainer [data-rc-key]').forEach(ta => {
+    out[ta.dataset.rcKey] = ta.value;
+  });
+  if (rcCurrentId) rcSectionCache[rcCurrentId] = out;
+  return out;
+}
+
+// Build a corrected-report PDF from all report sections.
+async function rcBuildSectionsPdf(sections, row) {
   const { PDFDocument, rgb, StandardFonts } = window.PDFLib;
   const doc = await PDFDocument.create();
-  let page = doc.addPage([612, 792]); // US Letter
+  let page = doc.addPage([612, 792]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const margin = 64;
+  const margin = 60;
+  const lineH = 16;
+  const bodySize = 10;
+  const maxW = 612 - margin * 2;
   let y = 792 - margin;
 
-  const drawLine = (text, f, size, color) => {
-    page.drawText(text, { x: margin, y, size, font: f, color: color || rgb(0.1,0.1,0.12) });
-    y -= size + 8;
-  };
-
-  drawLine('PSYCHOLOGICAL ASSESSMENT REPORT', bold, 16, rgb(0.08,0.18,0.42));
-  drawLine('Corrected Copy', font, 10, rgb(0.45,0.45,0.5));
-  y -= 6;
-  page.drawLine({ start:{x:margin,y}, end:{x:612-margin,y}, thickness:1, color:rgb(0.8,0.82,0.88) });
-  y -= 24;
-  drawLine('IDENTIFYING INFORMATION', bold, 12, rgb(0.08,0.18,0.42));
-  y -= 4;
-
-  const lines = String(identText || '').split('\n');
-  lines.forEach((ln) => {
-    if (y < margin + 40) { page = doc.addPage([612, 792]); y = 792 - margin; }
-    // Bold the label part ("Label: value")
-    const idx = ln.indexOf(':');
-    if (idx > -1) {
-      const label = ln.slice(0, idx + 1);
-      const val = ln.slice(idx + 1);
-      page.drawText(label, { x: margin, y, size: 11, font: bold, color: rgb(0.2,0.2,0.25) });
-      const lw = bold.widthOfTextAtSize(label, 11);
-      page.drawText(val, { x: margin + lw + 4, y, size: 11, font, color: rgb(0.12,0.12,0.15) });
-    } else if (ln.trim()) {
-      page.drawText(ln, { x: margin, y, size: 11, font, color: rgb(0.12,0.12,0.15) });
+  function ensurePage(needed) {
+    if (y < margin + needed) {
+      page = doc.addPage([612, 792]);
+      y = 792 - margin;
     }
-    y -= 20;
-  });
+  }
 
-  // Footer reference
-  y = margin - 18;
-  page.drawText(`Reference: ${row.ticket_number || ''}   ·   Generated ${new Date().toLocaleString()}`,
-    { x: margin, y, size: 8, font, color: rgb(0.55,0.55,0.6) });
+  // Header
+  page.drawText('PSYCHOLOGICAL ASSESSMENT REPORT', { x: margin, y, size: 15, font: bold, color: rgb(0.08,0.18,0.42) });
+  y -= 20;
+  page.drawText('Corrected Copy', { x: margin, y, size: 9, font, color: rgb(0.45,0.45,0.5) });
+  y -= 8;
+  page.drawLine({ start:{x:margin,y}, end:{x:612-margin,y}, thickness:1, color:rgb(0.8,0.82,0.88) });
+  y -= 20;
+
+  // Word-wrap helper (simple greedy)
+  function wrapText(text, f, size, maxPx) {
+    const words = String(text || '').split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (f.widthOfTextAtSize(test, size) <= maxPx) {
+        cur = test;
+      } else {
+        if (cur) lines.push(cur);
+        cur = w;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  for (const sec of RC_DEFAULT_SECTIONS) {
+    const content = (sections[sec.key] || '').trim();
+    if (!content && sec.key !== 'identifying_information') continue;
+
+    ensurePage(40);
+    page.drawText(sec.title.toUpperCase(), { x: margin, y, size: 10, font: bold, color: rgb(0.08,0.18,0.42) });
+    y -= 6;
+    page.drawLine({ start:{x:margin,y}, end:{x:margin+maxW*0.5,y}, thickness:0.5, color:rgb(0.75,0.78,0.88) });
+    y -= 14;
+
+    // Split by newlines, then word-wrap each line
+    const rawLines = content.split('\n');
+    for (const raw of rawLines) {
+      if (!raw.trim()) { y -= lineH * 0.5; continue; }
+      const wrapped = wrapText(raw, font, bodySize, maxW);
+      for (const wl of wrapped) {
+        ensurePage(lineH + 4);
+        const colon = wl.indexOf(':');
+        if (sec.key === 'identifying_information' && colon > -1) {
+          const lbl = wl.slice(0, colon + 1);
+          const val = wl.slice(colon + 1);
+          page.drawText(lbl, { x: margin, y, size: bodySize, font: bold, color: rgb(0.2,0.2,0.25) });
+          const lw = bold.widthOfTextAtSize(lbl, bodySize);
+          if (val.trim()) page.drawText(val, { x: margin + lw + 4, y, size: bodySize, font, color: rgb(0.12,0.12,0.15) });
+        } else {
+          page.drawText(wl, { x: margin, y, size: bodySize, font, color: rgb(0.12,0.12,0.15) });
+        }
+        y -= lineH;
+      }
+    }
+    y -= 12;
+  }
+
+  // Footer
+  const footerY = margin - 18;
+  doc.getPages().forEach(pg => {
+    pg.drawText(
+      `Reference: ${row.ticket_number || ''}   ·   Generated ${new Date().toLocaleString()}`,
+      { x: margin, y: footerY, size: 7, font, color: rgb(0.55,0.55,0.6) }
+    );
+  });
 
   return await doc.save();
 }
 
 async function rcBuildIdentDataUrl() {
   if (!window.PDFLib) { toast('PDF engine still loading — try again.','error'); return null; }
-  const text = document.getElementById('rcIdentText').value || '';
-  rcIdentCache[rcCurrentId] = text; // remember edits
-  const bytes = await rcBuildIdentPdfBytes(text, rcCurrentRow || { id: rcCurrentId });
+  const sections = rcCollectSections();
+  const bytes = await rcBuildSectionsPdf(sections, rcCurrentRow || { id: rcCurrentId });
   let bin = ''; const chunk = 0x8000;
   for (let i=0;i<bytes.length;i+=chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
   return 'data:application/pdf;base64,' + btoa(bin);
@@ -2221,8 +2357,10 @@ async function rcSaveVersionFromSections() {
   try {
     const dataUrl = await rcBuildIdentDataUrl();
     if (!dataUrl) { hideLoading(); return; }
+    const editedSections = Object.entries(rcSectionCache[rcCurrentId]||{})
+      .filter(([,v])=>v.trim()).map(([k])=>k.replace(/_/g,' ')).join(', ') || 'report sections';
     const r = await api('/requests/'+rcCurrentId+'/concern-version',{method:'POST',
-      body:JSON.stringify({ file:dataUrl, filename:'report_corrected.pdf', changeNote:'Identifying information corrected' })});
+      body:JSON.stringify({ file:dataUrl, filename:'report_corrected.pdf', changeNote:`Corrected: ${editedSections}` })});
     toast('Saved as report version '+(r.data?.version_number||'')+'. You can now Resolve with Revised Report.');
     rcCloseEdit();
     loadReportConcerns();

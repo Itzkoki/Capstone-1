@@ -138,7 +138,7 @@
         <img src="barcarse logo.jpg" alt="BPS Logo">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <!-- Distraction-free checkout: nav links, notifications and profile are
          intentionally omitted on the payment page so the client stays focused
@@ -441,7 +441,11 @@
         '<p class="pay-note">Enter the exact amount and include your reference number in the GCash note so we can match your payment.</p>' +
         '<div class="upload-row">' +
           `<label for="proof-input">Upload ${isReject ? 'a new ' : ''}proof of payment (JPG, PNG, or PDF \u00b7 max 5 MB)</label>` +
-          '<input type="file" id="proof-input" accept="image/jpeg,image/png,application/pdf">' +
+          '<label class="file-pick" for="proof-input">' +
+            '<input type="file" id="proof-input" accept="image/jpeg,image/png,application/pdf" style="display:none" onchange="this.closest(\'.file-pick\').querySelector(\'.file-pick__name\').textContent=this.files[0]?this.files[0].name:\'No file chosen\'">' +
+            '<span class="file-pick__btn"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Choose File</span>' +
+            '<span class="file-pick__name">No file chosen</span>' +
+          '</label>' +
           '<div class="pay-actions">' +
             `<button class="pay-btn pay-btn--primary" id="submit-proof-btn" onclick="uploadProof()">${isReject ? 'Resend Proof of Payment' : 'Submit Proof of Payment'}</button>` +
             `<a class="pay-btn pay-btn--ghost" href="${isIntakeFlow ? 'intakeform.html' : 'notifications.html'}">Back</a>` +

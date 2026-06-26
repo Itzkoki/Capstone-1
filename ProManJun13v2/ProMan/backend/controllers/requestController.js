@@ -1,128 +1,51 @@
-const db = require('../config/db');
-const User = require('../models/User');
-const ActivityLog = require('../models/ActivityLog');
-const RequestAuditLog = require('../models/RequestAuditLog');
-const notificationService = require('../services/notificationService');
+const {
+  db, User, RequestAuditLog, notificationService,
+  getClientIP, isStaff, isDirector,
+  audit, reqAudit,
+  REQUEST_TYPE_LABELS,
+  ADDITIONAL_COPY_FEE, ACCEPTED_MIMES, MAX_REPORT_LEN,
+  STATUS_LABELS,
+  validateDataUrl, generateTicketNumber, publicRow,
+  reportRequestStatus, PAYMENT_JOIN,
+} = require('./requestShared');
+const securityEvents = require('../services/securityEvents');
+const Payment = require('../models/Payment');
+const PsychologicalReport = require('../models/PsychologicalReport');
+const ReportSignedPdf = require('../models/ReportSignedPdf');
+const ReportTemplate = require('../models/ReportTemplate');
 
-const getClientIP = (req) =>
-  (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || null;
-
-const isStaff = (role) => role && role !== 'client';
-const isDirector = (role) => role === 'clinical_director';
-
-// Audit logging must never break the user's action — log failures are reported
-// to the console but swallowed.
-async function audit(userId, action, resourceId, req, details) {
-  try {
-    await ActivityLog.log(userId, action, 'client_request', resourceId, getClientIP(req), details);
-  } catch (e) {
-    console.error('Audit log failed (' + action + '):', e.message);
-  }
+// Re-fetch a single request WITH its linked-payment join so publicRow can derive
+// the payment fields (used after writes, since UPDATE ... RETURNING * lacks the
+// joined pay_* aliases).
+async function fetchRequest(id) {
+  const r = await db.query(`SELECT cr.*, pay.* FROM client_requests cr ${PAYMENT_JOIN} WHERE cr.id = $1`, [id]);
+  return r.rows[0] || null;
 }
 
-// Dedicated per-ticket audit trail (separate table). Self-guarding in the model.
-async function reqAudit(requestId, userId, action, remarks) {
-  await RequestAuditLog.log(requestId, userId, action, remarks || null);
-}
-
-// Map the stored columns onto the Report-Requests display status the spec uses:
-//   Under Review → Awaiting Payment → Payment Submitted → Payment Verified
-//   → Resolved → Sent  (plus Rejected).
-function reportRequestStatus(row) {
-  if (row.status === 'rejected') return 'Rejected';
-  if (row.sent_at) return 'Sent';
-  if (row.report_released_at && (row.payment_status === 'verified' || !row.payment_required)) return 'Resolved';
-  if (row.payment_required) {
-    if (row.payment_status === 'verified') return 'Payment Verified';
-    if (row.payment_status === 'under_review') return 'Payment Submitted';
-    if (row.payment_status === 'awaiting_payment' || row.payment_status === 'rejected') return 'Awaiting Payment';
-  }
-  return 'Under Review';
-}
-
-const REQUEST_TYPE_LABELS = {
-  additional_copies: 'Additional Copies of Report',
-  report_concern: 'Concern About Report',
-};
-
-// ── Report Concerns ────────────────────────────────────────────────────────
-// Lifecycle statuses for the "Report Concerns" console (spec §1).
-const CONCERN_STATUSES = [
-  'Pending Review', 'Under Investigation', 'Client Action Required',
-  'Resolved', 'Rejected',
-];
-// Map a raw concern checkbox value (as stored by requests.html) onto the
-// canonical concern-type label and a workflow "kind" used to decide whether a
-// correction needs a new report version (spec §§4-10).
-const CONCERN_KIND = {
-  'misspelled name'                     : 'name',
-  'wrong birthday/age'                  : 'dob',
-  'wrong address'                       : 'address',
-  'missing pages/documents'             : 'missing',
-  'concern regarding findings/diagnosis': 'findings',
-  'concern regarding recommendations'   : 'recommendations',
-};
-
-const ADDITIONAL_COPY_FEE = 1.00; // ₱ — clinic fee per additional-copy request
-const MAX_FILE_LEN = 7 * 1024 * 1024;   // ~5MB binary as base64 (attachments/proof)
-const MAX_REPORT_LEN = 28 * 1024 * 1024; // ~20MB as base64 — edited report PDFs
-const ACCEPTED_MIMES = ['image/jpeg', 'image/png', 'application/pdf'];
-
-// Concern display status: an explicit column drives the Report-Concerns table.
-function concernStatus(row) {
-  return row.concern_status || 'Pending Review';
-}
-
-const STATUS_LABELS = {
-  submitted: 'Submitted', under_review: 'Under Review',
-  resolved: 'Resolved', closed: 'Closed',
-};
-
-function validateDataUrl(dataUrl, maxLen = MAX_FILE_LEN) {
-  if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return null;
-  const m = dataUrl.match(/^data:([^;]+);base64,/);
-  if (!m) return null;
-  const mime = m[1].toLowerCase();
-  if (!ACCEPTED_MIMES.includes(mime)) return null;
-  if (dataUrl.length > maxLen) return null;
-  return mime;
-}
-
-// Generate ticket like BPS-REQ-20260609-001 (daily sequence)
-async function generateTicketNumber() {
-  const today = new Date();
-  const y = today.getFullYear(), mo = String(today.getMonth() + 1).padStart(2, '0'), d = String(today.getDate()).padStart(2, '0');
-  const prefix = `BPS-REQ-${y}${mo}${d}-`;
-  const r = await db.query(
-    `SELECT ticket_number FROM client_requests WHERE ticket_number LIKE $1 ORDER BY ticket_number DESC LIMIT 1`,
-    [prefix + '%']
-  );
-  let seq = 1;
-  if (r.rowCount) {
-    const last = parseInt(r.rows[0].ticket_number.slice(prefix.length), 10);
-    if (!Number.isNaN(last)) seq = last + 1;
-  }
-  return prefix + String(seq).padStart(3, '0');
-}
-
-// Strip large blobs from list payloads
-function publicRow(row, role) {
-  const out = { ...row };
-  delete out.attachment;
-  delete out.payment_proof;
-  delete out.report_file;
-  out.has_attachment = !!row.attachment_name;
-  out.has_payment_proof = !!row.payment_proof_name;
-  out.has_report = !!row.report_filename;
-  out.status_label = STATUS_LABELS[row.status] || row.status;
-  // Report-Requests display status (Under Review … Sent / Rejected) + type label.
-  out.report_request_status = reportRequestStatus(row);
-  out.request_type_label = REQUEST_TYPE_LABELS[row.nature] || row.nature;
-  out.has_receipt = !!row.receipt_number;
-  // Report-Concerns display status (Pending Review … Resolved / Rejected).
-  out.concern_status = concernStatus(row);
-  out.is_concern = row.nature === 'report_concern';
-  return out;
+// Create (or reuse) the centralized report-request payment row backing a ticket.
+// Report-request payments live in the `payments` table (module='report_request',
+// RPM- reference) so they appear in the Payment Verification module and are
+// verified by the Supervising Psychometrician — not in the Report Requests
+// section. The inline client_requests.payment_* columns are kept only as a synced
+// display mirror (deprecated). Returns the payment row (existing or new).
+async function ensureRequestPayment(ticket, fee) {
+  const existing = await Payment.findActiveByClientRequest(ticket.id);
+  if (existing) return existing;
+  const referenceNumber = await Payment.generateReferenceNumber('RPM');
+  return Payment.create({
+    referenceNumber,
+    clientId: ticket.client_id,
+    clientRequestId: ticket.id,
+    module: 'report_request',
+    serviceLabel: `Report request ${ticket.ticket_number}`,
+    paymentOption: 'full',
+    paymentMethod: 'GCash',
+    amountDue: fee,
+    totalFee: fee,
+    outstandingBalance: 0,
+    agreedNoCancellation: 1,
+    expiresInMinutes: 525600, // ~1 year — request payments do not time out like booking holds
+  });
 }
 
 // ── POST /api/requests — client submits the form ──
@@ -150,7 +73,56 @@ const createRequest = async (req, res, next) => {
       }
     }
 
+    // ── Legacy / external report request ──────────────────────────────────
+    // The client's report predates the online system (or is paper-only), so it
+    // cannot be picked from "my released reports". A photo ID is MANDATORY — the
+    // Clinical Director must verify identity before any old report is released.
+    const isLegacy = !!f.isLegacy;
+    let idDocumentMime = null;
+    if (isLegacy) {
+      if (!f.idDocument) {
+        return res.status(400).json({ success: false, message: 'A photo of a valid ID is required to verify your identity for an older/physical report.' });
+      }
+      idDocumentMime = validateDataUrl(f.idDocument);
+      if (!idDocumentMime) {
+        return res.status(400).json({ success: false, message: 'The ID must be a JPG, PNG, or PDF under 5 MB.' });
+      }
+    }
+
     const isConcern = f.nature === 'report_concern';
+
+    // ── Concern linkage (spec: every concern is linked to Client ID + Case ID) ──
+    // The client picks one of their RELEASED reports; from it we derive the
+    // source report, its case, and the PSYCHOLOGIST who finalized/approved it
+    // (psychological_reports.approved_by) — that psychologist (not the staff
+    // member who merely prepared it, psychologist_id) is the report's author of
+    // record and is the one asked to modify the report once the concern is
+    // approved + paid. Falls back to psychologist_id for solo-authored reports.
+    let concernCaseId = null, concernReportId = null, concernPsychologistId = null;
+    // Legacy requests have no in-system report to link yet — the CD digitizes and
+    // links it during verification — so skip the released-report requirement.
+    if (isConcern && !isLegacy) {
+      if (!f.reportId) {
+        return res.status(400).json({ success: false, message: 'Please select the released report your concern is about.' });
+      }
+      const rep = await db.query(
+        `SELECT id, client_id, case_id, psychologist_id, approved_by, signature_stage
+         FROM psychological_reports WHERE id = $1`, [f.reportId]);
+      if (!rep.rowCount) {
+        return res.status(404).json({ success: false, message: 'The selected report could not be found.' });
+      }
+      const report = rep.rows[0];
+      if (String(report.client_id) !== String(req.user.id)) {
+        return res.status(403).json({ success: false, message: 'You can only raise a concern about your own report.' });
+      }
+      if (report.signature_stage !== 'released') {
+        return res.status(409).json({ success: false, message: 'Concerns can only be raised about a released report.' });
+      }
+      concernReportId = report.id;
+      concernCaseId = report.case_id || null;
+      concernPsychologistId = report.approved_by || report.psychologist_id || null;
+    }
+
     const ticket = await generateTicketNumber();
     const concerns = Array.isArray(f.concerns) ? f.concerns : [];
 
@@ -168,15 +140,24 @@ const createRequest = async (req, res, next) => {
         guardian_name, assessment_date, contact_number, center_branch,
         nature, concerns, concern_other, description,
         attachment, attachment_name, attachment_mime,
-        concern_status, copies
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        concern_status, copies,
+        case_id, report_id, assigned_psychologist_id,
+        is_legacy, legacy_status, id_document, id_document_name, id_document_mime
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
       RETURNING *`,
       [
         ticket, req.user.id, f.familyName, f.givenName, f.mi || null,
         f.guardianName || null, f.assessmentDate || null, f.contactNumber || null, f.centerBranch || null,
         f.nature, JSON.stringify(concerns), f.concernOther || null, String(f.description).trim(),
         f.attachment || null, f.attachment ? (f.attachmentName || 'attachment').slice(0, 255) : null, attachmentMime,
-        isConcern ? 'Pending Review' : null, copies,
+        // Legacy requests gate on legacy_status (Records Verification) first, so a
+        // legacy concern's concern_status stays NULL until the CD verifies it.
+        (isConcern && !isLegacy) ? 'Pending Review' : null, copies,
+        concernCaseId, concernReportId, concernPsychologistId,
+        isLegacy, isLegacy ? 'Records Verification' : null,
+        isLegacy ? f.idDocument : null,
+        isLegacy ? (f.idDocumentName || 'id').slice(0, 255) : null,
+        idDocumentMime,
       ]
     );
     const row = result.rows[0];
@@ -192,21 +173,33 @@ const createRequest = async (req, res, next) => {
     try {
       await notificationService.notifyUser(
         req.user.id, 'ticket', 'Request Received',
-        `Your ${f.nature === 'additional_copies' ? `request for ${copiesText} of your report` : 'report concern'} has been received. Your ticket number is ${ticket}. We'll notify you as it progresses.`,
-        'requests.html'
+        isLegacy
+          ? `Your request about an older/physical report has been received (ticket ${ticket}). Our Clinical Director will verify your identity and locate your report, then notify you of the next step.`
+          : `Your ${f.nature === 'additional_copies' ? `request for ${copiesText} of your report` : 'report concern'} has been received. Your ticket number is ${ticket}. We'll notify you as it progresses.`,
+        'profile.html?section=requests'
       );
     } catch (_) {}
     try {
-      await notificationService.notifyStaff(
-        'ticket', isConcern ? 'New Report Concern Submitted' : 'New Client Request/Concern',
-        isConcern
-          ? `${clientName} submitted a report concern (ticket ${ticket}). A new report concern has been submitted.`
-          : `${clientName} submitted a request for additional report copies — ${copiesText} (ticket ${ticket}).`,
-        isConcern ? 'psych-reports.html#reportConcerns' : 'psych-reports.html#reportRequests'
-      );
-      await reqAudit(row.id, req.user.id,
-        isConcern ? 'CONCERN_SUBMITTED' : 'STAFF_NOTIFIED',
-        isConcern ? 'Staff notified of the new submission.' : `Staff notified — ${copiesText} requested.`);
+      if (isLegacy) {
+        await notificationService.notifyRole(
+          'clinical_director', 'ticket', 'Legacy Report Request — Verification Required',
+          `${clientName} submitted a ${isConcern ? 'concern' : 'copy request'} about an older/physical report (ticket ${ticket}). Verify their identity and locate/digitize the report.`,
+          `psych-reports.html?legacy=${row.id}`
+        );
+        await reqAudit(row.id, req.user.id, 'LEGACY_SUBMITTED', 'Legacy report request submitted — awaiting identity & records verification.');
+      } else {
+        await notificationService.notifyRole(
+          'clinical_director',
+          'ticket', isConcern ? 'New Report Concern Submitted' : 'New Client Request/Concern',
+          isConcern
+            ? `${clientName} submitted a report concern (ticket ${ticket}). A new report concern has been submitted.`
+            : `${clientName} submitted a request for additional report copies — ${copiesText} (ticket ${ticket}).`,
+          isConcern ? 'psych-reports.html#reportConcerns' : 'psych-reports.html#reportRequests'
+        );
+        await reqAudit(row.id, req.user.id,
+          isConcern ? 'CONCERN_SUBMITTED' : 'STAFF_NOTIFIED',
+          isConcern ? 'Staff notified of the new submission.' : `Staff notified — ${copiesText} requested.`);
+      }
     } catch (_) {}
 
     return res.status(201).json({ success: true, message: 'Request submitted.', data: publicRow(row) });
@@ -219,18 +212,20 @@ const getRequests = async (req, res, next) => {
     let rows;
     if (isStaff(req.user.role)) {
       const r = await db.query(
-        `SELECT cr.*, u.full_name AS client_account_name, u.email AS client_email,
+        `SELECT cr.*, pay.*, u.full_name AS client_account_name, u.email AS client_email,
                 s.full_name AS assigned_staff_name
          FROM client_requests cr
          JOIN users u ON u.id = cr.client_id
          LEFT JOIN users s ON s.id = cr.assigned_staff_id
+         ${PAYMENT_JOIN}
          ORDER BY cr.created_at DESC`);
       rows = r.rows;
     } else {
       const r = await db.query(
-        `SELECT cr.*, s.full_name AS assigned_staff_name
+        `SELECT cr.*, pay.*, s.full_name AS assigned_staff_name
          FROM client_requests cr
          LEFT JOIN users s ON s.id = cr.assigned_staff_id
+         ${PAYMENT_JOIN}
          WHERE cr.client_id = $1
          ORDER BY cr.created_at DESC`, [req.user.id]);
       rows = r.rows;
@@ -243,10 +238,13 @@ const getRequests = async (req, res, next) => {
 const getRequest = async (req, res, next) => {
   try {
     const r = await db.query(
-      `SELECT cr.*, u.full_name AS client_account_name, s.full_name AS assigned_staff_name
+      `SELECT cr.*, pay.*, u.full_name AS client_account_name, s.full_name AS assigned_staff_name,
+              pr.report_code AS report_code
        FROM client_requests cr
        JOIN users u ON u.id = cr.client_id
        LEFT JOIN users s ON s.id = cr.assigned_staff_id
+       LEFT JOIN psychological_reports pr ON pr.id = cr.report_id
+       ${PAYMENT_JOIN}
        WHERE cr.id = $1`, [req.params.id]);
     if (!r.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const row = r.rows[0];
@@ -276,7 +274,17 @@ const getRequestFile = async (req, res, next) => {
     const type = req.query.type;
     let dataUrl = null, name = null;
     if (type === 'attachment') { dataUrl = row.attachment; name = row.attachment_name; }
-    else if (type === 'proof' && staff) { dataUrl = row.payment_proof; name = row.payment_proof_name; }
+    else if (type === 'id_document' && staff) {
+      // Photo ID uploaded for legacy identity verification — staff-only.
+      dataUrl = row.id_document; name = row.id_document_name;
+    }
+    else if (type === 'proof' && staff) {
+      // Proof of payment now lives on the linked payment row (Payment Verification module).
+      const pp = await db.query(
+        `SELECT proof_of_payment, proof_filename FROM payments
+         WHERE client_request_id = $1 ORDER BY created_at DESC LIMIT 1`, [req.params.id]);
+      if (pp.rowCount) { dataUrl = pp.rows[0].proof_of_payment; name = pp.rows[0].proof_filename; }
+    }
     else if (type === 'version') {
       // A specific stored report version. Staff can open any version; the client
       // may only open the latest released version (spec §13).
@@ -299,9 +307,19 @@ const getRequestFile = async (req, res, next) => {
       // Report is delivered to the client only after the Clinical Director
       // clicks "Send" (sent_at set). Staff can always access it.
       if (!staff && !row.sent_at) {
+        securityEvents.record({
+          module: 'report_storage', eventType: 'unauthorized_report_access',
+          userId: req.user.id, subjectKind: 'user', ip: getClientIP(req),
+          details: `Client attempted to access report for request #${req.params.id} before it was released.`,
+        });
         return res.status(403).json({ success: false, message: 'The report has not been sent to you yet.' });
       }
-      dataUrl = row.report_file; name = row.report_filename;
+      // The report blob lives in the version table now (not on the request row).
+      // Serve the latest version; the request row only holds the display name.
+      const lv = await db.query(
+        `SELECT file, filename FROM client_request_report_versions
+         WHERE request_id = $1 ORDER BY version_number DESC LIMIT 1`, [req.params.id]);
+      if (lv.rowCount) { dataUrl = lv.rows[0].file; name = row.report_filename || lv.rows[0].filename; }
     }
     if (!dataUrl) return res.status(404).json({ success: false, message: 'File not found.' });
     return res.json({ success: true, data: { name, dataUrl } });
@@ -312,12 +330,12 @@ const getRequestFile = async (req, res, next) => {
 const assignRequest = async (req, res, next) => {
   try {
     const { staffId, deadline } = req.body || {};
-    const r = await db.query(
+    const upd = await db.query(
       `UPDATE client_requests SET assigned_staff_id = $1, deadline = $2, updated_at = NOW()
-       WHERE id = $3 RETURNING *`,
+       WHERE id = $3 RETURNING id`,
       [staffId || null, deadline || null, req.params.id]);
-    if (!r.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const row = r.rows[0];
+    if (!upd.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
+    const row = await fetchRequest(req.params.id);
     await audit(req.user.id, 'ASSIGN_REQUEST', row.id, req, { ticket: row.ticket_number, staffId: staffId || null, deadline: deadline || null });
     if (staffId) {
       try {
@@ -342,20 +360,25 @@ const updateRequestStatus = async (req, res, next) => {
     if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const ticket = cur.rows[0];
 
-    // Additional-copy requests must have a verified payment before processing/resolution.
-    if (['resolved'].includes(status) && ticket.payment_required && ticket.payment_status !== 'verified') {
-      return res.status(409).json({ success: false, message: 'Payment must be verified before resolving this request.' });
+    // Additional-copy requests must have a verified payment before resolution.
+    // Payment state comes from the linked payment row (inline columns dropped):
+    // a payment that exists but isn't verified blocks resolution.
+    if (status === 'resolved') {
+      const pay = await Payment.findActiveByClientRequest(ticket.id);
+      if (pay && pay.status !== 'verified') {
+        return res.status(409).json({ success: false, message: 'Payment must be verified before resolving this request.' });
+      }
     }
     if (status === 'resolved' && !(resolutionNote && resolutionNote.trim()) && !ticket.resolution_note) {
       return res.status(400).json({ success: false, message: 'A resolution note is required to resolve a ticket.' });
     }
 
-    const r = await db.query(
+    await db.query(
       `UPDATE client_requests
        SET status = $1, resolution_note = COALESCE($2, resolution_note), updated_at = NOW()
-       WHERE id = $3 RETURNING *`,
+       WHERE id = $3`,
       [status, resolutionNote && resolutionNote.trim() ? resolutionNote.trim() : null, req.params.id]);
-    const row = r.rows[0];
+    const row = await fetchRequest(req.params.id);
 
     await audit(req.user.id, 'UPDATE_REQUEST_STATUS', row.id, req, { ticket: row.ticket_number, status });
 
@@ -379,18 +402,17 @@ const promptPayment = async (req, res, next) => {
     const amount = Number((req.body || {}).amount) || ADDITIONAL_COPY_FEE;
     const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
     if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const reference = `${cur.rows[0].ticket_number}-PAY`;
-    const r = await db.query(
-      `UPDATE client_requests
-       SET payment_required = TRUE, payment_amount = $1, payment_status = 'awaiting_payment',
-           payment_reference = $2, status = 'under_review', updated_at = NOW()
-       WHERE id = $3 RETURNING *`, [amount, reference, req.params.id]);
-    const row = r.rows[0];
+    const payment = await ensureRequestPayment(cur.rows[0], amount);
+    const reference = payment.reference_number;
+    await db.query(
+      `UPDATE client_requests SET status = 'under_review', updated_at = NOW() WHERE id = $1`,
+      [req.params.id]);
+    const row = await fetchRequest(req.params.id);
     await audit(req.user.id, 'REQUEST_PAYMENT_PROMPT', row.id, req, { ticket: row.ticket_number, amount });
-    await reqAudit(row.id, req.user.id, 'PAYMENT_PROMPTED', `Client prompted for payment of \u20b1${amount.toFixed(2)}.`);
+    await reqAudit(row.id, req.user.id, 'PAYMENT_PROMPTED', `Client prompted for payment of ₱${amount.toFixed(2)}.`);
     try {
       await notificationService.notifyUser(row.client_id, 'ticket', 'Payment Required for Your Request',
-        `Your request ${row.ticket_number} for additional report copies requires a fee of \u20b1${amount.toFixed(2)}. Open your ticket to scan the clinic QR and upload your proof of payment.`,
+        `Your request ${row.ticket_number} for additional report copies requires a fee of ₱${amount.toFixed(2)}. Open your ticket to scan the clinic QR and upload your proof of payment.`,
         'requests.html');
     } catch (_) {}
     return res.json({ success: true, message: 'Payment prompt sent to the client.', data: publicRow(row) });
@@ -405,87 +427,58 @@ const uploadRequestPaymentProof = async (req, res, next) => {
     if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const ticket = cur.rows[0];
     if (ticket.client_id !== req.user.id) return res.status(403).json({ success: false, message: 'Access denied.' });
-    if (!ticket.payment_required || !['awaiting_payment', 'rejected'].includes(ticket.payment_status)) {
+
+    // Payment state is derived from the linked payment row (the inline columns
+    // were dropped). The payment must be awaiting proof (pending) or rejected
+    // (re-upload after a rejection).
+    const pay = await Payment.findActiveByClientRequest(ticket.id);
+    if (!pay || !['pending', 'rejected'].includes(pay.status)) {
       return res.status(409).json({ success: false, message: 'This ticket is not awaiting payment.' });
     }
     const mime = validateDataUrl(proof);
     if (!mime) return res.status(400).json({ success: false, message: 'Proof must be a JPG, PNG, or PDF under 5 MB.' });
 
-    const r = await db.query(
-      `UPDATE client_requests
-       SET payment_proof = $1, payment_proof_name = $2, payment_status = 'under_review', updated_at = NOW()
-       WHERE id = $3 RETURNING *`,
-      [proof, (filename || 'proof').slice(0, 255), req.params.id]);
-    const row = r.rows[0];
+    // The proof of payment lives ONLY on the centralized payment row, where it
+    // surfaces in the Payment Verification module for the Supervising
+    // Psychometrician to review.
+    await Payment.attachProof(pay.id, { dataUrl: proof, filename: (filename || 'proof').slice(0, 255), mime });
+    // A report concern advances to "Payment Verification Pending" once proof is in
+    // (spec §3). Additional-copies tickets keep their derived display status.
+    if (ticket.nature === 'report_concern') {
+      await db.query(
+        `UPDATE client_requests SET concern_status = 'Payment Verification Pending', updated_at = NOW() WHERE id = $1`,
+        [req.params.id]);
+    }
+    const row = await fetchRequest(req.params.id);
+
     await audit(req.user.id, 'REQUEST_PAYMENT_PROOF', row.id, req, { ticket: row.ticket_number });
     await reqAudit(row.id, req.user.id, 'PAYMENT_SUBMITTED', 'Client submitted proof of payment for verification.');
     try {
-      await notificationService.notifyStaff('ticket', 'Request Payment Proof Received',
-        `Payment proof received for ticket ${row.ticket_number}. Please verify.`, 'psych-reports.html#reportRequests');
-      // The spec routes payment verification to the Clinical Director.
-      await notificationService.notifyRole('clinical_director', 'ticket', 'Proof of Payment Submitted',
-        `A client has submitted proof of payment for verification (ticket ${row.ticket_number}).`,
-        'psych-reports.html#reportRequests');
+      // Verification now happens in the Payment Verification module (Supervising
+      // Psychometrician), not the Report Requests section. Use the 'ticket' type
+      // (report requests ARE tickets) so the notification is filed under the
+      // Tickets category and its action navigates straight to the Payment
+      // Verification module — NOT the 'payment' type, which is categorized as an
+      // appointment and would open the appointment-payment modal instead.
+      await notificationService.notifyRoles(['supervising_psychometrician', 'clinical_director'], 'ticket',
+        'Report-Request Payment Awaiting Verification',
+        `A client submitted proof of payment for report request ${row.ticket_number}${pay.reference_number ? ` (ref ${pay.reference_number})` : ''}. Verify it in the Payment Verification module.`,
+        'payments-admin.html');
     } catch (_) {}
     return res.json({ success: true, message: 'Proof submitted — awaiting staff verification.', data: publicRow(row) });
   } catch (error) { next(error); }
 };
 
-// ── PUT /api/requests/:id/payment-verify — Clinical Director verifies/rejects payment ──
-const verifyRequestPayment = async (req, res, next) => {
-  try {
-    const { action, note } = req.body || {};
-    if (!isDirector(req.user.role)) {
-      return res.status(403).json({ success: false, message: 'Only a Clinical Director can verify payments.' });
-    }
-    if (!['approve', 'reject'].includes(action)) {
-      return res.status(400).json({ success: false, message: "Action must be 'approve' or 'reject'." });
-    }
-    if (action === 'reject' && (!note || !String(note).trim())) {
-      return res.status(400).json({ success: false, message: 'A reason is required to reject a payment.' });
-    }
-    const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
-    if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    if (cur.rows[0].payment_status !== 'under_review') {
-      return res.status(409).json({ success: false, message: 'No payment is awaiting verification on this ticket.' });
-    }
-
-    let row;
-    if (action === 'approve') {
-      // Generate a receipt reference and store it on the ticket (the client's receipt).
-      const receiptNumber = `${cur.rows[0].ticket_number}-RCPT`;
-      const r = await db.query(
-        `UPDATE client_requests
-         SET payment_status = 'verified', payment_rejection_reason = NULL,
-             receipt_number = $1, receipt_issued_at = NOW(), updated_at = NOW()
-         WHERE id = $2 RETURNING *`, [receiptNumber, req.params.id]);
-      row = r.rows[0];
-      await audit(req.user.id, 'VERIFY_REQUEST_PAYMENT', row.id, req, { ticket: row.ticket_number, receipt: receiptNumber });
-      await reqAudit(row.id, req.user.id, 'PAYMENT_APPROVED', `Payment verified. Receipt ${receiptNumber} issued.`);
-      try {
-        await notificationService.notifyUser(row.client_id, 'ticket', 'Payment Verified',
-          `Your payment for ticket ${row.ticket_number} has been successfully verified. Your receipt (${receiptNumber}) is now available.`,
-          'requests.html');
-      } catch (_) {}
-    } else {
-      const reason = String(note).trim();
-      const r = await db.query(
-        `UPDATE client_requests
-         SET payment_status = 'rejected', payment_rejection_reason = $1, updated_at = NOW()
-         WHERE id = $2 RETURNING *`, [reason, req.params.id]);
-      row = r.rows[0];
-      await audit(req.user.id, 'REJECT_REQUEST_PAYMENT', row.id, req, { ticket: row.ticket_number, note: reason });
-      await reqAudit(row.id, req.user.id, 'PAYMENT_REJECTED', `Proof of payment rejected. Reason: ${reason}`);
-      try {
-        // Link carries an action hint so the client UI can surface a
-        // "Re-upload Proof of Payment" button and reopen the upload step.
-        await notificationService.notifyUser(row.client_id, 'ticket', 'Proof of Payment Rejected',
-          `Your proof of payment for ticket ${row.ticket_number} has been rejected. Reason: ${reason} Please re-upload your proof of payment.`,
-          `requests.html?reupload=${row.id}`);
-      } catch (_) {}
-    }
-    return res.json({ success: true, message: action === 'approve' ? 'Payment verified.' : 'Payment rejected.', data: publicRow(row) });
-  } catch (error) { next(error); }
+// ── PUT /api/requests/:id/payment-verify — DEPRECATED / CLOSED ──
+// Report-request payment verification was relocated to the Payment Verification
+// module and is now performed exclusively by the Supervising Psychometrician
+// (PUT /api/payments/:id/verify). This in-section endpoint is closed so
+// verification cannot bypass that workflow.
+const verifyRequestPayment = async (req, res) => {
+  return res.status(410).json({
+    success: false,
+    message: 'Payment verification has moved to the Payment Verification module (handled by the Supervising Psychometrician).',
+  });
 };
 
 // ── POST /api/requests/:id/report — staff uploads finalized report (release) ──
@@ -497,22 +490,33 @@ const uploadRequestReport = async (req, res, next) => {
     const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
     if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const ticket = cur.rows[0];
-    if (ticket.payment_required && ticket.payment_status !== 'verified') {
+    // Payment-verified gate derived from the linked payment row (inline columns dropped).
+    const payGate = await Payment.findActiveByClientRequest(ticket.id);
+    if (payGate && payGate.status !== 'verified') {
       return res.status(409).json({ success: false, message: 'Payment must be verified before releasing the report.' });
     }
-    const r = await db.query(
+    const fname = (filename || 'report.pdf').slice(0, 255);
+    // Store the PDF in the append-only version table — NOT as base64 on the
+    // request row. client_requests keeps only lightweight metadata pointers.
+    const vq = await db.query(
+      `SELECT COALESCE(MAX(version_number),0)+1 AS n FROM client_request_report_versions WHERE request_id = $1`,
+      [req.params.id]);
+    const vnum = Number(vq.rows[0].n);
+    await db.query(
+      `INSERT INTO client_request_report_versions (request_id, version_number, file, filename, mime, change_note, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [req.params.id, vnum, file, fname, mime, 'Report released', req.user.id]);
+    await db.query(
       `UPDATE client_requests
-       SET report_file = $1, report_filename = $2, report_mime = $3,
+       SET report_filename = $1, report_mime = $2, report_version = $3,
            report_released_at = NOW(), status = 'resolved', updated_at = NOW()
-       WHERE id = $4 RETURNING *`,
-      [file, (filename || 'report.pdf').slice(0, 255), mime, req.params.id]);
-    const row = r.rows[0];
+       WHERE id = $4`,
+      [fname, mime, vnum, req.params.id]);
+    const row = await fetchRequest(req.params.id);
     await audit(req.user.id, 'RELEASE_REQUEST_REPORT', row.id, req, { ticket: row.ticket_number, filename: row.report_filename });
     await reqAudit(row.id, req.user.id, 'REPORT_GENERATED',
       `Report generated/attached (${row.report_filename}). Ticket resolved; ready to send.`);
     try {
-      // Report is generated but NOT yet delivered — the client is notified only
-      // when the Clinical Director clicks "Send". Notify the director it's ready.
       await notificationService.notifyRole('clinical_director', 'ticket', 'Report Ready to Send',
         `The report for ticket ${row.ticket_number} has been generated and the request is resolved. You can now send it to the client.`,
         'psych-reports.html#reportRequests');
@@ -543,12 +547,12 @@ const replyToRequest = async (req, res, next) => {
     if (!staff && flag && ['resolved', 'closed'].includes(ticket.status)) {
       await db.query(`UPDATE client_requests SET status = 'under_review', updated_at = NOW() WHERE id = $1`, [req.params.id]);
       try {
-        await notificationService.notifyStaff('ticket', 'Ticket Flagged for Further Review',
+        await notificationService.notifyRole('clinical_director', 'ticket', 'Ticket Flagged for Further Review',
           `Ticket ${ticket.ticket_number} was flagged by the client for further review.`, 'psych-reports.html#reportRequests');
       } catch (_) {}
     } else if (!staff) {
       try {
-        await notificationService.notifyStaff('ticket', 'New Reply on Ticket',
+        await notificationService.notifyRole('clinical_director', 'ticket', 'New Reply on Ticket',
           `New client reply on ticket ${ticket.ticket_number}.`, 'psych-reports.html#reportRequests');
       } catch (_) {}
     } else {
@@ -585,12 +589,13 @@ const listReportRequests = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Only a Clinical Director can view report requests.' });
     }
     const r = await db.query(
-      `SELECT cr.*, u.full_name AS client_account_name, u.email AS client_email,
+      `SELECT cr.*, pay.*, u.full_name AS client_account_name, u.email AS client_email,
               s.full_name AS assigned_staff_name
        FROM client_requests cr
        JOIN users u ON u.id = cr.client_id
        LEFT JOIN users s ON s.id = cr.assigned_staff_id
-       WHERE cr.nature = 'additional_copies'
+       ${PAYMENT_JOIN}
+       WHERE cr.nature = 'additional_copies' AND cr.is_legacy IS NOT TRUE
        ORDER BY cr.created_at DESC`);
     const data = r.rows.map((row) => {
       const pub = publicRow(row, req.user.role);
@@ -607,8 +612,8 @@ const listReportRequests = async (req, res, next) => {
         status: pub.report_request_status,
         has_report: pub.has_report,
         has_payment_proof: pub.has_payment_proof,
-        payment_status: row.payment_status,
-        payment_amount: row.payment_amount,
+        payment_status: pub.payment_status,
+        payment_amount: pub.payment_amount,
       };
     });
     return res.json({ success: true, data });
@@ -637,11 +642,11 @@ const reviewRequest = async (req, res, next) => {
         return res.status(400).json({ success: false, message: 'A reason is required to reject a request.' });
       }
       const reasonTxt = String(reason).trim();
-      const r = await db.query(
+      await db.query(
         `UPDATE client_requests
          SET status = 'rejected', rejection_reason = $1, updated_at = NOW()
-         WHERE id = $2 RETURNING *`, [reasonTxt, req.params.id]);
-      const row = r.rows[0];
+         WHERE id = $2`, [reasonTxt, req.params.id]);
+      const row = await fetchRequest(req.params.id);
       await audit(req.user.id, 'REJECT_REQUEST', row.id, req, { ticket: row.ticket_number, reason: reasonTxt });
       await reqAudit(row.id, req.user.id, 'REQUEST_REJECTED', `Request rejected. Reason: ${reasonTxt}`);
       try {
@@ -651,23 +656,27 @@ const reviewRequest = async (req, res, next) => {
       return res.json({ success: true, message: 'Request rejected.', data: publicRow(row) });
     }
 
-    // Approve → move to Awaiting Payment and reuse the existing payment workflow.
+    // Approve → create the centralized report-request payment (it now lives in
+    // the payments table / Payment Verification module, RPM- reference, verified
+    // by the Supervising Psychometrician) and move the request to Awaiting Payment.
     const fee = Number(amount) || ADDITIONAL_COPY_FEE;
-    const reference = `${ticket.ticket_number}-PAY`;
-    const r = await db.query(
+    const payment = await ensureRequestPayment(ticket, fee);
+    const reference = payment.reference_number;
+    // Payment state lives entirely on the payments row created above; the request
+    // only records the approval + lifecycle status.
+    await db.query(
       `UPDATE client_requests
        SET status = 'under_review', approved_at = NOW(), approved_by = $1,
-           payment_required = TRUE, payment_amount = $2, payment_status = 'awaiting_payment',
-           payment_reference = $3, rejection_reason = NULL, updated_at = NOW()
-       WHERE id = $4 RETURNING *`, [req.user.id, fee, reference, req.params.id]);
-    const row = r.rows[0];
+           rejection_reason = NULL, updated_at = NOW()
+       WHERE id = $2`, [req.user.id, req.params.id]);
+    const row = await fetchRequest(req.params.id);
     await audit(req.user.id, 'APPROVE_REQUEST', row.id, req, { ticket: row.ticket_number, amount: fee });
     await reqAudit(row.id, req.user.id, 'REQUEST_APPROVED',
-      `Request approved. Awaiting payment of \u20b1${fee.toFixed(2)} (ref ${reference}).`);
+      `Request approved. Awaiting payment of ₱${fee.toFixed(2)} (ref ${reference}).`);
     await reqAudit(row.id, req.user.id, 'PAYMENT_PROMPTED', 'Client directed to the payment workflow.');
     try {
       await notificationService.notifyUser(row.client_id, 'ticket', 'Report Request Approved',
-        `Your report request has been approved. Please proceed to payment of \u20b1${fee.toFixed(2)} for ticket ${row.ticket_number}.`,
+        `Your report request has been approved. Please proceed to payment of ₱${fee.toFixed(2)} for ticket ${row.ticket_number}.`,
         `request-payment.html?request=${row.id}`);
     } catch (_) {}
     return res.json({ success: true, message: 'Request approved. Client moved to payment.', data: publicRow(row) });
@@ -684,9 +693,8 @@ const sendReport = async (req, res, next) => {
     if (!isDirector(req.user.role)) {
       return res.status(403).json({ success: false, message: 'Only a Clinical Director can send reports.' });
     }
-    const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
-    if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const ticket = cur.rows[0];
+    const ticket = await fetchRequest(req.params.id);
+    if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found.' });
 
     // Must be in Payment Verified or Resolved state to send.
     const displayStatus = reportRequestStatus(ticket);
@@ -696,27 +704,48 @@ const sendReport = async (req, res, next) => {
 
     const { file, filename } = req.body || {};
 
-    // If a report file is provided in this request, save it first.
+    // If a report file is provided in this request, save it first (as a version).
     if (file) {
       const mime = validateDataUrl(file);
       if (!mime) return res.status(400).json({ success: false, message: 'Report must be a JPG, PNG, or PDF under 5 MB.' });
+      const fname = (filename || 'report.pdf').slice(0, 255);
+      const vq = await db.query(
+        `SELECT COALESCE(MAX(version_number),0)+1 AS n FROM client_request_report_versions WHERE request_id = $1`,
+        [req.params.id]);
+      const vnum = Number(vq.rows[0].n);
+      await db.query(
+        `INSERT INTO client_request_report_versions (request_id, version_number, file, filename, mime, change_note, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [req.params.id, vnum, file, fname, mime, 'Report uploaded for sending', req.user.id]);
       await db.query(
         `UPDATE client_requests
-         SET report_file = $1, report_filename = $2, report_mime = $3,
+         SET report_filename = $1, report_mime = $2, report_version = $3,
              report_released_at = NOW(), status = 'resolved', updated_at = NOW()
          WHERE id = $4`,
-        [file, (filename || 'report.pdf').slice(0, 255), mime, req.params.id]);
-      await reqAudit(req.params.id, req.user.id, 'REPORT_GENERATED', `Report uploaded by CD (${filename || 'report.pdf'}).`);
-    } else if (!ticket.report_file) {
-      // No stored file and no uploaded file — cannot send.
-      return res.status(409).json({ success: false, message: 'Please upload the report file before sending.' });
+        [fname, mime, vnum, req.params.id]);
+      await reqAudit(req.params.id, req.user.id, 'REPORT_GENERATED', `Report uploaded by CD (${fname}).`);
+    } else {
+      // No new file — there must be a stored report version to send.
+      const anyVer = await db.query(`SELECT 1 FROM client_request_report_versions WHERE request_id = $1 LIMIT 1`, [req.params.id]);
+      if (!anyVer.rowCount) {
+        return res.status(409).json({ success: false, message: 'Please upload the report file before sending.' });
+      }
     }
 
-    // Mark the request as sent.
-    const r = await db.query(
-      `UPDATE client_requests SET sent_at = NOW(), sent_by = $1, updated_at = NOW()
-       WHERE id = $2 RETURNING *`, [req.user.id, req.params.id]);
-    const row = r.rows[0];
+    // Mark the request as sent. Ensure report_released_at is set (the "no new
+    // file" path — e.g. a pre-seeded legacy copy — otherwise the client can't
+    // download the version).
+    await db.query(
+      `UPDATE client_requests SET sent_at = NOW(), sent_by = $1,
+              report_released_at = COALESCE(report_released_at, NOW()), updated_at = NOW()
+       WHERE id = $2`, [req.user.id, req.params.id]);
+    const row = await fetchRequest(req.params.id);
+    // Clear the "Legacy Report" flag on the linked report once the copy is released.
+    if (row.report_id) {
+      await db.query(
+        `UPDATE psychological_reports SET modification_status = NULL, active_concern_id = NULL, updated_at = NOW()
+         WHERE id = $1 AND modification_status = 'Legacy Report'`, [row.report_id]).catch(() => {});
+    }
     await audit(req.user.id, 'SEND_REQUEST_REPORT', row.id, req, { ticket: row.ticket_number });
     await reqAudit(row.id, req.user.id, 'REPORT_SENT', `Report delivered to the client's Generated Reports.`);
     try {
@@ -742,334 +771,199 @@ const getRequestAudit = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ════════════════════════════════════════════════════════════════════════
-// REPORT CONCERNS — Clinical Director console (spec: Report Concerns module)
-// Mirrors the Report-Requests logic but for nature='report_concern'. Concerns
-// never require payment; instead the Director investigates, may request more
-// information, edits/replaces the report PDF (creating a new version), and then
-// resolves or rejects the concern. Every report change creates a new version.
-// ════════════════════════════════════════════════════════════════════════
-
-// Friendly, de-duplicated list of the concern types on a ticket.
-function concernTypeLabel(row) {
-  let list = [];
-  try { list = Array.isArray(row.concerns) ? row.concerns : JSON.parse(row.concerns || '[]'); } catch (_) {}
-  if (row.concern_other) list = list.concat(['Other']);
-  if (!list.length) return 'Report Concern';
-  return list.join(', ');
-}
-
-// Does this concern's resolution require generating a new report version?
-// (Misspelled name, wrong DOB/age, wrong address, missing pages, or an explicit
-// "revise" decision on findings/recommendations.) Maintain/keep decisions and
-// pure "Other" resolutions only require a resolution note.
-function concernRequiresVersion(row, decision) {
-  if (decision === 'maintain' || decision === 'keep') return false;
-  if (decision === 'revise' || decision === 'update') return true;
-  let list = [];
-  try { list = Array.isArray(row.concerns) ? row.concerns : JSON.parse(row.concerns || '[]'); } catch (_) {}
-  const kinds = list.map(v => CONCERN_KIND[String(v).toLowerCase()]).filter(Boolean);
-  return kinds.some(k => ['name', 'dob', 'address', 'missing'].includes(k));
-}
-
-// ── GET /api/requests/report-concerns — Clinical Director "Report Concerns" tab ──
-const listReportConcerns = async (req, res, next) => {
+// ── GET /api/requests/legacy-verifications — CD queue of legacy requests ──
+// Old-client requests (copy or concern) about a report not in the system that
+// need identity + records verification before entering the normal pipeline.
+const listLegacyVerifications = async (req, res, next) => {
   try {
     if (!isDirector(req.user.role)) {
-      return res.status(403).json({ success: false, message: 'Only a Clinical Director can view report concerns.' });
+      return res.status(403).json({ success: false, message: 'Only a Clinical Director can verify legacy requests.' });
     }
     const r = await db.query(
-      `SELECT cr.*, u.full_name AS client_account_name, u.email AS client_email,
-              s.full_name AS assigned_staff_name,
+      `SELECT cr.*, pay.*, u.full_name AS client_account_name, u.email AS client_email,
               (SELECT COUNT(*) FROM client_request_report_versions v WHERE v.request_id = cr.id) AS version_count
        FROM client_requests cr
        JOIN users u ON u.id = cr.client_id
-       LEFT JOIN users s ON s.id = cr.assigned_staff_id
-       WHERE cr.nature = 'report_concern'
-       ORDER BY cr.created_at DESC`);
+       ${PAYMENT_JOIN}
+       WHERE cr.is_legacy = TRUE
+       ORDER BY (cr.legacy_status = 'Records Verification') DESC, cr.created_at DESC`);
     const data = r.rows.map((row) => {
       const pub = publicRow(row, req.user.role);
+      const isConcern = row.nature === 'report_concern';
       return {
         id: pub.id,
         ticket_number: pub.ticket_number,
+        nature: row.nature,
+        request_type_label: pub.request_type_label,
         client_name: row.client_account_name ||
-          [row.client_given_name, row.client_family_name].filter(Boolean).join(' '),
+          [row.client_given_name, row.client_mi, row.client_family_name].filter(Boolean).join(' '),
         client_email: row.client_email,
-        concern_type: concernTypeLabel(row),
-        date_submitted: row.created_at,
-        status: pub.concern_status,
-        report_version: row.report_version || 1,
-        version_count: Number(row.version_count) || 0,
+        guardian_name: row.guardian_name || null,
+        assessment_date: row.assessment_date || null,
+        center_branch: row.center_branch || null,
+        contact_number: row.contact_number || null,
+        copies: row.copies || 1,
+        concerns: (() => { try { return Array.isArray(row.concerns) ? row.concerns : JSON.parse(row.concerns || '[]'); } catch (_) { return []; } })(),
+        concern_other: row.concern_other || null,
+        description: row.description || '',
+        legacy_status: row.legacy_status || 'Records Verification',
+        // Live pipeline status (after verification) so the CD manages the whole
+        // legacy lifecycle from this one console.
+        concern_status: isConcern ? pub.concern_status : null,
+        report_request_status: isConcern ? null : pub.report_request_status,
+        payment_status: pub.payment_status,
+        report_id: row.report_id || null,
         has_report: pub.has_report,
+        sent_at: row.sent_at || null,
+        version_count: Number(row.version_count) || 0,
+        concern_revision_note: row.concern_revision_note || null,
+        has_id_document: pub.has_id_document,
         has_attachment: pub.has_attachment,
+        date_submitted: row.created_at,
       };
     });
     return res.json({ success: true, data });
   } catch (error) { next(error); }
 };
 
-// ── POST /api/requests/:id/concern-version — Director saves an edited report ──
-// Stores the (edited) PDF as the next report version. Used by the in-browser
-// PDF editor and by direct uploads. Returns the new version metadata.
-const saveConcernVersion = async (req, res, next) => {
+// ── PUT /api/requests/:id/legacy-verify — CD verifies identity + digitizes ──
+// action 'approve': verify identity, register/link the (digitized) report, then
+// hand off to the normal pipeline (concern → Awaiting Payment; copy → Awaiting
+// Payment with the digitized PDF seeded for delivery).
+// action 'reject': identity/records could not be verified.
+const legacyVerify = async (req, res, next) => {
   try {
     if (!isDirector(req.user.role)) {
-      return res.status(403).json({ success: false, message: 'Only a Clinical Director can edit reports.' });
+      return res.status(403).json({ success: false, message: 'Only a Clinical Director can verify legacy requests.' });
     }
-    const { file, filename, changeNote } = req.body || {};
-    const mime = validateDataUrl(file, MAX_REPORT_LEN);
-    if (!mime) return res.status(400).json({ success: false, message: 'Report must be a JPG, PNG, or PDF under 20 MB.' });
-
-    const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
-    if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const ticket = cur.rows[0];
-    if (ticket.nature !== 'report_concern') {
-      return res.status(400).json({ success: false, message: 'This ticket is not a report concern.' });
-    }
-
-    const maxq = await db.query(`SELECT COALESCE(MAX(version_number),0) AS mx FROM client_request_report_versions WHERE request_id = $1`, [req.params.id]);
-    const nextVersion = Number(maxq.rows[0].mx) + 1;
-    const vname = (filename || `report_v${nextVersion}.pdf`).slice(0, 255);
-
-    const vr = await db.query(
-      `INSERT INTO client_request_report_versions (request_id, version_number, file, filename, mime, change_note, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, version_number, filename, change_note, created_at`,
-      [req.params.id, nextVersion, file, vname, mime, (changeNote || 'Report updated').slice(0, 500), req.user.id]);
-
-    // Keep report_version + report_file (latest) in sync, but do NOT release to
-    // the client yet — release happens on Resolve.
-    await db.query(
-      `UPDATE client_requests
-       SET report_version = $1, report_file = $2, report_filename = $3, report_mime = $4, updated_at = NOW()
-       WHERE id = $5`,
-      [nextVersion, file, vname, mime, req.params.id]);
-
-    await audit(req.user.id, 'CONCERN_REPORT_EDITED', req.params.id, req, { ticket: ticket.ticket_number, version: nextVersion });
-    await reqAudit(req.params.id, req.user.id, 'REPORT_UPDATED',
-      `Report edited — version ${nextVersion} created${changeNote ? ' (' + changeNote + ')' : ''}.`);
-
-    return res.json({ success: true, message: `Report version ${nextVersion} saved.`, data: vr.rows[0] });
-  } catch (error) { next(error); }
-};
-
-// ── GET /api/requests/:id/concern-versions — version history (spec §13) ──
-const getConcernVersions = async (req, res, next) => {
-  try {
-    const cur = await db.query(`SELECT client_id, report_released_at FROM client_requests WHERE id = $1`, [req.params.id]);
-    if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const staff = isStaff(req.user.role);
-    if (!staff && cur.rows[0].client_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
-    const r = await db.query(
-      `SELECT v.id, v.version_number, v.filename, v.change_note, v.created_at, u.full_name AS created_by_name
-       FROM client_request_report_versions v
-       LEFT JOIN users u ON u.id = v.created_by
-       WHERE v.request_id = $1 ORDER BY v.version_number ASC`, [req.params.id]);
-    let rows = r.rows;
-    // Clients can only see the latest released version (spec §13).
-    if (!staff) {
-      if (!cur.rows[0].report_released_at || !rows.length) rows = [];
-      else rows = [rows[rows.length - 1]];
-    }
-    return res.json({ success: true, data: rows });
-  } catch (error) { next(error); }
-};
-
-// ── PUT /api/requests/:id/concern-review — Director acts on a concern ──
-// action: 'investigate' | 'request_info' | 'resolve' | 'reject'
-const reviewConcern = async (req, res, next) => {
-  try {
-    if (!isDirector(req.user.role)) {
-      return res.status(403).json({ success: false, message: 'Only a Clinical Director can review report concerns.' });
-    }
-    const { action, info, reason, resolutionNote, decision } = req.body || {};
-    if (!['investigate', 'request_info', 'resolve', 'reject'].includes(action)) {
-      return res.status(400).json({ success: false, message: 'Invalid concern action.' });
+    const { action } = req.body || {};
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, message: "Action must be 'approve' or 'reject'." });
     }
     const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
     if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const ticket = cur.rows[0];
-    if (ticket.nature !== 'report_concern') {
-      return res.status(400).json({ success: false, message: 'This ticket is not a report concern.' });
+    if (!ticket.is_legacy) {
+      return res.status(400).json({ success: false, message: 'This is not a legacy report request.' });
     }
-    if (['Resolved', 'Rejected'].includes(concernStatus(ticket))) {
-      return res.status(409).json({ success: false, message: 'This concern has already been closed.' });
+    if (ticket.legacy_status !== 'Records Verification') {
+      return res.status(409).json({ success: false, message: 'This legacy request has already been verified.' });
     }
+    const isConcern = ticket.nature === 'report_concern';
 
-    // ── Mark Under Investigation ──
-    if (action === 'investigate') {
-      const r = await db.query(
-        `UPDATE client_requests SET concern_status = 'Under Investigation', status = 'under_review', updated_at = NOW()
-         WHERE id = $1 RETURNING *`, [req.params.id]);
-      await audit(req.user.id, 'CONCERN_INVESTIGATE', req.params.id, req, { ticket: ticket.ticket_number });
-      await reqAudit(req.params.id, req.user.id, 'INVESTIGATION_STARTED', 'Concern marked under investigation.');
-      try {
-        await notificationService.notifyUser(ticket.client_id, 'ticket', 'Concern Under Investigation',
-          `Your report concern (${ticket.ticket_number}) is now under investigation by the Clinical Director.`, 'profile.html?section=requests');
-      } catch (_) {}
-      return res.json({ success: true, message: 'Concern marked under investigation.', data: publicRow(r.rows[0]) });
-    }
-
-    // ── Request Additional Information (spec §11) ──
-    if (action === 'request_info') {
-      if (!info || !String(info).trim()) {
-        return res.status(400).json({ success: false, message: 'Please specify the information being requested.' });
-      }
-      const note = String(info).trim();
-      const r = await db.query(
-        `UPDATE client_requests SET concern_status = 'Client Action Required', concern_info_request = $1,
-                status = 'under_review', updated_at = NOW()
-         WHERE id = $2 RETURNING *`, [note, req.params.id]);
-      await audit(req.user.id, 'CONCERN_REQUEST_INFO', req.params.id, req, { ticket: ticket.ticket_number });
-      await reqAudit(req.params.id, req.user.id, 'ADDITIONAL_INFO_REQUESTED', `Requested additional information: ${note}`);
-      try {
-        await notificationService.notifyUser(ticket.client_id, 'ticket', 'Additional Information Required',
-          `Additional information is required to process your concern (${ticket.ticket_number}). ${note}`,
-          `profile.html?section=requests&concernInfo=${req.params.id}`);
-      } catch (_) {}
-      return res.json({ success: true, message: 'Additional information requested from the client.', data: publicRow(r.rows[0]) });
-    }
-
-    // ── Reject Concern (spec §12) ──
+    // ── Reject ──
     if (action === 'reject') {
-      if (!reason || !String(reason).trim()) {
-        return res.status(400).json({ success: false, message: 'A rejection reason is mandatory.' });
-      }
-      const reasonTxt = String(reason).trim();
-      const r = await db.query(
-        `UPDATE client_requests SET concern_status = 'Rejected', concern_rejection_reason = $1,
-                status = 'rejected', updated_at = NOW()
-         WHERE id = $2 RETURNING *`, [reasonTxt, req.params.id]);
-      await audit(req.user.id, 'CONCERN_REJECTED', req.params.id, req, { ticket: ticket.ticket_number, reason: reasonTxt });
-      await reqAudit(req.params.id, req.user.id, 'CONCERN_REJECTED', `Concern rejected. Reason: ${reasonTxt}`);
+      const reason = String(req.body.reason || '').trim();
+      if (!reason) return res.status(400).json({ success: false, message: 'A reason is required to reject a legacy request.' });
+      await db.query(
+        `UPDATE client_requests
+         SET legacy_status = 'Rejected', status = 'rejected', rejection_reason = $1,
+             concern_status = CASE WHEN nature = 'report_concern' THEN 'Rejected' ELSE concern_status END,
+             updated_at = NOW()
+         WHERE id = $2`, [reason, req.params.id]);
+      await audit(req.user.id, 'LEGACY_REJECTED', req.params.id, req, { ticket: ticket.ticket_number, reason });
+      await reqAudit(req.params.id, req.user.id, 'LEGACY_REJECTED', `Legacy request rejected. Reason: ${reason}`);
       try {
-        await notificationService.notifyUser(ticket.client_id, 'ticket', 'Report Concern Rejected',
-          `Your report concern (${ticket.ticket_number}) has been reviewed and rejected. Reason: ${reasonTxt}`,
+        await notificationService.notifyUser(ticket.client_id, 'ticket', 'Legacy Report Request — Not Verified',
+          `We could not verify your request about an older report (ticket ${ticket.ticket_number}). Reason: ${reason} Please contact the clinic or visit in person to verify your identity.`,
           'profile.html?section=requests');
       } catch (_) {}
-      return res.json({ success: true, message: 'Concern rejected.', data: publicRow(r.rows[0]) });
+      return res.json({ success: true, message: 'Legacy request rejected.' });
     }
 
-    // ── Resolve Concern (spec §§4-10) ──
-    // A correction-type concern (or an explicit "revise" decision) must have a
-    // new report version. A "maintain/keep" decision (or any resolution with no
-    // report change) requires a mandatory resolution / review note.
-    const needsVersion = concernRequiresVersion(ticket, decision);
-    const verq = await db.query(`SELECT COUNT(*) AS n FROM client_request_report_versions WHERE request_id = $1`, [req.params.id]);
-    const hasVersion = Number(verq.rows[0].n) > 0;
+    // ── Approve: register/link the report ──
+    const { reportPdf, reportFilename, psychologistId, existingReportId, clientName, assessmentDate, amount } = req.body || {};
+    let reportId = null;
 
-    if (needsVersion && !hasVersion) {
-      return res.status(409).json({ success: false, message: 'Please edit and save a corrected report version before resolving this concern.' });
-    }
-    const noteTxt = (resolutionNote || '').trim();
-    if (!needsVersion && !noteTxt) {
-      return res.status(400).json({ success: false, message: 'A resolution / review note is required when no report change is made.' });
-    }
-
-    // Build the client-facing resolution message per concern kind.
-    let resolvedMsg = 'Your report concern has been resolved. Please review the updated report.';
-    let list = [];
-    try { list = Array.isArray(ticket.concerns) ? ticket.concerns : JSON.parse(ticket.concerns || '[]'); } catch (_) {}
-    const kinds = list.map(v => CONCERN_KIND[String(v).toLowerCase()]).filter(Boolean);
-    if (decision === 'maintain' || decision === 'keep') {
-      resolvedMsg = kinds.includes('recommendations')
-        ? 'Your concern has been reviewed. The recommendations remain unchanged after clinical evaluation.'
-        : 'Your concern has been reviewed. The findings and diagnosis remain unchanged.';
-      if (noteTxt) resolvedMsg += ` Clinical Director's note: ${noteTxt}`;
-    } else if (kinds.includes('name')) {
-      resolvedMsg = 'Your concern regarding the misspelled name has been resolved. A corrected report is now available.';
-    } else if (kinds.includes('dob')) {
-      resolvedMsg = 'Your concern regarding the incorrect birthday/age has been resolved.';
-    } else if (kinds.includes('address')) {
-      resolvedMsg = 'Your report has been updated with the correct address.';
-    } else if (kinds.includes('missing')) {
-      resolvedMsg = 'The missing pages/documents have been added and are now available.';
-    } else if (kinds.includes('findings')) {
-      resolvedMsg = 'Your concern regarding the findings/diagnosis has been reviewed and the report has been updated.';
-    } else if (kinds.includes('recommendations')) {
-      resolvedMsg = 'Your recommendations have been updated. Please review the revised report.';
-    }
-
-    // Release the latest version to the client when one exists (reuses the
-    // existing client report-download path: report_file + report_released_at +
-    // sent_at make it appear in the client's tickets / Generated Reports).
-    if (hasVersion) {
-      const latest = await db.query(`SELECT * FROM client_request_report_versions WHERE request_id = $1 ORDER BY version_number DESC LIMIT 1`, [req.params.id]);
-      const v = latest.rows[0];
-      await db.query(
-        `UPDATE client_requests
-         SET concern_status = 'Resolved', status = 'resolved',
-             concern_resolution_note = $1, concern_review_note = $2,
-             report_file = $3, report_filename = $4, report_mime = $5, report_version = $6,
-             report_released_at = NOW(), sent_at = NOW(), sent_by = $7, updated_at = NOW()
-         WHERE id = $8`,
-        [noteTxt || null, (decision === 'maintain' || decision === 'keep') ? noteTxt : null,
-         v.file, v.filename, v.mime, v.version_number, req.user.id, req.params.id]);
+    if (existingReportId) {
+      // The report is already in the system — link to it (de-duplication path).
+      const rq = await db.query(
+        `SELECT id, client_id, signature_stage FROM psychological_reports WHERE id = $1`, [parseInt(existingReportId, 10)]);
+      if (!rq.rowCount) return res.status(404).json({ success: false, message: 'The selected existing report was not found.' });
+      reportId = rq.rows[0].id;
     } else {
+      // Create a new legacy report from the digitized official PDF.
+      if (!reportPdf) {
+        return res.status(400).json({ success: false, message: 'Upload the digitized report PDF (or pick an existing report).' });
+      }
+      const mime = validateDataUrl(reportPdf, MAX_REPORT_LEN);
+      if (!mime) return res.status(400).json({ success: false, message: 'The report must be a JPG, PNG, or PDF under 20 MB.' });
+
+      const tpl = await db.query(`SELECT id FROM report_templates ORDER BY id ASC LIMIT 1`);
+      if (!tpl.rowCount) return res.status(400).json({ success: false, message: 'No report template is available to register a legacy report.' });
+      const templateId = tpl.rows[0].id;
+      const assignedPsych = psychologistId ? parseInt(psychologistId, 10) : req.user.id;
+      const fullClientName = clientName ||
+        [ticket.client_given_name, ticket.client_mi, ticket.client_family_name].filter(Boolean).join(' ') || 'Client';
+
+      const report = await PsychologicalReport.create({
+        template_id: templateId, psychologist_id: assignedPsych, client_id: ticket.client_id,
+        client_name: fullClientName, client_age: null, client_gender: null,
+        date_of_assessment: assessmentDate || ticket.assessment_date || null, case_id: null,
+      });
+      reportId = report.id;
+      const legCode = (report.report_code || '').replace(/^BPS-RPT-/, 'LEG-') || report.report_code;
       await db.query(
-        `UPDATE client_requests
-         SET concern_status = 'Resolved', status = 'resolved',
-             concern_resolution_note = $1, concern_review_note = $2, updated_at = NOW()
-         WHERE id = $3`,
-        [noteTxt || null, noteTxt || null, req.params.id]);
+        `UPDATE psychological_reports
+         SET signature_stage = 'released', status = 'finalized', is_locked = TRUE, is_legacy = TRUE,
+             approved_by = $1, prepared_by = $1, reviewed_by = $1, report_code = $2, updated_at = NOW()
+         WHERE id = $3`, [assignedPsych, legCode, reportId]);
+      try {
+        const template = await ReportTemplate.findById(templateId);
+        if (template && Array.isArray(template.sections_config) && template.sections_config.length) {
+          await PsychologicalReport.createSections(reportId, template.sections_config);
+        }
+      } catch (_) { /* sections are non-fatal — the digitized PDF is the content */ }
+      // Store the digitized PDF as the report's authoritative (released) PDF.
+      await ReportSignedPdf.save(reportId, { pdfBase64: reportPdf, signatureStage: 'released', signedBy: req.user.id });
     }
 
-    await audit(req.user.id, 'CONCERN_RESOLVED', req.params.id, req, { ticket: ticket.ticket_number, decision: decision || 'revise' });
-    await reqAudit(req.params.id, req.user.id, 'CONCERN_RESOLVED',
-      `Concern resolved${decision ? ' (' + decision + ')' : ''}.${noteTxt ? ' Note: ' + noteTxt : ''}`);
-    try {
-      await notificationService.notifyUser(ticket.client_id, 'ticket', 'Report Concern Resolved', resolvedMsg,
-        'profile.html?section=requests');
-    } catch (_) {}
+    // The psychologist of record handles any concern about this report.
+    const rprow = await db.query(`SELECT approved_by, psychologist_id, case_id FROM psychological_reports WHERE id = $1`, [reportId]);
+    const approvedBy = rprow.rows[0].approved_by || rprow.rows[0].psychologist_id;
+    const fee = Number(amount) || ADDITIONAL_COPY_FEE;
 
-    const fin = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
-    return res.json({ success: true, message: 'Concern resolved.', data: publicRow(fin.rows[0]) });
-  } catch (error) { next(error); }
-};
+    await audit(req.user.id, 'LEGACY_VERIFIED', req.params.id, req, { ticket: ticket.ticket_number, report_id: reportId });
+    await reqAudit(req.params.id, req.user.id, 'LEGACY_VERIFIED',
+      `Identity verified and report registered (report #${reportId}). Linked to the request.`);
 
-// ── POST /api/requests/:id/concern-info — client submits requested info ──
-const submitConcernInfo = async (req, res, next) => {
-  try {
-    const { message, attachment, attachmentName } = req.body || {};
-    const cur = await db.query(`SELECT * FROM client_requests WHERE id = $1`, [req.params.id]);
-    if (!cur.rowCount) return res.status(404).json({ success: false, message: 'Ticket not found.' });
-    const ticket = cur.rows[0];
-    if (ticket.client_id !== req.user.id) return res.status(403).json({ success: false, message: 'Access denied.' });
-    if (concernStatus(ticket) !== 'Client Action Required') {
-      return res.status(409).json({ success: false, message: 'No additional information is being requested on this concern.' });
+    // Link the report and move to Awaiting Payment. Legacy requests — copy AND
+    // concern alike — are delivered as the digitized report (no in-report
+    // modification), so we seed the deliverable version now; after payment the CD
+    // simply Releases it from the Legacy Verifications console.
+    await db.query(
+      `UPDATE client_requests
+       SET legacy_status = 'Verified', report_id = $1, assigned_psychologist_id = $2,
+           case_id = $3,
+           concern_status = CASE WHEN nature = 'report_concern' THEN 'Awaiting Payment' ELSE concern_status END,
+           status = 'under_review', approved_at = NOW(), approved_by = $4, updated_at = NOW()
+       WHERE id = $5`,
+      [reportId, approvedBy, rprow.rows[0].case_id || null, req.user.id, req.params.id]);
+
+    let deliverPdf = reportPdf || null, deliverMime = null;
+    if (!deliverPdf) {
+      const latest = await ReportSignedPdf.getLatest(reportId);
+      if (latest && latest.pdf_base64) deliverPdf = latest.pdf_base64;
     }
-    if ((!message || !String(message).trim()) && !attachment) {
-      return res.status(400).json({ success: false, message: 'Please provide a remark or attach a file.' });
-    }
-    let updates = { attachment: null, name: null, mime: null };
-    if (attachment) {
-      const mime = validateDataUrl(attachment);
-      if (!mime) return res.status(400).json({ success: false, message: 'Attachment must be a JPG, PNG, or PDF under 5 MB.' });
-      updates = { attachment, name: (attachmentName || 'additional').slice(0, 255), mime };
-    }
-    // Record the client's remark as a reply, store the newly uploaded file (if
-    // any) as the ticket attachment, and return the concern to "Under Investigation".
-    if (message && String(message).trim()) {
-      await db.query(`INSERT INTO client_request_replies (request_id, user_id, message) VALUES ($1,$2,$3)`,
-        [req.params.id, req.user.id, String(message).trim()]);
-    }
-    if (updates.attachment) {
+    if (deliverPdf) {
+      deliverMime = validateDataUrl(deliverPdf, MAX_REPORT_LEN) || 'application/pdf';
+      const vq = await db.query(`SELECT COALESCE(MAX(version_number),0)+1 AS n FROM client_request_report_versions WHERE request_id = $1`, [req.params.id]);
+      const vnum = Number(vq.rows[0].n);
+      const vname = (reportFilename || 'report.pdf').slice(0, 255);
       await db.query(
-        `UPDATE client_requests SET attachment = $1, attachment_name = $2, attachment_mime = $3 WHERE id = $4`,
-        [updates.attachment, updates.name, updates.mime, req.params.id]);
+        `INSERT INTO client_request_report_versions (request_id, version_number, file, filename, mime, change_note, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [req.params.id, vnum, deliverPdf, vname, deliverMime, 'Digitized legacy report', req.user.id]);
+      await db.query(`UPDATE client_requests SET report_filename = $1, report_mime = $2, report_version = $3 WHERE id = $4`,
+        [vname, deliverMime, vnum, req.params.id]);
     }
-    const r = await db.query(
-      `UPDATE client_requests SET concern_status = 'Under Investigation', updated_at = NOW()
-       WHERE id = $1 RETURNING *`, [req.params.id]);
-    await audit(req.user.id, 'CONCERN_INFO_SUBMITTED', req.params.id, req, { ticket: ticket.ticket_number });
-    await reqAudit(req.params.id, req.user.id, 'ADDITIONAL_INFO_SUBMITTED',
-      `Client submitted additional information${message ? ': ' + String(message).trim() : '.'}`);
+    await ensureRequestPayment(ticket, fee);
     try {
-      await notificationService.notifyRole('clinical_director', 'ticket', 'Additional Information Received',
-        `The client submitted additional information for concern ${ticket.ticket_number}.`, 'psych-reports.html#reportConcerns');
+      await notificationService.notifyUser(ticket.client_id, 'ticket', 'Request Verified — Payment Required',
+        `Your ${isConcern ? 'concern about your report' : 'request for a copy of your report'} (ticket ${ticket.ticket_number}) has been verified. Please proceed to payment of ₱${fee.toFixed(2)}.`,
+        `request-payment.html?request=${ticket.id}`);
     } catch (_) {}
-    return res.json({ success: true, message: 'Additional information submitted.', data: publicRow(r.rows[0]) });
+    return res.json({ success: true, message: 'Identity verified, report registered, client moved to payment.' });
   } catch (error) { next(error); }
 };
 
@@ -1079,6 +973,6 @@ module.exports = {
   promptPayment, uploadRequestPaymentProof, verifyRequestPayment,
   uploadRequestReport, replyToRequest, getReleasedReports,
   listReportRequests, reviewRequest, sendReport, getRequestAudit,
-  listReportConcerns, reviewConcern, saveConcernVersion, getConcernVersions, submitConcernInfo,
+  listLegacyVerifications, legacyVerify,
   ADDITIONAL_COPY_FEE,
 };

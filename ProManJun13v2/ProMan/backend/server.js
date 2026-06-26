@@ -4,10 +4,12 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 
+const captchaRoutes      = require('./routes/captcha');
 const authRoutes         = require('./routes/auth');
 const staffAuthRoutes    = require('./routes/staffAuth');
 const profileRoutes      = require('./routes/profile');
 const staffRoutes        = require('./routes/staff');
+const staffDirectoryRoutes = require('./routes/staffDirectory');
 const notificationRoutes = require('./routes/notifications');
 const articleRoutes      = require('./routes/articles');
 const meetingRoutes      = require('./routes/meetings');
@@ -28,6 +30,10 @@ const reportTplRoutes    = require('./routes/reportTemplates');
 const landingRoutes      = require('./routes/landing');
 const paymentRoutes      = require('./routes/payments');
 const requestRoutes      = require('./routes/requests');
+const caseRoutes         = require('./routes/cases');
+const contactRoutes      = require('./routes/contact');
+const auditRoutes        = require('./routes/audit');
+const moduleOtpRoutes    = require('./routes/moduleOtp');
 
 const { activityLogger } = require('./middleware/activityLogger');
 const runMigrations      = require('./migrations');
@@ -49,16 +55,24 @@ app.use(activityLogger);
 // ── Serve frontend static files ───────────────────────
 app.use(express.static(path.join(__dirname, '..')));
 
+// ── Serve the FingerprintJS browser bundle from node_modules ──
+// Frontend loads /vendor/fingerprintjs/fp.umd.min.js to compute a device ID.
+app.use('/vendor/fingerprintjs', express.static(
+  path.join(__dirname, 'node_modules', '@fingerprintjs', 'fingerprintjs', 'dist')
+));
+
 // ── Serve uploaded files (team photos, etc.) ──────────
 // The database stores only the file path (e.g. /uploads/team/thumbs/x.jpg);
 // the actual image lives in backend/uploads and is served from here.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────
+app.use('/api/captcha',       captchaRoutes);
 app.use('/api/auth',          authRoutes);
 app.use('/api/staff-auth',    staffAuthRoutes);
 app.use('/api/profile',       profileRoutes);
 app.use('/api/staff',         staffRoutes);
+app.use('/api/staff-directory', staffDirectoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/articles',      articleRoutes);
 app.use('/api/meetings',      meetingRoutes);
@@ -79,6 +93,10 @@ app.use('/api/report-templates', reportTplRoutes);
 app.use('/api/landing',         landingRoutes);
 app.use('/api/payments',        paymentRoutes);
 app.use('/api/requests',        requestRoutes);
+app.use('/api/cases',           caseRoutes);
+app.use('/api/contact',         contactRoutes);
+app.use('/api/audit',           auditRoutes);
+app.use('/api/module-otp',      moduleOtpRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Staff = require('../models/Staff');
+const { COUNSELING_ROLES, ASSESSMENT_ROLES } = require('../models/Staff');
 const ActivityLog = require('../models/ActivityLog');
 
 // Keep hashing strength consistent with the rest of the app.
@@ -47,6 +48,31 @@ const getAllStaff = async (req, res, next) => {
   }
 };
 
+// GET /api/staff-directory/assignable — Public list of assignable staff for
+// client-facing pickers (intake counselor/therapist, teleconference). Returns
+// only active staff with a clinical role, including their specialization.
+// Optional ?gender=Male|Female filter. Never exposes emails or status.
+const getAssignableStaff = async (req, res, next) => {
+  try {
+    const { gender, service } = req.query;
+    let roles;
+    if (service === 'counseling') roles = COUNSELING_ROLES;
+    else if (service === 'assessment') roles = ASSESSMENT_ROLES;
+    const staff = await Staff.findAssignable({ gender, roles });
+    const data = staff.map((s) => ({
+      staff_id: s.staff_id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(' ').trim(),
+      gender: s.gender || null,
+      role: s.role,
+      specialization: s.specialization || null,
+      schedule: s.schedule || [],
+    }));
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/staff/:id — Get a specific staff member
 const getStaffById = async (req, res, next) => {
   try {
@@ -64,7 +90,7 @@ const getStaffById = async (req, res, next) => {
 // This is the only account-creation path; role is always 'staff' at creation.
 const createStaff = async (req, res, next) => {
   try {
-    const { first_name, last_name, gender, email, username, password } = req.body;
+    const { first_name, last_name, gender, email, username, password, specialization, schedule } = req.body;
 
     if (await Staff.existsUsername(username)) {
       return res.status(409).json({ success: false, message: 'That username is already taken.' });
@@ -74,7 +100,7 @@ const createStaff = async (req, res, next) => {
     }
 
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
-    const staff = await Staff.create({ first_name, last_name, gender, email, username, password_hash });
+    const staff = await Staff.create({ first_name, last_name, gender, email, username, password_hash, specialization, schedule: Array.isArray(schedule) ? schedule : [] });
 
     await safeLog(
       req.user.id, 'CREATE_STAFF', 'staff', staff.staff_id,
@@ -191,6 +217,7 @@ const getStaffActivity = async (req, res, next) => {
 
 module.exports = {
   getAllStaff,
+  getAssignableStaff,
   getStaffById,
   createStaff,
   updateStaffRole,

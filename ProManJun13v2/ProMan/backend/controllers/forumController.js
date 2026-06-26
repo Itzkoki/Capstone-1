@@ -1,8 +1,29 @@
 const ForumThread = require('../models/ForumThread');
 const ForumReply  = require('../models/ForumReply');
 const User        = require('../models/User');
+const ContentFlag = require('../models/ContentFlag');
 const notificationService = require('../services/notificationService');
 const crisisDetection     = require('../services/crisisDetection');
+const securityEvents      = require('../services/securityEvents');
+const contentAnalyzer     = require('../services/communityContentAnalyzer');
+
+// Run the automated analyzer over new community content and, if it matches any
+// flag category, open a Community incident in the Action Center carrying the
+// detected category/categories, severity, and the exact triggering cues.
+function autoFlag(text, contentType, contentId, req) {
+  try {
+    const result = contentAnalyzer.analyze(text);
+    if (!result.flagged) return null;
+    const { eventType, severity } = contentAnalyzer.toIncident(result);
+    securityEvents.record({
+      module: 'community', eventType,
+      userId: req.user.id, subjectKind: req.user.type === 'staff' ? 'staff' : 'user', ip: req.ip,
+      targetType: contentType, targetId: contentId, severityOverride: severity,
+      details: contentAnalyzer.describe(result, contentType, contentId, text),
+    });
+    return result;
+  } catch (e) { console.error('autoFlag failed:', e.message); return null; }
+}
 
 // ── Helper: check if user is staff ──
 const isStaff = (role) => role && role !== 'client';
@@ -62,6 +83,15 @@ const getThread = async (req, res, next) => {
     const safeThread = sanitizeForClient(thread, req.user.role, req.user.id);
     const safeReplies = replies.map(r => sanitizeForClient(r, req.user.role, req.user.id));
 
+    // Staff/CD see which specific post or comment has been flagged, with the
+    // report reason/message, surfaced inline in the forum.
+    if (isStaff(req.user.role)) {
+      safeThread.flags = await ContentFlag.findPendingByContent('thread', thread.id);
+      await Promise.all(
+        safeReplies.map(async (r) => { r.flags = await ContentFlag.findPendingByContent('reply', r.id); })
+      );
+    }
+
     return res.json({ success: true, data: { ...safeThread, replies: safeReplies } });
   } catch (error) { next(error); }
 };
@@ -90,6 +120,9 @@ const createThread = async (req, res, next) => {
     const thread = await ForumThread.create(
       req.user.id, title, content, category, tags, is_anonymous || false, status
     );
+
+    // Automated Action-Center flag detection (category + severity + cues).
+    autoFlag(`${title}\n${content}`, 'thread', thread.id, req);
 
     // Notifications
     if (crisisCheck.isCrisis) {
@@ -147,7 +180,7 @@ const approveThread = async (req, res, next) => {
         await notificationService.notifyUser(
           thread.author_id, 'community', 'Your Discussion Has Been Approved',
           `Your discussion "${thread.title}" is now visible to the community.`,
-          'community.html'
+          `community.html?tab=discussion&thread=${thread.id}`
         );
       } catch (err) { console.error('Approval notification failed:', err.message); }
     }
@@ -220,6 +253,9 @@ const createReply = async (req, res, next) => {
     );
     await ForumThread.incrementReplyCount(req.params.id);
 
+    // Automated Action-Center flag detection (category + severity + cues).
+    autoFlag(content, 'reply', reply.id, req);
+
     // If crisis content, flag and notify staff
     if (crisisCheck.isCrisis) {
       await ForumReply.updateStatus(reply.id, 'flagged');
@@ -239,7 +275,7 @@ const createReply = async (req, res, next) => {
         await notificationService.notifyUser(
           thread.author_id, 'community', 'New Reply on Your Discussion',
           `Someone replied to your discussion "${thread.title}".`,
-          'community.html'
+          `community.html?tab=discussion&thread=${thread.id}`
         );
       } catch (err) { console.error('Reply notification failed:', err.message); }
     }

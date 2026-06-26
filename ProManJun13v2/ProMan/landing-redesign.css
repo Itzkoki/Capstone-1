@@ -151,33 +151,33 @@
 
 /* ---------- Buttons ---------- */
 .btn--primary {
-  background: #4A6BC5 !important;
+  background: linear-gradient(135deg, #1d4ed8, #15306E);
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(30, 58, 138, .25);
 }
 
 .btn--primary:hover {
-  background: #3A5BB5 !important;
+  background: rgb(30, 58, 138) !important;
 }
 
 .btn--secondary {
-  background: #4A6BC5 !important;
+  background: rgb(30, 58, 138) !important;
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(74, 107, 197, .25);
 }
 
 .btn--secondary:hover {
-  background: #3A5BB5 !important;
+  background: rgb(30, 58, 138)!important;
 }
 
 .btn--accent {
-  background: #4A6BC5 !important;
+  background: rgb(30, 58, 138) !important;
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(123, 149, 216, .25);
 }
 
 .btn--accent:hover {
-  background: #3A5BB5 !important;
+  background: rgb(30, 58, 138) !important;
 }
 
 .btn--white {
@@ -242,9 +242,9 @@
 }
 
 .team-section .container {
-  max-width: 1180px;
+  max-width: 1340px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 40px;
 }
 
 .team-section .section-label {}
@@ -270,106 +270,151 @@
 }
 
 .team-card {
-  flex: 0 0 calc((100% - 72px) / 4);
-  /* 4 across desktop (gap 24*3) */
+  flex: 0 0 calc((100% - 48px) / 3);   /* 3 across desktop (gap 24*2) — larger portraits */
+  position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--theme-surface);
   border: 1px solid var(--theme-line);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow);
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, .06);
   overflow: hidden;
-  text-align: center;
-  transition: box-shadow .25s ease, transform .25s ease;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow .38s cubic-bezier(.22, .7, .2, 1),
+              transform .38s cubic-bezier(.22, .7, .2, 1),
+              border-color .3s ease;
+  animation: teamCardIn .6s cubic-bezier(.22, .7, .2, 1) both;
+  animation-delay: calc(var(--ci, 0) * .08s);
+}
+@keyframes teamCardIn {
+  /* uses the independent `translate` longhand so the filled end-state
+     doesn't lock `transform` (which the hover lift relies on) */
+  from { opacity: 0; translate: 0 26px; }
+  to   { opacity: 1; translate: 0 0; }
 }
 
 .team-card:hover {
-  box-shadow: var(--theme-shadow-lg);
-  transform: translateY(-4px);
+  transform: translateY(-8px);
+  box-shadow: 0 28px 56px rgba(30, 58, 138, .14);
+  border-color: color-mix(in srgb, var(--theme-primary) 35%, transparent);
 }
-
-.team-card__photo {
-  width: 100%;
-  aspect-ratio: 1/1;
-  object-fit: cover;
-  display: block;
-  background: linear-gradient(135deg, var(--theme-primary-wash), var(--theme-secondary-wash));
-}
-
-.team-card__body {
-  padding: 20px 16px 24px;
-}
-
-.team-card__name {
-  font-family: 'Fraunces', Georgia, serif;
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--theme-ink);
-  margin-bottom: 4px;
-}
-
-.team-card__role {
-  font-size: .85rem;
-  color: var(--theme-primary);
-  font-weight: 600;
-}
-
-.team-card__bio {
-  font-size: .8rem;
-  color: var(--theme-ink-faint);
-  margin-top: 8px;
-}
-
-/* placeholder avatar (initials) when no photo */
-.team-card__photo--ph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Fraunces', serif;
-  font-size: 3rem;
-  font-weight: 600;
-  color: var(--theme-primary);
-  filter: none;
-}
-
-/* ---- clickable card: photo wrapper + "expand" affordance ---- */
-.team-card { cursor: pointer; }
 .team-card:focus-visible {
   outline: 3px solid var(--theme-primary);
   outline-offset: 2px;
 }
+
+/* portrait media — consistent 4:5 frame, face-favoured crop, no distortion */
 .team-card__media {
   position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
+  background: linear-gradient(135deg, var(--theme-primary-wash), var(--theme-secondary-wash));
 }
-.team-card__expand {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(16, 24, 40, .55);
-  color: #fff;
-  backdrop-filter: blur(2px);
-  opacity: 0;
-  transform: scale(.85);
-  transition: opacity .2s ease, transform .2s ease;
-  pointer-events: none;
+.team-card__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;   /* keep heads & faces in frame */
+  display: block;
+  transition: transform .6s cubic-bezier(.22, .7, .2, 1);
 }
-.team-card:hover .team-card__expand,
-.team-card:focus-visible .team-card__expand { opacity: 1; transform: scale(1); }
+.team-card:hover .team-card__photo { transform: scale(1.06); }
+
+/* legibility veil for overlay elements */
 .team-card__media::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(16, 24, 40, .18), transparent 42%);
-  opacity: 0;
-  transition: opacity .25s ease;
+  background: linear-gradient(to top, rgba(16, 24, 40, .55) 0%, rgba(16, 24, 40, .10) 36%, transparent 58%);
+  opacity: .85;
+  transition: opacity .3s ease;
   pointer-events: none;
 }
 .team-card:hover .team-card__media::after { opacity: 1; }
+
+/* optional specialty badge (rendered only when provided by the CMS) */
+.team-card__badge {
+  position: absolute;
+  top: 12px; left: 12px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 5px 11px; border-radius: 999px;
+  font-size: .72rem; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: rgba(255, 255, 255, .92);
+  color: var(--theme-primary);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, .12);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.team-card__badge svg { width: 13px; height: 13px; flex-shrink: 0; fill: var(--theme-accent, #C0922E); }
+
+/* "View Profile" affordance — appears on hover/focus */
+.team-card__view {
+  position: absolute;
+  left: 50%; bottom: 16px; z-index: 2;
+  transform: translate(-50%, 12px);
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  color: var(--theme-primary);
+  font-size: .82rem; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(16, 24, 40, .20);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease, transform .3s cubic-bezier(.22, .7, .2, 1);
+}
+.team-card__view svg { width: 15px; height: 15px; stroke: currentColor; }
+.team-card:hover .team-card__view,
+.team-card:focus-visible .team-card__view { opacity: 1; transform: translate(-50%, 0); }
+
+/* body — clean typographic hierarchy */
+.team-card__body {
+  padding: 18px 20px 22px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.team-card__name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: 1.14rem;
+  line-height: 1.25;
+  color: var(--theme-ink);
+}
+.team-card__role {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--theme-primary);
+}
+.team-card__bio {
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--theme-ink-faint);
+  margin-top: 3px;
+}
+
+/* placeholder avatar (initials) when no photo */
+.team-card__photo--ph {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 3.2rem; font-weight: 600;
+  color: var(--theme-primary);
+}
+
+/* active state while this card's profile is open */
+.team-card.is-active {
+  border-color: var(--theme-primary);
+  box-shadow: 0 22px 48px rgba(30, 58, 138, .18),
+              0 0 0 2px color-mix(in srgb, var(--theme-primary) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-card { animation: none !important; }
+  .team-card,
+  .team-card__photo,
+  .team-card__view { transition: none !important; }
+  .team-card:hover .team-card__photo { transform: none; }
+}
 
 /* ============================================================
    EXPANDED STAFF PROFILE MODAL
@@ -484,7 +529,7 @@ body.staff-modal-lock { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .staff-modal,
   .staff-modal__dialog,
-  .team-card__expand,
+  .team-card__view,
   .team-card__media::after { transition: none; }
   .staff-modal__dialog { transform: none; }
 }
@@ -613,4 +658,326 @@ body.staff-modal-lock { overflow: hidden; }
   .carousel__btn--next {
     right: 4px;
   }
+}
+
+/* ============================================================
+   CLICKABLE SERVICE CARDS  (open a text popup)
+   ============================================================ */
+.service-card[role="button"] { cursor: pointer; }
+.service-card[role="button"]:focus-visible {
+  outline: 3px solid var(--theme-primary);
+  outline-offset: 3px;
+}
+.service-card__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--theme-primary) !important;
+  opacity: .85;
+  transition: gap .2s ease, opacity .2s ease;
+}
+.service-card__more svg { stroke: currentColor; fill: none; }
+.service-card:hover .service-card__more { gap: 9px; opacity: 1; }
+
+/* ============================================================
+   SERVICE INFO MODAL  (text-only popup)
+   ============================================================ */
+.info-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .28s ease, visibility 0s linear .28s;
+}
+.info-modal.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .28s ease;
+}
+.info-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 24, 40, .55);
+  backdrop-filter: blur(4px);
+}
+.info-modal__dialog {
+  position: relative;
+  width: min(92vw, 560px);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--theme-surface, #fff);
+  border-radius: var(--theme-radius-lg, 18px);
+  box-shadow: var(--theme-shadow-xl, 0 30px 60px rgba(16,24,40,.25));
+  transform: translateY(18px) scale(.97);
+  opacity: .6;
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1), opacity .3s ease;
+  -webkit-overflow-scrolling: touch;
+}
+.info-modal.is-open .info-modal__dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.info-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--theme-primary-wash, #eef6f1);
+  color: var(--theme-ink, #1a2b22);
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
+  z-index: 2;
+}
+.info-modal__close:hover { background: var(--theme-primary, #2e7d57); color: #fff; transform: scale(1.06); }
+.info-modal__close:focus-visible { outline: 3px solid var(--theme-primary); outline-offset: 2px; }
+.info-modal__body { padding: 40px 38px 36px; }
+.info-modal__eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--theme-primary, #2e7d57);
+  margin-bottom: 8px;
+}
+.info-modal__title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.7rem;
+  line-height: 1.2;
+  color: var(--theme-ink, #1a2b22);
+  margin: 0 0 16px;
+}
+.info-modal__content { color: var(--theme-ink-body, #4a5a52); font-size: 15px; line-height: 1.65; }
+.info-modal__content p { margin: 0 0 14px; }
+.info-modal__content ul { margin: 0 0 14px; padding-left: 20px; }
+.info-modal__content li { margin-bottom: 7px; }
+
+@media (max-width: 480px) {
+  .info-modal { padding: 14px; }
+  .info-modal__body { padding: 34px 24px 28px; }
+  .info-modal__title { font-size: 1.45rem; }
+}
+
+/* ============================================================
+   FACILITIES — fanned coverflow carousel
+   (styled after the provided reference image)
+   ============================================================ */
+.facilities {
+  padding: 96px 0;
+  background:
+    radial-gradient(1100px 380px at 50% 120%, var(--theme-primary-wash, #eaf5ee), transparent 70%);
+  overflow: hidden;
+}
+/* Custom header (not overwritten by the CMS hydrator) */
+.fac-eyebrow {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--theme-primary, var(--green-primary)) !important;
+  margin-bottom: 12px;
+}
+.fac-heading {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+  color: var(--theme-ink, var(--text-dark)) !important;
+  margin: 0 0 16px;
+}
+.fac-sub {
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--theme-ink-body, var(--text-body)) !important;
+}
+.facilities-carousel {
+  position: relative;
+  margin-top: 44px;
+}
+/* keep the prev/next controls above the fanned cards (z up to ~100) */
+.facilities-carousel .carousel__btn { z-index: 200; top: 50%; }
+.facilities-carousel .carousel__btn--prev { left: 8px; }
+.facilities-carousel .carousel__btn--next { right: 8px; }
+.facilities-stage {
+  position: relative;
+  height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+}
+.facility-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(300px, 42vw, 480px);
+  aspect-ratio: 4 / 3; /* landscape facility photos */
+  margin: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #d9e2dd;
+  box-shadow: 0 24px 50px rgba(16, 24, 40, .22);
+  cursor: pointer;
+  transform-origin: center center;
+  /* translateX/rotate/scale are applied by JS; this centers the card first */
+  margin-left: calc(clamp(300px, 42vw, 480px) / -2);
+  margin-top: calc(clamp(300px, 42vw, 480px) * 3 / 4 / -2);
+  transition: transform .5s cubic-bezier(.16, 1, .3, 1), opacity .5s ease, box-shadow .3s ease;
+  will-change: transform, opacity;
+}
+.facility-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.facility-card.is-active {
+  box-shadow: 0 30px 64px rgba(16, 24, 40, .32);
+  outline: 4px solid rgba(255, 255, 255, .9);
+  outline-offset: -4px;
+}
+.facilities-caption {
+  text-align: center;
+  margin-top: 26px;
+  font-family: 'Fraunces', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--theme-ink, #1a2b22);
+  min-height: 1.4em;
+}
+#facilities-dots { display: flex; justify-content: center; gap: 8px; }
+
+@media (max-width: 640px) {
+  .facilities { padding: 64px 0; }
+  .facilities-stage { height: 300px; }
+  .facility-card { width: clamp(220px, 80vw, 320px); margin-left: calc(clamp(220px, 80vw, 320px) / -2); margin-top: calc(clamp(220px, 80vw, 320px) * 3 / 4 / -2); }
+}
+
+/* ============================================================
+   PARTNER SCHOOLS — infinite auto-scroll logo carousel
+   ============================================================ */
+
+/* No background card — integrates seamlessly with the page */
+.partner-schools {
+  padding: 72px 0 64px;
+  overflow: hidden;
+}
+
+.partner-schools__header {
+  text-align: center;
+  padding: 0 24px;
+  margin-bottom: 48px;
+}
+
+.partner-badge {
+  display: inline-block;
+  color: var(--theme-primary, #1E3A8A);
+  background: var(--theme-primary-wash, #eef3fd);
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.partner-title {
+  font-family: 'Playfair Display', 'Fraunces', serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+  font-weight: 700;
+  color: var(--theme-ink, #0f1f16);
+  margin: 0 0 10px;
+}
+
+.partner-sub {
+  color: var(--theme-ink-body, #4a5a52);
+  max-width: 540px;
+  margin: 12px auto 0;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* soft edge fade — keeps the carousel polished without boxing it */
+.partner-track-wrap {
+  overflow: hidden;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+}
+
+/* scrolling strip: two full sets of logos → translate -50% = seamless loop */
+.partner-track {
+  display: flex;
+  align-items: center;
+  gap: 72px;
+  width: max-content;
+  animation: bpsPartnerScroll 48s linear infinite;
+}
+
+@keyframes bpsPartnerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-track { animation: none; }
+}
+
+/* uniform logo container — equal size for every institution */
+.partner-logo {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* full-color logos, no filters, no hover effects */
+.partner-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  filter: none;
+  transition: none;
+}
+
+@media (max-width: 1024px) {
+  .partner-logo { width: 136px; height: 92px; }
+  .partner-track { gap: 56px; }
+}
+
+@media (max-width: 640px) {
+  .partner-schools { padding: 52px 0 44px; }
+  .partner-logo { width: 108px; height: 72px; }
+  .partner-track { gap: 40px; }
+  .partner-schools__header { margin-bottom: 36px; }
+  .partner-title { font-size: 1.45rem; }
 }

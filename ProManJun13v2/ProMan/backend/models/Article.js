@@ -1,5 +1,14 @@
 const db = require('../config/db');
 
+// Article authors may live in EITHER the legacy `users` table (clients) OR the
+// dedicated `staff` table (clinical staff / Clinical Director, keyed by
+// staff_id). An INNER JOIN to users silently dropped every staff-authored
+// article. LEFT JOIN both and COALESCE the display name so all articles surface.
+const AUTHOR_JOIN = `
+  LEFT JOIN users u ON u.id = a.author_id
+  LEFT JOIN staff s ON s.staff_id = a.author_id`;
+const AUTHOR_NAME = `COALESCE(u.full_name, NULLIF(TRIM(CONCAT(s.first_name, ' ', s.last_name)), ''), 'Unknown') AS author_name`;
+
 const Article = {
   async create(authorId, title, content, opts = {}) {
     const { category, source_url, featured_image, original_author, published_date } = opts;
@@ -15,9 +24,9 @@ const Article = {
   // Public feed — only approved articles
   async findAll(limit = 20, offset = 0) {
     const result = await db.query(
-      `SELECT a.*, u.full_name AS author_name
+      `SELECT a.*, ${AUTHOR_NAME}
        FROM articles a
-       JOIN users u ON u.id = a.author_id
+       ${AUTHOR_JOIN}
        WHERE a.status = 'approved'
        ORDER BY a.created_at DESC
        LIMIT $1 OFFSET $2`,
@@ -29,9 +38,9 @@ const Article = {
   // Staff view — all articles regardless of status
   async findAllForStaff(limit = 50, offset = 0) {
     const result = await db.query(
-      `SELECT a.*, u.full_name AS author_name
+      `SELECT a.*, ${AUTHOR_NAME}
        FROM articles a
-       JOIN users u ON u.id = a.author_id
+       ${AUTHOR_JOIN}
        ORDER BY a.created_at DESC
        LIMIT $1 OFFSET $2`,
       [limit, offset]
@@ -42,9 +51,9 @@ const Article = {
   // Pending articles only — for staff moderation queue
   async findPending(limit = 50, offset = 0) {
     const result = await db.query(
-      `SELECT a.*, u.full_name AS author_name
+      `SELECT a.*, ${AUTHOR_NAME}
        FROM articles a
-       JOIN users u ON u.id = a.author_id
+       ${AUTHOR_JOIN}
        WHERE a.status = 'pending'
        ORDER BY a.created_at DESC
        LIMIT $1 OFFSET $2`,
@@ -53,11 +62,25 @@ const Article = {
     return result.rows;
   },
 
+  // Recently moderated articles of a given status, most-recent first.
+  async findByStatus(status, limit = 20) {
+    const result = await db.query(
+      `SELECT a.*, ${AUTHOR_NAME}
+       FROM articles a
+       ${AUTHOR_JOIN}
+       WHERE a.status = $1
+       ORDER BY a.updated_at DESC
+       LIMIT $2`,
+      [status, limit]
+    );
+    return result.rows;
+  },
+
   async findById(id) {
     const result = await db.query(
-      `SELECT a.*, u.full_name AS author_name
+      `SELECT a.*, ${AUTHOR_NAME}
        FROM articles a
-       JOIN users u ON u.id = a.author_id
+       ${AUTHOR_JOIN}
        WHERE a.id = $1`,
       [id]
     );

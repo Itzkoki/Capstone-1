@@ -14,7 +14,7 @@ async function promoteIntakeForAppointment(appointmentId) {
   if (!appointmentId) return null;
 
   const apptRes = await db.query(
-    `SELECT id, client_id, intake_form_id, assessment_form_id, pending_intake_data
+    `SELECT id, client_id, case_id, intake_form_id, assessment_form_id, pending_intake_data
      FROM appointments WHERE id = $1`,
     [appointmentId]
   );
@@ -61,6 +61,11 @@ async function promoteIntakeForAppointment(appointmentId) {
     ]
   );
   const intakeId = result.rows[0].id;
+
+  // Link the new intake form to the case so it surfaces in Case Management.
+  if (appt.case_id) {
+    await db.query(`UPDATE intake_forms SET case_id = $1 WHERE id = $2`, [appt.case_id, intakeId]);
+  }
 
   // Link the appointment to the now-official intake form and clear the buffer.
   await db.query(
@@ -110,6 +115,11 @@ async function promoteAssessment(appt, f) {
     ]
   );
   const assessmentId = result.rows[0].id;
+
+  // Link the new assessment form to the case so it surfaces in Case Management.
+  if (appt.case_id) {
+    await db.query(`UPDATE assessment_intake_forms SET case_id = $1 WHERE id = $2`, [appt.case_id, assessmentId]);
+  }
 
   await db.query(
     `UPDATE appointments SET assessment_form_id = $1, pending_intake_data = NULL WHERE id = $2`,

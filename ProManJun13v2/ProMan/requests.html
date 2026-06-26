@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="navbar.css">
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="captcha.css">
   <style>
     .req-wrap{max-width:920px;margin:110px auto 60px;padding:0 20px;font-family:'Inter',sans-serif}
     .req-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;color:#1a202c}
@@ -19,6 +20,7 @@
     .req-card h2{font-size:17px;font-weight:700;color:#1a202c;margin-bottom:14px}
     .f-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .f-grid--3{grid-template-columns:2fr 2fr 1fr}
+    .f-grid--3col{grid-template-columns:1fr 1fr 1fr}
     .f-field{display:flex;flex-direction:column;gap:5px}
     .f-field--full{grid-column:1/-1}
     .f-field label{font-size:12px;font-weight:700;color:#2d3748}
@@ -37,14 +39,48 @@
     .req-btn:disabled{opacity:.55;cursor:not-allowed}
     .tickets-link{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#15306E;font-weight:600;text-decoration:none;padding:8px 14px;background:#EEF1FA;border-radius:9px;margin-bottom:18px}
     .tickets-link:hover{background:#dce3f7}
-    @media(max-width:640px){.f-grid,.f-grid--3,.nature-grid,.chk-grid{grid-template-columns:1fr}.req-wrap{margin-top:90px}}
+
+    /* ── Client account notice ── */
+    .client-notice{display:flex;align-items:center;gap:10px;background:#EEF1FA;border:1px solid #c7d2f7;border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:12.5px;color:#1E3A8A}
+    .client-notice svg{flex-shrink:0;fill:#1E3A8A}
+
+    /* ── Assessment Date Calendar (DOB-style) ── */
+    .adate-wrap{position:relative}
+    .adate-trigger{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;cursor:pointer;font-size:13.5px;color:#a0aec0;background:#fff;font-family:'Inter',sans-serif;transition:border-color .2s,box-shadow .2s;user-select:none}
+    .adate-trigger:hover,.adate-trigger:focus{border-color:#1E3A8A;box-shadow:0 0 0 3px rgba(30,58,138,.1);outline:none}
+    .adate-trigger.has-value{color:#2d3748;font-weight:500}
+    .adate-trigger svg{color:#94a3b8;flex-shrink:0}
+    .adate-calendar{display:none;position:absolute;top:100%;left:0;z-index:9999;margin-top:6px;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);border:1px solid #e2e8f0;padding:20px;width:320px;animation:adateFadeIn .18s ease-out}
+    .adate-calendar.open{display:block}
+    @keyframes adateFadeIn{0%{opacity:0;transform:translateY(-5px)}100%{opacity:1;transform:translateY(0)}}
+    .adate-cal__header{display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+    .adate-cal__selects{display:flex;gap:8px}
+    .adate-cal__selects select{padding:7px 26px 7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#1a202c;background:#fff;cursor:pointer;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .2s}
+    .adate-cal__selects select:focus{border-color:#1E3A8A;box-shadow:0 0 0 3px rgba(30,58,138,.1)}
+    .adate-cal__weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:6px}
+    .adate-cal__weekdays span{font-size:10.5px;font-weight:700;color:#94a3b8;letter-spacing:.4px}
+    .adate-cal__grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+    .adate-cal__day{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#1a202c;border:none;background:none;border-radius:50%;cursor:pointer;transition:background .12s;padding:0;font-family:'Inter',sans-serif}
+    .adate-cal__day:hover:not(:disabled):not(.adate-cal__day--other){background:#f0f0f0}
+    .adate-cal__day--today{background:#38bdf8;color:#fff;font-weight:700}
+    .adate-cal__day--today:hover{background:#0ea5e9!important}
+    .adate-cal__day--selected{background:#1E3A8A!important;color:#fff!important;font-weight:700}
+    .adate-cal__day--other{color:#cbd5e1;cursor:default;pointer-events:none}
+    .adate-cal__day--disabled{color:#cbd5e1;cursor:not-allowed;pointer-events:none}
+    .adate-cal__footer{display:flex;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9}
+    .adate-cal__close{padding:8px 20px;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;background:#f1f5f9;color:#4a5568;transition:background .15s}
+    .adate-cal__close:hover{background:#e2e8f0}
+
+    @media(max-width:640px){.f-grid,.f-grid--3,.f-grid--3col,.nature-grid,.chk-grid{grid-template-columns:1fr}.req-wrap{margin-top:90px}.adate-calendar{width:calc(100vw - 48px)}}
   </style>
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body>
   <nav class="navbar" id="navbar">
     <a href="landingpage.html" class="navbar__brand">
       <div class="navbar__logo"><img src="barcarse logo.jpg" alt="Barcarse logo" class="hero__illustration"></div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links" id="nav-links"></ul>
@@ -64,6 +100,12 @@
     <div class="req-title">Requests &amp; Concerns</div>
     <div class="req-sub">Formally submit requests or concerns about your released psychological assessment reports.</div>
 
+    <!-- Client account notice (populated from session) -->
+    <div class="client-notice" id="client-notice" style="display:none">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span id="client-notice-text">Submitting as your account</span>
+    </div>
+
     <div class="req-card">
       <h2>Submit a Request / Concern</h2>
       <div class="f-grid f-grid--3">
@@ -71,11 +113,33 @@
         <div class="f-field"><label>Given Name *</label><input id="givenName" maxlength="120"></div>
         <div class="f-field"><label>M.I.</label><input id="mi" maxlength="5"></div>
       </div>
-      <div class="f-grid" style="margin-top:14px;">
+      <div class="f-grid f-grid--3col" style="margin-top:14px;">
         <div class="f-field"><label>Name of Parent / Guardian</label><input id="guardianName" maxlength="200"></div>
-        <div class="f-field"><label>Date of Assessment</label><input id="assessmentDate" type="date"></div>
+        <div class="f-field adate-wrap">
+          <label>Date of Assessment</label>
+          <input type="hidden" id="assessmentDate">
+          <div class="adate-trigger" id="adate-trigger" tabindex="0" role="button" aria-label="Select date of assessment">
+            <span id="adate-display">Select date</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+          </div>
+          <!-- Assessment Date Calendar dropdown -->
+          <div class="adate-calendar" id="adate-calendar">
+            <div class="adate-cal__header">
+              <div class="adate-cal__selects">
+                <select id="adate-month-select" data-bps-skip></select>
+                <select id="adate-year-select" data-bps-skip></select>
+              </div>
+            </div>
+            <div class="adate-cal__weekdays">
+              <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+            </div>
+            <div class="adate-cal__grid" id="adate-cal-grid"></div>
+            <div class="adate-cal__footer">
+              <button type="button" class="adate-cal__close" id="adate-cal-close">Close</button>
+            </div>
+          </div>
+        </div>
         <div class="f-field"><label>Contact Number</label><input id="contactNumber" maxlength="40"></div>
-        <div class="f-field"><label>Name of Center and Branch</label><input id="centerBranch" maxlength="200"></div>
       </div>
       <div style="margin-top:18px;">
         <label style="font-size:12px;font-weight:700;color:#2d3748;">Nature of Request *</label>
@@ -90,6 +154,27 @@
           </button>
         </div>
       </div>
+      <div id="legacy-wrap" style="display:none;margin-top:14px;padding:12px 14px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;">
+        <label style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:13px;color:#1a202c;">
+          <input type="checkbox" id="legacyToggle" onchange="toggleLegacy()" style="margin-top:2px;">
+          <span><b>My report isn't listed — it's an older / physical report</b> (issued before the online system).<br>
+          <span style="font-size:11.5px;color:#718096;">We'll verify your identity and locate your report before processing your request.</span></span>
+        </label>
+        <div id="legacy-box" style="display:none;margin-top:12px;">
+          <div class="f-field f-field--full">
+            <label>Valid ID (required) — JPG, PNG, or PDF, max 5 MB *</label>
+            <label class="file-pick" for="idDocument">
+              <input type="file" id="idDocument" accept="image/jpeg,image/png,application/pdf" style="display:none" onchange="this.closest('.file-pick').querySelector('.file-pick__name').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+              <span class="file-pick__btn">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                Choose File
+              </span>
+              <span class="file-pick__name">No file chosen</span>
+            </label>
+            <div style="font-size:11.5px;color:#718096;margin-top:4px;">Required so we release your previous report only to you. Tip: also attach a photo of your physical report below to help us locate it faster.</div>
+          </div>
+        </div>
+      </div>
       <div id="copies-box" style="display:none;margin-top:14px;">
         <div class="f-field" style="max-width:240px;">
           <label>How many copies? *</label>
@@ -98,6 +183,13 @@
         <div style="font-size:12px;color:#718096;margin-top:4px;">Specify the number of report copies you need (1–50). A processing fee applies per request.</div>
       </div>
       <div id="concern-box" style="display:none;margin-top:14px;">
+        <div class="f-field f-field--full" style="margin-bottom:12px;" id="concernReportWrap">
+          <label>Which released report is this concern about? *</label>
+          <select id="concernReport" style="width:100%;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;background:#fff;">
+            <option value="">Loading your released reports…</option>
+          </select>
+          <div id="concernReportHint" style="font-size:11.5px;color:#718096;margin-top:4px;">Your concern will be linked to this report and its case.</div>
+        </div>
         <label style="font-size:12px;font-weight:700;color:#2d3748;">Concerns Encountered on the Report</label>
         <div class="chk-grid">
           <label><input type="checkbox" value="Misspelled name"> Misspelled name</label>
@@ -114,8 +206,15 @@
         <textarea id="description" maxlength="3000" placeholder="Please elaborate on your request or concern…"></textarea>
       </div>
       <div class="f-field f-field--full" style="margin-top:12px;">
-        <label>Supporting Document (optional — JPG, PNG, or PDF, max 5 MB)</label>
-        <input type="file" id="attachment" accept="image/jpeg,image/png,application/pdf">
+        <label>Supporting Document (optional — JPG, PNG, or PDF, max 5 MB)</label>
+        <label class="file-pick" for="attachment">
+          <input type="file" id="attachment" accept="image/jpeg,image/png,application/pdf" style="display:none" onchange="this.closest('.file-pick').querySelector('.file-pick__name').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+          <span class="file-pick__btn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+            Choose File
+          </span>
+          <span class="file-pick__name">No file chosen</span>
+        </label>
       </div>
       <div style="margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
         <button class="req-btn req-btn--primary" id="submit-btn" onclick="submitRequest()">Submit Request</button>
@@ -125,6 +224,46 @@
 
   <script src="session.js"></script>
   <script src="toast.js"></script>
+  <script src="captcha.js"></script>
+  <script>
+    (function () {
+      if (BPSCaptcha.isRequestsVerified()) return;
+      const gate = document.createElement('div');
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+          </div>
+          <h2 class="bps-community-gate__title">Security Verification</h2>
+          <p class="bps-community-gate__desc">Please complete a security check before submitting a Report Request or Concern.</p>
+          <div class="bps-community-gate__error" id="_bps_req_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_req_btn">
+            <span id="_bps_req_label">Verify to Continue</span>
+          </button>
+          <div class="bps-community-gate__footer">Protected by <strong>reCAPTCHA</strong> &nbsp;·&nbsp;
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a> &nbsp;·&nbsp;
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+          </div>
+        </div>`;
+      document.body.appendChild(gate);
+      document.getElementById('_bps_req_btn').addEventListener('click', async function () {
+        const btn = this, label = document.getElementById('_bps_req_label'), errEl = document.getElementById('_bps_req_err');
+        btn.disabled = true; label.textContent = 'Verifying…'; errEl.style.display = 'none';
+        const result = await BPSCaptcha.executeAndVerify('requests_concerns');
+        if (result.success) {
+          BPSCaptcha.setRequestsVerified();
+          gate.style.transition = 'opacity 0.3s ease'; gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          errEl.textContent = result.error || 'Security check failed. Please try again.';
+          errEl.style.display = 'block'; btn.disabled = false; label.textContent = 'Try Again';
+        }
+      });
+    })();
+  </script>
   <script>
     const API = 'http://localhost:5000/api';
     const token = BPSSession.getToken();
@@ -137,6 +276,46 @@
       document.getElementById('nat-concern').classList.toggle('nature-card--sel',n==='report_concern');
       document.getElementById('concern-box').style.display=n==='report_concern'?'block':'none';
       document.getElementById('copies-box').style.display=n==='additional_copies'?'block':'none';
+      // The "older/physical report" option applies to both natures.
+      document.getElementById('legacy-wrap').style.display=n?'block':'none';
+      if(n==='report_concern') loadReleasedReports();
+      applyLegacyVisibility();
+    }
+    // When the client says their report is an older/physical one, the in-system
+    // released-report picker doesn't apply — hide it and show the mandatory ID upload.
+    function isLegacyChecked(){ const c=document.getElementById('legacyToggle'); return !!(c&&c.checked); }
+    function toggleLegacy(){
+      document.getElementById('legacy-box').style.display=isLegacyChecked()?'block':'none';
+      applyLegacyVisibility();
+    }
+    function applyLegacyVisibility(){
+      const legacy=isLegacyChecked();
+      const wrap=document.getElementById('concernReportWrap');
+      if(wrap) wrap.style.display=(legacy||nature!=='report_concern')?'none':'';
+    }
+    // Populate the released-report picker so the concern can be linked to a
+    // specific report (and through it, the case + authoring psychologist).
+    let _releasedLoaded=false;
+    async function loadReleasedReports(){
+      if(_releasedLoaded) return;
+      const sel=document.getElementById('concernReport');
+      try{
+        const res=await fetch(API+'/reports/my-released',{headers:authHeaders});
+        if(res.status===401){window.location.href='login.html';return;}
+        const json=await res.json();
+        const reports=(json&&json.reports)||[];
+        if(!reports.length){
+          sel.innerHTML='<option value="">No released reports found</option>';
+          document.getElementById('concernReportHint').textContent='You can only raise a concern about a report that has been released to you.';
+          _releasedLoaded=true; return;
+        }
+        sel.innerHTML='<option value="">Select a released report…</option>'+reports.map(r=>{
+          const when=r.released_at?new Date(r.released_at).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}):'';
+          const label=[r.report_code,r.client_name,when].filter(Boolean).map(esc).join(' · ');
+          return `<option value="${r.id}">${label}</option>`;
+        }).join('');
+        _releasedLoaded=true;
+      }catch(e){ sel.innerHTML='<option value="">Could not load your reports</option>'; }
     }
     function readFileAsDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);})}
     async function submitRequest(){
@@ -151,16 +330,31 @@
         if(!copies||copies<1){BPSToast.warning('Please specify how many copies you need (at least 1).',{title:'Missing Field'});return;}
         if(copies>50){BPSToast.warning('You can request up to 50 copies per request.',{title:'Too Many Copies'});return;}
       }
+      const legacy=isLegacyChecked();
+      let reportId=null;
+      if(nature==='report_concern' && !legacy){
+        reportId=document.getElementById('concernReport').value||'';
+        if(!reportId){BPSToast.warning('Please select the released report your concern is about, or tick "My report isn’t listed".',{title:'Missing Field'});return;}
+      }
       if(!description){BPSToast.warning('Please provide a brief description of your concern.',{title:'Missing Field'});return;}
-      const payload={nature,familyName,givenName,copies,
+      const payload={nature,familyName,givenName,copies,reportId,isLegacy:legacy,
         mi:document.getElementById('mi').value.trim(),
         guardianName:document.getElementById('guardianName').value.trim(),
         assessmentDate:document.getElementById('assessmentDate').value||null,
         contactNumber:document.getElementById('contactNumber').value.trim(),
-        centerBranch:document.getElementById('centerBranch').value.trim(),
+        centerBranch:'',
         concerns:Array.from(document.querySelectorAll('#concern-box input[type=checkbox]:checked')).map(c=>c.value),
         concernOther:document.getElementById('concernOther').value.trim(),
         description};
+      // Legacy: a valid photo ID is mandatory to verify identity.
+      if(legacy){
+        const idInput=document.getElementById('idDocument');
+        if(!idInput.files||!idInput.files[0]){BPSToast.warning('Please upload a valid ID so we can verify your identity.',{title:'ID Required'});return;}
+        const idf=idInput.files[0];
+        if(!['image/jpeg','image/png','application/pdf'].includes(idf.type)){BPSToast.error('ID must be a JPG, PNG, or PDF.',{title:'Invalid File'});return;}
+        if(idf.size>5*1024*1024){BPSToast.error('ID must be under 5 MB.',{title:'File Too Large'});return;}
+        payload.idDocument=await readFileAsDataUrl(idf);payload.idDocumentName=idf.name;
+      }
       const fileInput=document.getElementById('attachment');
       if(fileInput.files&&fileInput.files[0]){
         const file=fileInput.files[0];
@@ -176,11 +370,23 @@
         let json=null;try{json=await res.json();}catch(_){}
         if(json&&json.success){
           BPSToast.success('Submitted! Ticket: '+json.data.ticket_number+'. Track it in My Tickets.',{title:'Request Received',duration:5000});
-          ['familyName','givenName','mi','guardianName','assessmentDate','contactNumber','centerBranch','concernOther','description'].forEach(id=>document.getElementById(id).value='');
+          ['familyName','givenName','mi','guardianName','concernOther','description'].forEach(id=>document.getElementById(id).value='');
+          document.getElementById('assessmentDate').value='';
+          document.getElementById('adate-display').textContent='Select date';
+          document.getElementById('adate-trigger').classList.remove('has-value');
+          if(window._adateReset)window._adateReset();
           document.querySelectorAll('#concern-box input[type=checkbox]').forEach(c=>c.checked=false);
+          const _cr=document.getElementById('concernReport'); if(_cr) _cr.value='';
           document.getElementById('copies').value='1';
-          fileInput.value='';setNature(null);nature=null;
+          fileInput.value='';
+          const _idn=document.querySelector('#legacy-box .file-pick__name'); if(_idn)_idn.textContent='No file chosen';
+          const _idInput=document.getElementById('idDocument'); if(_idInput)_idInput.value='';
+          const _lt=document.getElementById('legacyToggle'); if(_lt)_lt.checked=false;
+          document.getElementById('legacy-box').style.display='none';
+          setNature(null);nature=null;
           document.querySelectorAll('.nature-card').forEach(c=>c.classList.remove('nature-card--sel'));
+          // Re-populate contact from session after reset
+          _prefillContact();
         }else if(json){BPSToast.error(json.message||'Could not submit your request.',{title:'Submission Error',duration:6000});}
         else{BPSToast.error('Unexpected server response (HTTP '+res.status+').',{title:'Submission Error',duration:6000});}
       }catch(e){BPSToast.error('Network error. Please try again.',{title:'Connection Error'});}
@@ -189,6 +395,148 @@
     if(new URLSearchParams(location.search).get('resubmit')){
       document.addEventListener('DOMContentLoaded',()=>{document.getElementById('familyName')?.focus();});
     }
+
+    // ── Assessment Date Calendar ─────────────────────────
+    (function initAdateCal(){
+      const trigger   = document.getElementById('adate-trigger');
+      const display   = document.getElementById('adate-display');
+      const calendar  = document.getElementById('adate-calendar');
+      const grid      = document.getElementById('adate-cal-grid');
+      const mSel      = document.getElementById('adate-month-select');
+      const ySel      = document.getElementById('adate-year-select');
+      const closeBtn  = document.getElementById('adate-cal-close');
+      const hidden    = document.getElementById('assessmentDate');
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      const MONTHS = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+
+      // Populate month dropdown
+      MONTHS.forEach((m,i)=>{
+        const o=document.createElement('option');
+        o.value=i; o.textContent=m;
+        mSel.appendChild(o);
+      });
+      mSel.value=today.getMonth();
+
+      // Populate year dropdown (from current year back to 1950)
+      const curYear=today.getFullYear();
+      for(let y=curYear;y>=1950;y--){
+        const o=document.createElement('option');
+        o.value=y; o.textContent=y;
+        ySel.appendChild(o);
+      }
+      ySel.value=curYear;
+
+      let selectedDate=null;
+
+      function renderGrid(){
+        const vm=parseInt(mSel.value);
+        const vy=parseInt(ySel.value);
+        const firstDay=new Date(vy,vm,1).getDay(); // 0=Sun
+        const daysInMonth=new Date(vy,vm+1,0).getDate();
+        const daysInPrev=new Date(vy,vm,0).getDate();
+        let html='';
+
+        // Previous month trailing
+        for(let i=firstDay-1;i>=0;i--){
+          html+=`<button type="button" class="adate-cal__day adate-cal__day--other" disabled>${daysInPrev-i}</button>`;
+        }
+
+        // Current month days
+        for(let d=1;d<=daysInMonth;d++){
+          const date=new Date(vy,vm,d);
+          date.setHours(0,0,0,0);
+          const isFuture=date>today;
+          const isToday=date.getTime()===today.getTime();
+          const isSel=selectedDate&&selectedDate.getTime()===date.getTime();
+          let cls='adate-cal__day';
+          if(isToday) cls+=' adate-cal__day--today';
+          if(isSel)   cls+=' adate-cal__day--selected';
+          if(isFuture)cls+=' adate-cal__day--disabled';
+          html+=`<button type="button" class="${cls}" data-day="${d}" ${isFuture?'disabled title="Future dates cannot be selected"':''}>${d}</button>`;
+        }
+
+        // Next month leading
+        const total=firstDay+daysInMonth;
+        const rem=(7-(total%7))%7;
+        for(let i=1;i<=rem;i++){
+          html+=`<button type="button" class="adate-cal__day adate-cal__day--other" disabled>${i}</button>`;
+        }
+
+        grid.innerHTML=html;
+
+        grid.querySelectorAll('.adate-cal__day:not([disabled]):not(.adate-cal__day--other)').forEach(btn=>{
+          btn.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            const day=parseInt(btn.dataset.day);
+            selectedDate=new Date(parseInt(ySel.value),parseInt(mSel.value),day);
+            selectedDate.setHours(0,0,0,0);
+            const yyyy=selectedDate.getFullYear();
+            const mm=String(selectedDate.getMonth()+1).padStart(2,'0');
+            const dd=String(selectedDate.getDate()).padStart(2,'0');
+            hidden.value=`${yyyy}-${mm}-${dd}`;
+            display.textContent=selectedDate.toLocaleDateString('en-PH',{weekday:'short',year:'numeric',month:'long',day:'numeric'});
+            trigger.classList.add('has-value');
+            closeCalendar();
+          });
+        });
+      }
+
+      function openCalendar(){
+        if(selectedDate){
+          mSel.value=selectedDate.getMonth();
+          ySel.value=selectedDate.getFullYear();
+        } else {
+          mSel.value=today.getMonth();
+          ySel.value=today.getFullYear();
+        }
+        renderGrid();
+        calendar.classList.add('open');
+      }
+
+      function closeCalendar(){
+        calendar.classList.remove('open');
+      }
+
+      trigger.addEventListener('click',openCalendar);
+      trigger.addEventListener('keydown',(e)=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();openCalendar();}
+      });
+      closeBtn.addEventListener('click',closeCalendar);
+      mSel.addEventListener('change',renderGrid);
+      ySel.addEventListener('change',renderGrid);
+
+      // Close when clicking outside
+      document.addEventListener('click',(e)=>{
+        if(calendar.classList.contains('open')&&!calendar.contains(e.target)&&!trigger.contains(e.target)){
+          closeCalendar();
+        }
+      });
+
+      // Expose reset so the submit handler can clear the selected date
+      window._adateReset=function(){
+        selectedDate=null;
+      };
+    })();
+
+    // ── Auto-fill contact from session & show account notice ─
+    function _prefillContact(){
+      const u=BPSSession.getUser();
+      if(!u) return;
+      if(u.contact_number){
+        document.getElementById('contactNumber').value=u.contact_number;
+      }
+      if(u.full_name){
+        const notice=document.getElementById('client-notice');
+        const noticeText=document.getElementById('client-notice-text');
+        noticeText.textContent='Submitting as: '+u.full_name+' — this request is automatically linked to your account.';
+        notice.style.display='flex';
+      }
+    }
+    _prefillContact();
   </script>
   <script>if(sessionStorage.getItem('bps_logged_in')==='true')document.body.classList.add('logged-in');</script>
   <script src="navbar.js"></script>

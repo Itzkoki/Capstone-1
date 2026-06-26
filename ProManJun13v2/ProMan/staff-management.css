@@ -149,9 +149,11 @@
 .modal {
   background: #fff;
   border-radius: 20px;
-  padding: 32px;
-  max-width: 420px;
-  width: 90%;
+  padding: 28px 32px;
+  max-width: 680px;
+  width: 95%;
+  max-height: 92vh;
+  overflow-y: auto;
   box-shadow: 0 24px 64px rgba(0,0,0,0.15);
   animation: modalIn 0.3s ease;
 }

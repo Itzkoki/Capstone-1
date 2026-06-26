@@ -14,7 +14,19 @@
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="auth-split.css">
   <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="captcha.css">
   <link rel="preload" as="image" href="auth-images/carousel-1.png">
+  <style>
+    /* Shared 6-digit OTP layout (matches the registration verification screen) */
+    .otp-inputs{display:flex;justify-content:center;gap:14px;margin-bottom:22px;}
+    .otp-inputs input{width:54px;height:62px;border:1.5px solid #E6EAF1;border-radius:12px;font-size:24px;font-weight:700;color:#101828;text-align:center;background:#fff;transition:border-color .25s,box-shadow .25s,transform .15s;outline:none;-webkit-appearance:none;}
+    .otp-inputs input:focus{border-color:#1e3a8a;box-shadow:0 0 0 3px rgba(30,58,138,.15);transform:scale(1.05);}
+    .otp-inputs input.filled{border-color:#1e3a8a;background:#f0faf4;}
+    .otp-inputs input.error{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,.12);animation:otpshake .4s ease;}
+    @keyframes otpshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+    @media(max-width:480px){.otp-inputs{gap:8px}.otp-inputs input{width:44px;height:52px;font-size:20px}}
+  </style>
+  <script src="fingerprint.js"></script>
 </head>
 
 <body class="auth-page">
@@ -29,7 +41,7 @@
             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
         </svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
   </nav>
 
@@ -82,7 +94,31 @@
             <button type="submit" class="auth-btn" id="login-btn">Login</button>
           </form>
 
-          <div class="auth-footer">
+          <!-- ===== STEP 2: Email verification code (every login) ===== -->
+          <form id="otp-form" novalidate style="display:none;">
+            <p class="auth-card__subtitle" id="otp-sub" style="margin-bottom:12px;">
+              We sent a 6-digit verification code to your email. Enter it below to continue.
+            </p>
+            <div class="otp-spam-note" style="display:flex;gap:8px;align-items:flex-start;background:#fffaf0;border:1px solid #fbd38d;color:#9c5b15;border-radius:8px;padding:10px 12px;margin-bottom:18px;font-size:0.86rem;line-height:1.45;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span>If the verification code is not visible in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.</span>
+            </div>
+            <div class="otp-inputs" id="otp-inputs">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-1" aria-label="Digit 1" autocomplete="one-time-code">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-2" aria-label="Digit 2">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-3" aria-label="Digit 3">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-4" aria-label="Digit 4">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-5" aria-label="Digit 5">
+              <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-6" aria-label="Digit 6">
+            </div>
+            <button type="submit" class="auth-btn" id="verify-btn">Verify OTP</button>
+            <div class="auth-footer" style="margin-top:14px;">
+              Didn't get a code? <a href="#" id="resend-link">Resend code</a>
+              &nbsp;·&nbsp; <a href="#" id="back-link">Back to login</a>
+            </div>
+          </form>
+
+          <div class="auth-footer" id="signup-footer">
             Don't have an account? <a href="register.html">Create one</a>
           </div>
         </div>
@@ -90,6 +126,71 @@
 
     </div>
   </div>
+
+  <!-- ===== CAPTCHA module ===== -->
+  <script src="captcha.js"></script>
+
+  <!-- ===== LOGIN CAPTCHA GATE (page-load) =====
+       The login form must not be visible until a security check passes.
+       Skipped if the user is already authenticated (handled by the redirect
+       guard below). -->
+  <script>
+    (function () {
+      // If already logged in we redirect away — don't flash the gate.
+      const _tok = sessionStorage.getItem('bps_token');
+      const _li  = sessionStorage.getItem('bps_logged_in');
+      if (_tok && _li === 'true') return;
+
+      const gate = document.createElement('div');
+      gate.id = 'bps-login-gate';
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            </svg>
+          </div>
+          <h2 class="bps-community-gate__title">Security Verification</h2>
+          <p class="bps-community-gate__desc">Please complete a quick security check before signing in.</p>
+          <div class="bps-community-gate__error" id="_bps_login_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_login_btn">
+            <span id="_bps_login_label">Verify to Continue</span>
+          </button>
+          <div class="bps-community-gate__footer">
+            Protected by <strong>reCAPTCHA</strong> &nbsp;·&nbsp;
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            &nbsp;·&nbsp;
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(gate);
+
+      document.getElementById('_bps_login_btn').addEventListener('click', async function () {
+        const btn   = this;
+        const label = document.getElementById('_bps_login_label');
+        const errEl = document.getElementById('_bps_login_err');
+        btn.disabled = true;
+        label.textContent = 'Verifying…';
+        errEl.style.display = 'none';
+
+        const result = await BPSCaptcha.executeAndVerify('login');
+        if (result.success) {
+          gate.style.transition = 'opacity 0.3s ease';
+          gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          errEl.textContent = result.error || 'Verification failed. Please try again.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          label.textContent = 'Try Again';
+        }
+      });
+    })();
+  </script>
 
   <!-- ===== CAROUSEL ===== -->
   <script src="auth-carousel.js"></script>
@@ -153,11 +254,13 @@
     const loginForm = document.getElementById('login-form');
     const loginBtn = document.getElementById('login-btn');
 
-    // Create error/info display element
+    // Create error/info display element. Insert it BEFORE the login form (as a
+    // sibling) so it stays visible during the OTP step too — the login form is
+    // hidden then, so a status box inside it would never show OTP errors.
     const statusBox = document.createElement('div');
     statusBox.id = 'login-status';
     statusBox.style.cssText = 'display:none; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:0.92rem; text-align:center;';
-    loginForm.insertBefore(statusBox, loginBtn);
+    loginForm.parentNode.insertBefore(statusBox, loginForm);
 
     // ── Lockout banner element ──
     const lockoutBanner = document.createElement('div');
@@ -278,6 +381,9 @@
       lockoutCountdownInterval = setInterval(tick, 1000);
     }
 
+    // Track whether CAPTCHA is required based on server responses
+    let captchaRequired = false;
+
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideStatus();
@@ -290,41 +396,58 @@
         return;
       }
 
+      // ── CAPTCHA gate: required after 3 consecutive failures ──
+      let captchaClearance = null;
+      if (captchaRequired) {
+        const passed = await BPSCaptcha.verify('login');
+        if (!passed) return; // user cancelled
+        // Use the server-signed clearance token — NOT the raw reCAPTCHA token,
+        // which is already consumed by /api/captcha/verify (single-use).
+        captchaClearance = BPSCaptcha.getClearanceToken();
+      }
+
       loginBtn.disabled = true;
       loginBtn.textContent = 'Logging in...';
 
       try {
+        const body = { email, password };
+        if (captchaClearance) body.captcha_clearance = captchaClearance;
+
         const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify(body),
         });
 
         const data = await res.json();
 
-        if (res.ok && data.success) {
-          // Store JWT token and user info in sessionStorage (cleared on browser close)
-          sessionStorage.setItem('bps_logged_in', 'true');
-          sessionStorage.setItem('bps_token', data.data.token);
-          sessionStorage.setItem('bps_user', JSON.stringify(data.data.user));
-          // Clear any cross-tab logout signal from previous session
-          localStorage.removeItem('bps_logout');
-          // Redirect based on role: clients go to landing page, staff go to dashboard
-          const role = data.data.user.role;
-          if (role === 'client') {
-            window.location.replace('landingpage.html');
-          } else {
-            window.location.replace('admin-dashboard.html');
-          }
+        if (res.ok && data.success && data.requiresVerification) {
+          // Password OK — move to the email-code verification step.
+          pendingEmail = email;
+          showOtpStep(data.data && data.data.email_hint);
+          // The first resend is allowed immediately; the 2-minute cooldown timer
+          // starts only after the user clicks Resend (matches the OTP workflow).
+        } else if (res.ok && data.success && data.data && data.data.token) {
+          // (Fallback) a token came back directly — sign in.
+          finishLogin(data.data);
+        } else if (res.status === 428 && data.captcha_required) {
+          // Server says CAPTCHA is required — trigger it on the next attempt
+          captchaRequired = true;
+          showStatus('Please complete the security check before retrying.', 'warning');
         } else if (res.status === 423 && data.locked) {
           // ── Account locked — show lockout banner with countdown ──
           showLockoutBanner(data.locked_until);
+        } else if (res.status === 403 && data.suspended) {
+          // Account suspended by a Clinical Director (Action Center).
+          showStatus(data.message || 'Your account has been suspended. Please contact the moderator.', 'error');
         } else if (res.status === 403) {
           // Unverified email — store email for the OTP page and offer link
           sessionStorage.setItem('bps_user', JSON.stringify({ email }));
           showStatus('Your email is not verified. <a href="verify-otp.html" style="color:#15306E;font-weight:600;">Verify now</a>', 'warning');
         } else {
           showStatus(data.message || 'Invalid email or password.', 'error');
+          // Enable CAPTCHA if server signals it's required (3+ failures)
+          if (data.captcha_required) captchaRequired = true;
         }
       } catch (err) {
         showStatus('Unable to connect to the server. Please try again later.', 'error');
@@ -332,6 +455,165 @@
         loginBtn.disabled = false;
         loginBtn.textContent = 'Login';
       }
+    });
+
+    // ===== STEP 2: email-code verification (every login) =====
+    const RESEND_COOLDOWN = 120; // seconds (2-minute resend rate limit)
+    const otpForm = document.getElementById('otp-form');
+    const otpInputs = document.querySelectorAll('#otp-inputs input');
+    function getOTP() { return Array.from(otpInputs).map(i => i.value).join(''); }
+    function clearOtpBoxes() { otpInputs.forEach(i => { i.value = ''; i.classList.remove('filled', 'error'); }); }
+    function shakeOtp() { otpInputs.forEach(i => i.classList.add('error')); setTimeout(() => otpInputs.forEach(i => i.classList.remove('error')), 500); }
+    otpInputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        const v = e.target.value.replace(/\D/g, '').slice(0, 1);
+        e.target.value = v;
+        e.target.classList.toggle('filled', !!v);
+        e.target.classList.remove('error');
+        if (v && index < otpInputs.length - 1) otpInputs[index + 1].focus();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) otpInputs[index - 1].focus();
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const d = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6).split('');
+        otpInputs.forEach((inp, i) => { inp.value = d[i] || ''; inp.classList.toggle('filled', !!d[i]); });
+        const ne = Array.from(otpInputs).findIndex(inp => !inp.value);
+        (ne === -1 ? otpInputs[otpInputs.length - 1] : otpInputs[ne]).focus();
+      });
+      input.addEventListener('focus', () => input.select());
+    });
+    const otpSub = document.getElementById('otp-sub');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resendLink = document.getElementById('resend-link');
+    const backLink = document.getElementById('back-link');
+    const signupFooter = document.getElementById('signup-footer');
+
+    let pendingEmail = '';
+    let resendTimer = null;
+    let resendBlocked = false;
+
+    function finishLogin(payload) {
+      sessionStorage.setItem('bps_logged_in', 'true');
+      sessionStorage.setItem('bps_token', payload.token);
+      sessionStorage.setItem('bps_user', JSON.stringify(payload.user));
+      localStorage.removeItem('bps_logout');
+      // Forced password reset (Action Center): send the client to the reset page
+      // instead of the dashboard. The just-issued token authorizes the change.
+      if (payload.must_reset_password) {
+        window.location.replace('reset-password.html?forced=1');
+        return;
+      }
+      const role = payload.user && payload.user.role;
+      window.location.replace(role && role !== 'client' ? 'admin-dashboard.html' : 'landingpage.html');
+    }
+
+    function showOtpStep(emailHint) {
+      loginForm.style.display = 'none';
+      signupFooter.style.display = 'none';
+      otpForm.style.display = 'block';
+      otpSub.textContent = emailHint
+        ? `Enter the 6-digit code sent to ${emailHint}`
+        : 'Enter the 6-digit code sent to your email';
+      clearOtpBoxes();
+      otpInputs[0].focus();
+    }
+
+    function showLoginStep() {
+      otpForm.style.display = 'none';
+      loginForm.style.display = 'block';
+      signupFooter.style.display = 'block';
+      if (resendTimer) { clearInterval(resendTimer); resendTimer = null; }
+      resendBlocked = false;
+      hideStatus();
+    }
+
+    function startResendCountdown(initialSeconds) {
+      let seconds = Math.max(1, Math.round(initialSeconds || RESEND_COOLDOWN));
+      resendBlocked = true;
+      if (resendTimer) clearInterval(resendTimer);
+      resendLink.style.pointerEvents = 'none';
+      resendLink.style.opacity = '0.6';
+      resendLink.textContent = `Resend code in ${seconds}s`;
+      resendTimer = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) {
+          clearInterval(resendTimer);
+          resendTimer = null;
+          resendBlocked = false;
+          resendLink.style.pointerEvents = '';
+          resendLink.style.opacity = '';
+          resendLink.textContent = 'Resend code';
+        } else {
+          resendLink.textContent = `Resend code in ${seconds}s`;
+        }
+      }, 1000);
+    }
+
+    otpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
+      const otp = getOTP();
+      if (!/^\d{6}$/.test(otp)) {
+        showStatus('Enter the 6-digit code from your email.', 'error');
+        shakeOtp();
+        return;
+      }
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch(`${API_BASE}/verify-login-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingEmail, otp }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.data && data.data.token) {
+          finishLogin(data.data);
+        } else {
+          showStatus(data.message || 'Verification failed. Please try again.', 'error');
+          shakeOtp();
+          clearOtpBoxes();
+          otpInputs[0].focus();
+        }
+      } catch (err) {
+        showStatus('Unable to connect to the server. Please try again later.', 'error');
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify OTP';
+      }
+    });
+
+    resendLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (resendBlocked) return; // cooldown still active
+      hideStatus();
+      resendLink.textContent = 'Sending...';
+      try {
+        const res = await fetch(`${API_BASE}/resend-login-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingEmail }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          showStatus(data.message || 'Please wait before requesting another code.', 'warning');
+          startResendCountdown(data.retryAfter || RESEND_COOLDOWN);
+        } else {
+          showStatus('A new verification code has been sent to your email.', 'warning');
+          startResendCountdown((data && data.retryAfter) || RESEND_COOLDOWN);
+        }
+      } catch (err) {
+        showStatus('Unable to resend the code right now.', 'error');
+        resendLink.textContent = 'Resend code';
+      }
+    });
+
+    backLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      pendingEmail = '';
+      showLoginStep();
     });
   </script>
 </body>

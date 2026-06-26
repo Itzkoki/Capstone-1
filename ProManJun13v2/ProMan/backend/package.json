@@ -8,6 +8,8 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^5.2.0",
+    "@maxmind/geoip2-node": "^6.3.4",
     "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.2.0",

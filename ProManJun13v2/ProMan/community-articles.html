@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mental Health Articles | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="captcha.css">
+  <style>
+    .cpage { --c-navy:#1E3A8A; --c-navy-d:#15306E; --c-green:#176E3D; --c-ink:#1b2433; --c-muted:#64748b; --c-line:#e7ecf3; --c-soft:#f3f7fc; }
+    body.cpage { background: linear-gradient(180deg,#eef4fb 0%, #f5f9f4 100%); }
+    .cwrap { position: relative; max-width: 1180px; margin: 0 auto; padding: 96px 24px 60px; }
+    .cblob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: .45; z-index: 0; pointer-events: none; }
+    .cblob--1 { width: 440px; height: 440px; background: #cfe0fb; top: -120px; right: -80px; }
+    .cblob--2 { width: 400px; height: 400px; background: #d4eedd; bottom: -140px; left: -100px; }
+    .cwrap > * { position: relative; z-index: 1; }
+
+    .cbreadcrumb { font-size: 13px; color: var(--c-muted); margin-bottom: 14px; }
+    .cbreadcrumb a { color: var(--c-navy); text-decoration: none; font-weight: 600; }
+    .cbreadcrumb a:hover { text-decoration: underline; }
+
+    /* Hero */
+    .chero { text-align: center; margin-bottom: 30px; }
+    .chero__title { font-family: 'Fraunces', serif; font-size: clamp(30px, 4.4vw, 46px); font-weight: 800; color: var(--c-navy); margin: 0 0 10px; }
+    .chero__sub { font-size: 15px; color: #46566a; max-width: 620px; margin: 0 auto 22px; line-height: 1.6; }
+    .csearch { display: flex; align-items: center; gap: 10px; max-width: 560px; margin: 0 auto; background: #fff; border: 1px solid var(--c-line); border-radius: 14px; padding: 4px 6px 4px 16px; box-shadow: 0 8px 24px rgba(16,40,80,.06); }
+    .csearch svg { width: 20px; height: 20px; fill: #9aa6b6; flex: 0 0 auto; }
+    .csearch input { flex: 1; border: none; outline: none; font: inherit; font-size: 15px; color: var(--c-ink); background: none; padding: 12px 0; }
+
+    .cchips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 22px 0 30px; }
+    .cchip { border: 1px solid var(--c-line); background: #fff; color: var(--c-muted); border-radius: 999px; padding: 9px 18px; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: .15s; }
+    .cchip.active { background: var(--c-navy); color: #fff; border-color: var(--c-navy); }
+    .cchip:hover:not(.active) { background: var(--c-soft); }
+
+    .crow-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .csort { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--c-muted); }
+    .csort select { font: inherit; font-size: 13.5px; font-weight: 600; color: var(--c-ink); border: 1px solid var(--c-line); border-radius: 10px; padding: 8px 12px; background: #fff; cursor: pointer; }
+    .csection-title { font-size: 18px; font-weight: 800; color: var(--c-ink); margin: 0; }
+
+    /* Featured */
+    .cfeatured { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0; background: #fff; border: 1px solid var(--c-line); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(16,40,80,.06); margin-bottom: 34px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+    .cfeatured:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(16,40,80,.12); }
+    .cfeatured__img { aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+    .cfeatured__img svg { width: 56px; height: 56px; fill: rgba(255,255,255,.85); }
+    .cfeatured__body { padding: 28px; display: flex; flex-direction: column; justify-content: center; }
+    .cbadge { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: #eaf1fd; color: var(--c-navy); margin-bottom: 12px; }
+    .cfeatured__title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 800; color: var(--c-ink); line-height: 1.25; margin: 0 0 10px; }
+    .cfeatured__desc { font-size: 14px; color: #5a6b7d; line-height: 1.6; margin: 0 0 16px; }
+    .cmeta { display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--c-muted); margin-bottom: 16px; }
+    @media (max-width: 760px){ .cfeatured { grid-template-columns: 1fr; } }
+
+    /* Grid */
+    .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; }
+    .ccard { background: #fff; border: 1px solid var(--c-line); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; display: flex; flex-direction: column; }
+    .ccard:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(16,40,80,.12); }
+    .ccard__img { aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+    .ccard__img svg { width: 34px; height: 34px; fill: rgba(255,255,255,.85); }
+    .ccard__body { padding: 16px 16px 18px; display: flex; flex-direction: column; flex: 1; }
+    .ccard__title { font-size: 15.5px; font-weight: 800; color: var(--c-ink); line-height: 1.4; margin: 8px 0; }
+    .ccard__excerpt { font-size: 13px; color: #5a6b7d; line-height: 1.55; margin-bottom: 14px; flex: 1; }
+    .ccard__meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--c-muted); }
+
+    .cbtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 12px; padding: 11px 20px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, background .15s; }
+    .cbtn svg { width: 16px; height: 16px; fill: currentColor; }
+    .cbtn--primary { background: linear-gradient(135deg,var(--c-navy),var(--c-navy-d)); color: #fff; box-shadow: 0 6px 16px rgba(30,58,138,.25); align-self: flex-start; }
+    .cbtn--primary:hover { transform: translateY(-1px); }
+    .cbtn--ghost { background: #fff; color: var(--c-navy); border-color: #c4d6f7; }
+    .cbtn--ghost:hover { background: #eff5ff; }
+
+    .cloadwrap { text-align: center; margin-top: 30px; }
+
+    /* Empty state */
+    .cempty { text-align: center; padding: 60px 20px; color: var(--c-muted); }
+    .cempty svg { width: 80px; height: 80px; margin-bottom: 16px; }
+    .cempty__title { font-size: 18px; font-weight: 800; color: var(--c-ink); margin-bottom: 6px; }
+
+    /* Article modal */
+    .cmodal { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .cmodal.open { display: flex; }
+    .cmodal__box { background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 88vh; overflow: auto; padding: 30px; position: relative; }
+    .cmodal__close { position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
+    .cmodal__close svg { width: 16px; height: 16px; fill: #475569; }
+    .cmodal__title { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 800; color: var(--c-ink); margin: 10px 0; }
+    .cmodal__meta { font-size: 13px; color: var(--c-muted); margin-bottom: 18px; display: flex; gap: 8px; }
+    .cmodal__body { font-size: 14.5px; line-height: 1.8; color: #374151; white-space: pre-wrap; }
+  </style>
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
+</head>
+
+<body class="cpage logged-in">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="navbar-notif" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="navbar__notif-badge" id="notif-badge">0</span>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="My Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="cwrap">
+    <span class="cblob cblob--1" aria-hidden="true"></span>
+    <span class="cblob cblob--2" aria-hidden="true"></span>
+
+    <div class="cbreadcrumb"><a href="community.html">Community</a> › <span>Articles</span></div>
+
+    <!-- HERO -->
+    <div class="chero">
+      <h1 class="chero__title">Mental Health Articles</h1>
+      <p class="chero__sub">Explore expert-reviewed resources, guides, and stories to support your mental health and well-being.</p>
+      <div class="csearch">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="search" placeholder="Search articles..." oninput="applyFilters()">
+      </div>
+      <div class="cchips" id="chips"></div>
+    </div>
+
+    <!-- FEATURED -->
+    <div id="featured-wrap"></div>
+
+    <!-- LIST -->
+    <div class="crow-between">
+      <h2 class="csection-title" id="list-title">All Articles</h2>
+      <div class="csort">
+        <label for="sort">Sort by</label>
+        <select id="sort" onchange="applyFilters()">
+          <option value="latest">Latest</option>
+          <option value="viewed">Most Viewed</option>
+          <option value="helpful">Most Helpful</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="cgrid" id="grid"></div>
+    <div class="cloadwrap"><button class="cbtn cbtn--ghost" id="loadmore" onclick="loadMore()" style="display:none;">Load more articles</button></div>
+  </div>
+
+  <!-- Article Modal -->
+  <div class="cmodal" id="modal">
+    <div class="cmodal__box">
+      <button class="cmodal__close" onclick="closeModal()"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      <div class="cbadge" id="m-cat"></div>
+      <h2 class="cmodal__title" id="m-title"></h2>
+      <div class="cmodal__meta" id="m-meta"></div>
+      <div class="cmodal__body" id="m-body"></div>
+    </div>
+  </div>
+
+  <script src="session.js"></script>
+  <script src="toast.js"></script>
+  <script src="captcha.js"></script>
+  <script>
+    // Community access gate (consistent with the Community home page)
+    (function () {
+      if (BPSCaptcha.isCommunityVerified()) return;
+      const gate = document.createElement('div');
+      gate.className = 'bps-community-gate';
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+          <h2 class="bps-community-gate__title">Community Access</h2>
+          <p class="bps-community-gate__desc">Please complete a quick security verification to access the BPS Community.</p>
+          <div class="bps-community-gate__error" id="_g_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_g_btn"><span id="_g_lbl">Verify to Continue</span></button>
+          <div class="bps-community-gate__footer">Protected by <strong>reCAPTCHA</strong></div>
+        </div>`;
+      document.body.appendChild(gate);
+      document.getElementById('_g_btn').addEventListener('click', async function () {
+        const lbl = document.getElementById('_g_lbl'), err = document.getElementById('_g_err');
+        this.disabled = true; lbl.textContent = 'Verifying…'; err.style.display = 'none';
+        const r = await BPSCaptcha.executeAndVerify('community_access');
+        if (r.success) { BPSCaptcha.setCommunityVerified(); gate.style.opacity = '0'; setTimeout(() => gate.remove(), 300); }
+        else { err.textContent = r.error || 'Security check failed.'; err.style.display = 'block'; this.disabled = false; lbl.textContent = 'Try Again'; }
+      });
+    })();
+  </script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = BPSSession.getToken();
+
+    const CATEGORIES = ['All Articles', 'Anxiety', 'Depression', 'Self-Care', 'Relationships', 'Student Wellness', 'Stress Management'];
+    let allArticles = [], filtered = [], shown = 9, activeCat = 'All Articles';
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function timeAgo(d) { const m = Math.floor((Date.now() - new Date(d)) / 60000); if (m < 60) return m + 'm ago'; const h = Math.floor(m / 60); if (h < 24) return h + 'h ago'; return Math.floor(h / 24) + 'd ago'; }
+    function fmtDate(d) { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (_) { return ''; } }
+    function readTime(c) { const w = (c || '').trim().split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 200)) + ' min read'; }
+    function articleBg(cat) {
+      const map = { Anxiety: 'linear-gradient(135deg,#ffe0b2,#ffcc80)', Depression: 'linear-gradient(135deg,#bbdefb,#90caf9)', 'Self-Care': 'linear-gradient(135deg,#f8bbd0,#f48fb1)', Relationships: 'linear-gradient(135deg,#ffe0b2,#ffcc80)', 'Student Wellness': 'linear-gradient(135deg,#c8e6c9,#a5d6a7)', 'Stress Management': 'linear-gradient(135deg,#e1bee7,#ce93d8)' };
+      return map[cat] || 'linear-gradient(135deg,#dbeafe,#d1fae5)';
+    }
+    const FILE_SVG = '<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>';
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+      if (res.status === 401) { window.location.href = 'login.html'; return {}; }
+      return res.json().catch(() => ({}));
+    }
+
+    function renderChips() {
+      document.getElementById('chips').innerHTML = CATEGORIES.map(c =>
+        `<button class="cchip ${c === activeCat ? 'active' : ''}" onclick="setCat('${c.replace(/'/g, "\\'")}', this)">${esc(c)}</button>`).join('');
+    }
+    function setCat(c, btn) {
+      activeCat = c;
+      document.querySelectorAll('.cchip').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      shown = 9;
+      applyFilters();
+    }
+
+    function matchCat(a) {
+      if (activeCat === 'All Articles') return true;
+      const cat = (a.category || '').toLowerCase().replace(/-/g, ' ').trim();
+      if (!cat) return false;
+      const target = activeCat.toLowerCase().replace(/-/g, ' ').trim();
+      return cat.includes(target) || target.includes(cat);
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const sort = document.getElementById('sort').value;
+      filtered = allArticles.filter(a => matchCat(a) && (!q || (a.title || '').toLowerCase().includes(q) || (a.content || '').toLowerCase().includes(q)));
+      if (sort === 'latest') filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      else if (sort === 'viewed') filtered.sort((a, b) => (b.view_count || b.views || b.id || 0) - (a.view_count || a.views || a.id || 0));
+      else if (sort === 'helpful') filtered.sort((a, b) => (b.vote_score || 0) - (a.vote_score || 0));
+      render();
+    }
+
+    function render() {
+      document.getElementById('list-title').textContent = activeCat === 'All Articles' ? 'All Articles' : activeCat;
+
+      // Featured = first of the filtered set
+      const fw = document.getElementById('featured-wrap');
+      const feat = filtered[0];
+      const showFeatured = feat && !document.getElementById('search').value.trim();
+      fw.innerHTML = showFeatured ? `
+        <div class="cfeatured" onclick="openArticle(${feat.id})">
+          <div class="cfeatured__img" style="background:${articleBg(feat.category || '')}">${FILE_SVG}</div>
+          <div class="cfeatured__body">
+            <span class="cbadge">${esc(feat.category || 'Featured')}</span>
+            <h3 class="cfeatured__title">${esc(feat.title)}</h3>
+            <p class="cfeatured__desc">${esc((feat.content || '').substring(0, 160))}${(feat.content || '').length > 160 ? '…' : ''}</p>
+            <div class="cmeta"><span>${fmtDate(feat.created_at)}</span><span>•</span><span>${readTime(feat.content)}</span></div>
+            <button class="cbtn cbtn--primary" onclick="event.stopPropagation(); openArticle(${feat.id})">Read Article →</button>
+          </div>
+        </div>` : '';
+
+      const rest = showFeatured ? filtered.slice(1) : filtered;
+      const page = rest.slice(0, shown);
+      const grid = document.getElementById('grid');
+
+      if (!filtered.length) {
+        fw.innerHTML = '';
+        grid.innerHTML = `<div class="cempty" style="grid-column:1/-1;">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#e7eef9"/><path d="M9 10h6M9 13h4" stroke="#9bb4d8" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#cdddf2" stroke-width="1.5"/></svg>
+          <div class="cempty__title">No articles found</div>
+          <div>Try a different category or search term.</div></div>`;
+        document.getElementById('loadmore').style.display = 'none';
+        return;
+      }
+
+      grid.innerHTML = page.map(a => `
+        <div class="ccard" onclick="openArticle(${a.id})">
+          <div class="ccard__img" style="background:${articleBg(a.category || '')}">${FILE_SVG}</div>
+          <div class="ccard__body">
+            <span class="cbadge">${esc(a.category || 'General')}</span>
+            <div class="ccard__title">${esc(a.title)}</div>
+            <div class="ccard__excerpt">${esc((a.content || '').substring(0, 110))}${(a.content || '').length > 110 ? '…' : ''}</div>
+            <div class="ccard__meta"><span>${fmtDate(a.created_at)}</span><span>•</span><span>${readTime(a.content)}</span></div>
+          </div>
+        </div>`).join('');
+
+      document.getElementById('loadmore').style.display = rest.length > shown ? 'inline-flex' : 'none';
+    }
+
+    function loadMore() { shown += 9; render(); }
+
+    function openArticle(id) {
+      const a = allArticles.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('m-cat').textContent = a.category || 'Article';
+      document.getElementById('m-title').textContent = a.title;
+      document.getElementById('m-meta').innerHTML = `<span>${esc(a.author_name || 'Staff')}</span><span>·</span><span>${fmtDate(a.created_at)}</span><span>·</span><span>${readTime(a.content)}</span>`;
+      const more = a.source_url ? `\n\n` : '';
+      document.getElementById('m-body').innerHTML = `${esc(a.content)}${a.source_url ? `<div style="margin-top:20px"><a class="cbtn cbtn--primary" href="${esc(a.source_url)}" target="_blank" rel="noopener">Read full article ↗</a></div>` : ''}`;
+      document.getElementById('modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); document.body.style.overflow = ''; }
+    document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+    async function init() {
+      renderChips();
+      // Pre-select category from ?cat=
+      const cat = new URLSearchParams(location.search).get('cat');
+      if (cat && CATEGORIES.includes(cat)) activeCat = cat, renderChips();
+      const json = await apiFetch('/articles?limit=1000');
+      allArticles = json.success ? json.data : [];
+      applyFilters();
+    }
+    init();
+  </script>
+  <script src="navbar.js"></script>
+</body>
+
+</html>

@@ -166,6 +166,12 @@ const staffCreateRules = [
     .isLength({ max: 20 })
     .withMessage('Gender must be at most 20 characters'),
 
+  body('specialization')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 160 })
+    .withMessage('Specialization must be at most 160 characters'),
+
   body('email')
     .trim()
     .notEmpty()

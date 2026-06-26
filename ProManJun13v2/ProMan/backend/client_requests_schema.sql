@@ -40,16 +40,11 @@ CREATE TABLE IF NOT EXISTS client_requests (
     assigned_staff_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,  -- Assigned Staff
     deadline            DATE,
     resolution_note     TEXT,                                        -- Resolution Notes
-    -- Additional-copies fee flow
-    payment_required    BOOLEAN DEFAULT FALSE,
-    payment_amount      NUMERIC(10,2),
-    payment_status      VARCHAR(20) DEFAULT 'none'
-                        CHECK (payment_status IN ('none','awaiting_payment','under_review','verified','rejected')),
-    payment_proof       TEXT,
-    payment_proof_name  VARCHAR(255),
-    payment_reference   VARCHAR(40),
-    -- Finalized report release flow
-    report_file         TEXT,
+    -- NOTE: report-request payments now live in the centralized `payments` table
+    -- (module='report_request', RPM- reference) and report PDFs in
+    -- client_request_report_versions. The old inline payment_*/report_file
+    -- columns were removed.
+    -- Finalized report release flow (lightweight pointers only)
     report_filename     VARCHAR(255),
     report_mime         VARCHAR(100),
     report_released_at  TIMESTAMP,
@@ -81,9 +76,8 @@ CREATE TABLE IF NOT EXISTS client_request_replies (
 ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS approved_at              TIMESTAMP;
 ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS approved_by              INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS rejection_reason         TEXT;
-ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS payment_rejection_reason TEXT;
-ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS receipt_number           VARCHAR(40);
-ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS receipt_issued_at        TIMESTAMP;
+-- payment_rejection_reason / receipt_number / receipt_issued_at intentionally
+-- removed — that data now lives on the linked payments row.
 ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS sent_at                  TIMESTAMP;
 ALTER TABLE client_requests ADD COLUMN IF NOT EXISTS sent_by                  INTEGER REFERENCES users(id) ON DELETE SET NULL;
 

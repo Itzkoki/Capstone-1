@@ -1,12 +1,33 @@
 const db = require('../config/db');
 
 const PsychologicalReport = {
-  async create({ template_id, psychologist_id, client_name, client_age, client_gender, date_of_assessment }) {
+  async generateReportCode() {
+    const year = new Date().getFullYear();
+    const prefix = `BPS-RPT-${year}-`;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const last = await db.query(
+        `SELECT report_code FROM psychological_reports WHERE report_code LIKE $1 ORDER BY report_code DESC LIMIT 1`,
+        [prefix + '%']
+      );
+      let seq = 1 + attempt;
+      if (last.rows.length > 0) {
+        const parsed = parseInt(last.rows[0].report_code.split('-').pop(), 10);
+        if (!isNaN(parsed)) seq = parsed + 1 + attempt;
+      }
+      const candidate = `${prefix}${String(seq).padStart(5, '0')}`;
+      const taken = await db.query(`SELECT 1 FROM psychological_reports WHERE report_code = $1`, [candidate]);
+      if (taken.rows.length === 0) return candidate;
+    }
+    return `${prefix}${String(Date.now()).slice(-5)}`;
+  },
+
+  async create({ template_id, psychologist_id, client_id, client_name, client_age, client_gender, date_of_assessment, case_id }) {
+    const report_code = await this.generateReportCode();
     const r = await db.query(
       `INSERT INTO psychological_reports
-         (template_id, psychologist_id, client_name, client_age, client_gender, date_of_assessment)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [template_id, psychologist_id, client_name, client_age, client_gender, date_of_assessment]
+         (template_id, psychologist_id, client_id, client_name, client_age, client_gender, date_of_assessment, case_id, report_code)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [template_id, psychologist_id, client_id || null, client_name, client_age, client_gender, date_of_assessment, case_id || null, report_code]
     );
     return r.rows[0];
   },
@@ -14,10 +35,24 @@ const PsychologicalReport = {
   async findById(id) {
     const r = await db.query(
       `SELECT pr.*, rt.name AS template_name, rt.template_type, rt.sections_config,
-              u.full_name AS psychologist_name
+              COALESCE(
+                u.full_name,
+                NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''),
+                'Unknown'
+              ) AS psychologist_name,
+              COALESCE(u_prep.full_name, NULLIF(TRIM(CONCAT_WS(' ', s_prep.first_name, s_prep.last_name)), '')) AS prepared_by_name,
+              COALESCE(u_rev.full_name,  NULLIF(TRIM(CONCAT_WS(' ', s_rev.first_name,  s_rev.last_name)),  '')) AS reviewed_by_name,
+              COALESCE(u_app.full_name,  NULLIF(TRIM(CONCAT_WS(' ', s_app.first_name,  s_app.last_name)),  '')) AS approved_by_name
        FROM psychological_reports pr
        JOIN report_templates rt ON pr.template_id = rt.id
-       JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN users u      ON pr.psychologist_id = u.id
+       LEFT JOIN staff s      ON pr.psychologist_id = s.staff_id
+       LEFT JOIN users u_prep ON pr.prepared_by = u_prep.id
+       LEFT JOIN staff s_prep ON pr.prepared_by = s_prep.staff_id
+       LEFT JOIN users u_rev  ON pr.reviewed_by  = u_rev.id
+       LEFT JOIN staff s_rev  ON pr.reviewed_by  = s_rev.staff_id
+       LEFT JOIN users u_app  ON pr.approved_by  = u_app.id
+       LEFT JOIN staff s_app  ON pr.approved_by  = s_app.staff_id
        WHERE pr.id = $1`, [id]
     );
     return r.rows[0] || null;
@@ -25,9 +60,16 @@ const PsychologicalReport = {
 
   async findByPsychologist(psychologistId) {
     const r = await db.query(
-      `SELECT pr.*, rt.name AS template_name, rt.template_type
+      `SELECT pr.*, rt.name AS template_name, rt.template_type,
+              COALESCE(
+                u.full_name,
+                NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''),
+                'Unknown'
+              ) AS psychologist_name
        FROM psychological_reports pr
        JOIN report_templates rt ON pr.template_id = rt.id
+       LEFT JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN staff s ON pr.psychologist_id = s.staff_id
        WHERE pr.psychologist_id = $1 AND pr.deleted_at IS NULL AND pr.archived_at IS NULL
        ORDER BY pr.updated_at DESC`, [psychologistId]
     );
@@ -37,10 +79,11 @@ const PsychologicalReport = {
   async findPendingReview() {
     const r = await db.query(
       `SELECT pr.*, rt.name AS template_name, rt.template_type,
-              u.full_name AS psychologist_name
+              COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''), 'Unknown') AS psychologist_name
        FROM psychological_reports pr
        JOIN report_templates rt ON pr.template_id = rt.id
-       JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN staff s ON pr.psychologist_id = s.staff_id
        WHERE pr.status = 'submitted' AND pr.deleted_at IS NULL AND pr.archived_at IS NULL
        ORDER BY pr.updated_at ASC`
     );
@@ -48,11 +91,15 @@ const PsychologicalReport = {
   },
 
   async findAll(filters = {}) {
+    // Authors may live in EITHER the users table or the staff table (staff carry
+    // staff.staff_id, not users.id). Use LEFT JOINs to BOTH so staff-authored
+    // reports are never dropped — the Clinical Director must see every report.
     let q = `SELECT pr.*, rt.name AS template_name, rt.template_type,
-                    u.full_name AS psychologist_name
+                    COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''), 'Unknown') AS psychologist_name
              FROM psychological_reports pr
              JOIN report_templates rt ON pr.template_id = rt.id
-             JOIN users u ON pr.psychologist_id = u.id`;
+             LEFT JOIN users u ON pr.psychologist_id = u.id
+             LEFT JOIN staff s ON pr.psychologist_id = s.staff_id`;
     const params = [];
     const conds = ['pr.deleted_at IS NULL', 'pr.archived_at IS NULL'];
     let idx = 1;
@@ -67,10 +114,11 @@ const PsychologicalReport = {
   // Archived reports (the Archive). Director sees all; a psychologist only theirs.
   async findArchived(restrictPsychId = null) {
     let q = `SELECT pr.*, rt.name AS template_name, rt.template_type,
-                    u.full_name AS psychologist_name
+                    COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''), 'Unknown') AS psychologist_name
              FROM psychological_reports pr
              JOIN report_templates rt ON pr.template_id = rt.id
-             JOIN users u ON pr.psychologist_id = u.id
+             LEFT JOIN users u ON pr.psychologist_id = u.id
+             LEFT JOIN staff s ON pr.psychologist_id = s.staff_id
              WHERE pr.archived_at IS NOT NULL AND pr.deleted_at IS NULL`;
     const params = [];
     if (restrictPsychId) { q += ` AND pr.psychologist_id = $1`; params.push(restrictPsychId); }
@@ -83,10 +131,11 @@ const PsychologicalReport = {
   async findTrash() {
     const r = await db.query(
       `SELECT pr.*, rt.name AS template_name, rt.template_type,
-              u.full_name AS psychologist_name
+              COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''), 'Unknown') AS psychologist_name
        FROM psychological_reports pr
        JOIN report_templates rt ON pr.template_id = rt.id
-       JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN users u ON pr.psychologist_id = u.id
+       LEFT JOIN staff s ON pr.psychologist_id = s.staff_id
        WHERE pr.deleted_at IS NOT NULL
        ORDER BY pr.deleted_at DESC`
     );
@@ -210,9 +259,18 @@ const PsychologicalReport = {
 
   async getVersions(reportId) {
     const r = await db.query(
-      `SELECT rv.*, u.full_name AS editor_name
+      `SELECT rv.*,
+              COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', s.first_name, s.last_name)), ''), 'Unknown') AS editor_name,
+              ARRAY(
+                SELECT rs.section_title
+                FROM report_sections rs
+                WHERE rs.report_id = rv.report_id
+                  AND rs.section_key = ANY(rv.modified_sections)
+                ORDER BY rs.sort_order
+              ) AS modified_section_titles
        FROM report_versions rv
        LEFT JOIN users u ON rv.editor_id = u.id
+       LEFT JOIN staff s ON rv.editor_id = s.staff_id
        WHERE rv.report_id = $1
        ORDER BY rv.version_number DESC`, [reportId]
     );
@@ -241,7 +299,12 @@ const PsychologicalReport = {
     let q = `UPDATE psychological_reports SET deleted_at = NOW(), updated_at = NOW()
              WHERE id = ANY($1::int[]) AND deleted_at IS NULL`;
     const params = [ids];
-    if (restrictPsychId) { q += ` AND psychologist_id = $2`; params.push(restrictPsychId); }
+    if (restrictPsychId) {
+      // Non-director: only their own reports, and never once Approved or in a
+      // Signature Required stage.
+      q += ` AND psychologist_id = $2 AND status <> 'Approved' AND signature_stage IS NULL`;
+      params.push(restrictPsychId);
+    }
     q += ` RETURNING id`;
     const r = await db.query(q, params);
     return r.rows.map(x => x.id);
@@ -311,6 +374,143 @@ const PsychologicalReport = {
        ORDER BY ra.created_at DESC`, [reportId]
     );
     return r.rows;
+  },
+
+  // ── 3-stage workflow (Prepared → Review → Approved) ─────────────────
+
+  async findByWorkflowStatus(status) {
+    const r = await db.query(
+      `SELECT pr.*,
+              rt.name AS template_name, rt.template_type,
+              u.full_name AS client_full_name, u.user_code AS client_user_code,
+              c.case_id
+       FROM psychological_reports pr
+       LEFT JOIN report_templates rt ON pr.template_id = rt.id
+       LEFT JOIN users u ON pr.client_id = u.id
+       LEFT JOIN cases c ON pr.case_id = c.case_id
+       WHERE pr.status = $1
+         AND pr.deleted_at IS NULL
+         AND pr.archived_at IS NULL
+         AND pr.is_locked = FALSE
+       ORDER BY pr.updated_at ASC`,
+      [status]
+    );
+    return r.rows;
+  },
+
+  async submitPrepared(id, preparedByStaffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'Prepared', prepared_by = $1, updated_at = NOW()
+       WHERE id = $2 AND is_locked = FALSE
+       RETURNING *`,
+      [preparedByStaffId, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  async submitToReview(id, reviewedByStaffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'Review', reviewed_by = $1, updated_at = NOW()
+       WHERE id = $2 AND status = 'Prepared' AND is_locked = FALSE
+       RETURNING *`,
+      [reviewedByStaffId, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  async approveWorkflow(id, approvedByStaffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'Approved', approved_by = $1, updated_at = NOW()
+       WHERE id = $2 AND status = 'Review' AND is_locked = FALSE
+       RETURNING *`,
+      [approvedByStaffId, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  async overrideStatus(id, newStatus, staffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = $1, updated_at = NOW()
+       WHERE id = $2 AND is_locked = FALSE
+       RETURNING *`,
+      [newStatus, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  // Psychologist requests revision — status → 'revision_requested'
+  // revisionNotes are stored on the report for the submitter to see.
+  async requestRevision(id, reviewerStaffId, revisionNotes) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'revision_requested',
+           revision_notes = $1,
+           updated_at = NOW()
+       WHERE id = $2 AND status = 'Review' AND is_locked = FALSE
+       RETURNING *`,
+      [revisionNotes || null, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  // QCP requests revision — status → 'revision_requested_qc'
+  // qc_revision_notes stored; qc_reviewed_by tracked.
+  async requestQcRevision(id, qcStaffId, revisionNotes) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'revision_requested_qc',
+           qc_revision_notes = $1,
+           qc_reviewed_by = $2,
+           updated_at = NOW()
+       WHERE id = $3 AND status = 'Prepared' AND is_locked = FALSE
+       RETURNING *`,
+      [revisionNotes || null, qcStaffId, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  // SupPsy resubmits after revision_requested → back to 'Review' (skip QCP)
+  async resubmitToReview(id, staffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'Review',
+           revision_notes = NULL,
+           updated_at = NOW()
+       WHERE id = $1 AND status = 'revision_requested' AND is_locked = FALSE
+       RETURNING *`,
+      [id]
+    );
+    return r.rows[0] || null;
+  },
+
+  // SupPsy resubmits after revision_requested_qc → back to 'Prepared' (QCP queue)
+  async resubmitToQc(id, staffId) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET status = 'Prepared',
+           qc_revision_notes = NULL,
+           prepared_by = $1,
+           updated_at = NOW()
+       WHERE id = $2 AND status = 'revision_requested_qc' AND is_locked = FALSE
+       RETURNING *`,
+      [staffId, id]
+    );
+    return r.rows[0] || null;
+  },
+
+  async setLocked(id, locked) {
+    const r = await db.query(
+      `UPDATE psychological_reports
+       SET is_locked = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [locked, id]
+    );
+    return r.rows[0] || null;
   },
 };
 

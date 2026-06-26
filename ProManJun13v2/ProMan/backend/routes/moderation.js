@@ -3,7 +3,7 @@ const router  = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { authorizeMinRole } = require('../middleware/rbac');
 const {
-  reportContent, getPendingFlags, getStats, reviewFlag,
+  reportContent, getPendingFlags, getStats, getRecent, reviewFlag,
   getKeywords, addKeyword, removeKeyword, testFilter, seedKeywords,
 } = require('../controllers/moderationController');
 
@@ -15,6 +15,7 @@ router.post('/flags', reportContent);
 // Staff-only routes
 router.get('/flags',      authorizeMinRole('psychometrician'), getPendingFlags);
 router.get('/stats',      authorizeMinRole('psychometrician'), getStats);
+router.get('/recent',     authorizeMinRole('psychometrician'), getRecent);
 router.put('/flags/:id',  authorizeMinRole('psychometrician'), reviewFlag);
 
 // Keyword management (staff-only)

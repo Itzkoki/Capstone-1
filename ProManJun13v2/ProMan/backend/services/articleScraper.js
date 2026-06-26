@@ -208,18 +208,45 @@ function extractArticle(html, sourceUrl) {
   contentElement.find('[class*="comment"], [class*="related"], [class*="sidebar"]').remove();
   contentElement.find('button, input, form, select, textarea').remove();
 
-  // Build clean HTML preserving structure
-  const cleanHtml = sanitizeHtml(contentElement.html() || '', $);
+  // Build clean, readable PLAIN TEXT (not HTML). Articles are rendered as
+  // escaped text in the community pages, so returning raw HTML here caused the
+  // markup tags to "leak" into the published article. Extracting block-level
+  // text keeps paragraph/heading/list structure without any tags.
+  const cleanText = extractReadableText(contentElement, $);
 
   return {
     title: title.substring(0, 500),
-    content: cleanHtml,
-    contentText: contentElement.text().trim().substring(0, 10000),
+    content: cleanText,
+    contentText: cleanText,
     featuredImage: resolvedImage,
     author: author ? author.substring(0, 200) : null,
     publishedDate: publishedDate || null,
     sourceUrl: sourceUrl,
   };
+}
+
+/**
+ * Convert a content element into clean, readable plain text, preserving
+ * paragraph / heading / list-item breaks but stripping ALL HTML tags.
+ */
+function extractReadableText(contentElement, $) {
+  const blocks = [];
+  const seen = new Set();
+  contentElement.find('p, h1, h2, h3, h4, h5, h6, li, blockquote').each((_, el) => {
+    const text = $(el).text().replace(/\s+/g, ' ').trim();
+    if (!text || seen.has(text)) return; // skip empties + duplicates (nested wrappers)
+    seen.add(text);
+    blocks.push(el.name === 'li' ? `• ${text}` : text);
+  });
+
+  let text = blocks.join('\n\n');
+
+  // Fallback: if the page lacks block elements, collapse the raw text.
+  if (!text || text.trim().length < 50) {
+    text = contentElement.text().replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  return text.substring(0, 20000);
 }
 
 /**

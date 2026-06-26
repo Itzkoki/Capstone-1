@@ -4,16 +4,54 @@ const notificationService = require('../services/notificationService');
 const articleScraper = require('../services/articleScraper');
 const ActivityLog = require('../models/ActivityLog');
 
+/**
+ * Normalize article content to clean, readable paragraphs.
+ * Articles imported via link (and rendered as escaped text) can carry raw
+ * markup, HTML entities, and runs of whitespace/tabs/newlines that "leak" into
+ * the page as code-like noise. This strips any stray tags, decodes common
+ * entities, and collapses whitespace so only words/paragraphs remain.
+ */
+function cleanArticleContent(raw) {
+  if (raw == null) return raw;
+  let t = String(raw);
+  // Strip any stray HTML tags.
+  t = t.replace(/<[^>]+>/g, ' ');
+  // Decode the most common HTML entities.
+  t = t.replace(/&nbsp;/gi, ' ')
+       .replace(/&amp;/gi, '&')
+       .replace(/&lt;/gi, '<')
+       .replace(/&gt;/gi, '>')
+       .replace(/&quot;/gi, '"')
+       .replace(/&#39;|&apos;/gi, "'")
+       .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  // Normalize carriage returns and tabs.
+  t = t.replace(/\r\n?/g, '\n').replace(/\t/g, ' ');
+  // Trim each line, collapse inner double-spaces, drop blanks, rebuild as
+  // clean paragraphs separated by a single blank line.
+  const lines = t.split('\n').map(l => l.replace(/ {2,}/g, ' ').trim()).filter(Boolean);
+  return lines.join('\n\n');
+}
+
+// Apply cleanArticleContent to one row or an array of rows (in place).
+function cleanContentField(data) {
+  const clean = (a) => { if (a && typeof a.content === 'string') a.content = cleanArticleContent(a.content); return a; };
+  return Array.isArray(data) ? data.map(clean) : clean(data);
+}
+
 // POST /api/articles — clients: pending + notify staff. Staff: auto-approved.
 const createArticle = async (req, res, next) => {
   try {
-    const { title, content } = req.body;
+    const { title, content, category, featured_image } = req.body;
     if (!title || !content) {
       return res.status(400).json({ success: false, message: 'Title and content are required.' });
     }
 
     const isStaff = req.user.role && req.user.role !== 'client';
-    const article = await Article.create(req.user.id, title, content);
+    // Staff may attach a category + thumbnail/featured image; client posts stay plain.
+    const opts = isStaff
+      ? { category: category || null, featured_image: featured_image || null }
+      : {};
+    const article = await Article.create(req.user.id, title, content, opts);
 
     if (isStaff) {
       // Auto-approve staff articles
@@ -28,8 +66,8 @@ const createArticle = async (req, res, next) => {
         await notificationService.notifyStaff(
           'community',
           'New Post Awaiting Review',
-          `${authorName} submitted a new discussion: "${title}". Please review and approve or reject it.`,
-          'articles.html'
+          `${authorName} submitted a new article: "${title}". Please review and approve or reject it.`,
+          'moderation.html'
         );
       } catch (err) {
         console.error('Failed to send article review notifications:', err.message);
@@ -105,7 +143,7 @@ const getAllArticles = async (req, res, next) => {
   try {
     const { limit = 20, offset = 0 } = req.query;
     const articles = await Article.findAll(parseInt(limit), parseInt(offset));
-    return res.status(200).json({ success: true, data: articles });
+    return res.status(200).json({ success: true, data: cleanContentField(articles) });
   } catch (error) {
     next(error);
   }
@@ -116,7 +154,7 @@ const getPendingArticles = async (req, res, next) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     const articles = await Article.findPending(parseInt(limit), parseInt(offset));
-    return res.status(200).json({ success: true, data: articles });
+    return res.status(200).json({ success: true, data: cleanContentField(articles) });
   } catch (error) {
     next(error);
   }
@@ -129,7 +167,7 @@ const getArticle = async (req, res, next) => {
     if (!article) {
       return res.status(404).json({ success: false, message: 'Article not found.' });
     }
-    return res.status(200).json({ success: true, data: article });
+    return res.status(200).json({ success: true, data: cleanContentField(article) });
   } catch (error) {
     next(error);
   }
@@ -142,6 +180,11 @@ const updateArticle = async (req, res, next) => {
     const existing = await Article.findById(req.params.id);
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Article not found.' });
+    }
+
+    // Only the original author may edit their own article.
+    if (existing.author_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You can only edit articles you submitted.' });
     }
 
     const article = await Article.update(
@@ -203,6 +246,13 @@ const importPreview = async (req, res, next) => {
     // Scrape the URL
     const extracted = await articleScraper.scrape(url.trim());
 
+    // Normalize the extracted body so staff review clean paragraphs (no stray
+    // markup / whitespace noise) before publishing.
+    if (extracted) {
+      if (typeof extracted.content === 'string') extracted.content = cleanArticleContent(extracted.content);
+      if (typeof extracted.contentText === 'string') extracted.contentText = cleanArticleContent(extracted.contentText);
+    }
+
     return res.json({
       success: true,
       data: extracted,
@@ -241,8 +291,11 @@ const importPublish = async (req, res, next) => {
       });
     }
 
+    // Store clean, readable text (strip any stray markup/whitespace noise).
+    const cleanedContent = cleanArticleContent(content);
+
     // Create article with extended fields, auto-approved for staff
-    const article = await Article.create(req.user.id, title, content, {
+    const article = await Article.create(req.user.id, title, cleanedContent, {
       category: category || 'Imported',
       source_url: source_url.trim(),
       featured_image: featured_image || null,

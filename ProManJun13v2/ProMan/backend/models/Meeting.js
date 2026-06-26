@@ -19,9 +19,13 @@ const Meeting = {
   },
 
   async findAll({ hostId, status, limit = 20, offset = 0 } = {}) {
-    let query = `SELECT m.*, u.full_name AS host_name
+    // Host may be a staff-table account (staff_id) or a legacy users row, so
+    // resolve the name across both tables (prefer staff for the host).
+    let query = `SELECT m.*,
+                        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', st.first_name, st.last_name)), ''), u.full_name) AS host_name
                  FROM meetings m
-                 JOIN users u ON u.id = m.host_id
+                 LEFT JOIN users u  ON u.id       = m.host_id
+                 LEFT JOIN staff st ON st.staff_id = m.host_id
                  WHERE 1=1`;
     const params = [];
     let idx = 1;
@@ -44,9 +48,11 @@ const Meeting = {
 
   async findById(id) {
     const result = await db.query(
-      `SELECT m.*, u.full_name AS host_name
+      `SELECT m.*,
+              COALESCE(NULLIF(TRIM(CONCAT_WS(' ', st.first_name, st.last_name)), ''), u.full_name) AS host_name
        FROM meetings m
-       JOIN users u ON u.id = m.host_id
+       LEFT JOIN users u  ON u.id       = m.host_id
+       LEFT JOIN staff st ON st.staff_id = m.host_id
        WHERE m.id = $1`,
       [id]
     );

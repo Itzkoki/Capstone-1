@@ -54,11 +54,19 @@
     const minDate = opts.minDate || new Date();
     minDate.setHours(0, 0, 0, 0);
 
+    // Optional upper bound — e.g. a "Date of Assessment" that cannot be in the
+    // future. Days after maxDate are disabled and the Next arrow stops there.
+    const maxDate = opts.maxDate ? new Date(opts.maxDate) : null;
+    if (maxDate) maxDate.setHours(0, 0, 0, 0);
+
     const apiBase = opts.apiBase || '';
     const token = opts.token || '';
 
-    let viewYear = minDate.getFullYear();
-    let viewMonth = minDate.getMonth();
+    // Initial month to display. Defaults to minDate, but callers can open the
+    // calendar on a different month (e.g. today, when minDate is far in the past).
+    const startView = opts.startDate ? new Date(opts.startDate) : (maxDate || minDate);
+    let viewYear = startView.getFullYear();
+    let viewMonth = startView.getMonth();
     let selectedDate = null;
     let bookedDates = new Set(opts.bookedDates || []);
     let fullDates = new Set();       // dates that have reached 5/5
@@ -116,6 +124,23 @@
       return null;
     }
 
+    // Is the given slot ('HH:MM') already in the past for the selected date?
+    // Only applies when the selected date is the current calendar day — earlier
+    // days are fully blocked and later days are always in the future.
+    function isPastSlot(slotValue) {
+      if (!selectedDate) return false;
+      const now = new Date();
+      const sameDay =
+        selectedDate.getFullYear() === now.getFullYear() &&
+        selectedDate.getMonth() === now.getMonth() &&
+        selectedDate.getDate() === now.getDate();
+      if (!sameDay) return false;
+      const [h, m] = slotValue.split(':').map(Number);
+      const slotDt = new Date(now);
+      slotDt.setHours(h, m, 0, 0);
+      return slotDt <= now;
+    }
+
     // ── Update time select based on availability ──
     function updateTimeSlots(bookedSlotsList) {
       if (!timeSelect) return;
@@ -123,15 +148,16 @@
       timeSelect.innerHTML = '<option value="">Select time</option>';
       TIME_SLOTS.forEach(t => {
         const isBooked = bookedSlotsList.includes(t.v);
+        const isPast = isPastSlot(t.v);
         const opt = document.createElement('option');
         opt.value = t.v;
-        opt.textContent = isBooked ? `${t.l} — Booked` : t.l;
-        opt.disabled = isBooked;
-        if (isBooked) opt.style.color = '#a0aec0';
+        opt.textContent = isPast ? `${t.l} — Unavailable` : (isBooked ? `${t.l} — Booked` : t.l);
+        opt.disabled = isBooked || isPast;
+        if (isBooked || isPast) opt.style.color = '#a0aec0';
         timeSelect.appendChild(opt);
       });
-      // Restore previous selection if still available
-      if (currentVal && !bookedSlotsList.includes(currentVal)) {
+      // Restore previous selection only if it is still available (not booked, not past).
+      if (currentVal && !bookedSlotsList.includes(currentVal) && !isPastSlot(currentVal)) {
         timeSelect.value = currentVal;
       } else {
         timeSelect.value = '';
@@ -199,6 +225,13 @@
       const isBefore = viewYear < minDate.getFullYear() || (viewYear === minDate.getFullYear() && viewMonth < minDate.getMonth());
       prevBtn.disabled = isMinMonth || isBefore;
 
+      // Disable next if at or after the maxDate month
+      if (maxDate) {
+        const isMaxMonth = viewYear === maxDate.getFullYear() && viewMonth === maxDate.getMonth();
+        const isAfter = viewYear > maxDate.getFullYear() || (viewYear === maxDate.getFullYear() && viewMonth > maxDate.getMonth());
+        nextBtn.disabled = isMaxMonth || isAfter;
+      }
+
       const firstDay = new Date(viewYear, viewMonth, 1).getDay();
       const startOffset = (firstDay === 0) ? 6 : firstDay - 1;
       const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -218,6 +251,7 @@
         const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
         const isPast = date < minDate;
+        const isFuture = maxDate && date > maxDate;
         const isToday = date.getTime() === new Date(new Date().setHours(0,0,0,0)).getTime();
         const isFull = fullDates.has(dateStr);
         const isBooked = bookedDates.has(dateStr);
@@ -226,15 +260,16 @@
         let cls = 'cal-day';
         if (isToday) cls += ' cal-day--today';
         if (isSelected) cls += ' cal-day--selected';
-        if (isPast) cls += ' cal-day--disabled';
+        if (isPast || isFuture) cls += ' cal-day--disabled';
         else if (isFull) cls += ' cal-day--full';
         else if (isBooked) cls += ' cal-day--booked';
 
-        const disabled = isPast || isFull || isBooked;
+        const disabled = isPast || isFuture || isFull || isBooked;
         let title = '';
         if (isFull) title = 'Fully booked (5/5 clients)';
         else if (isBooked) title = 'This date is already booked';
         else if (isPast) title = 'Past date';
+        else if (isFuture) title = 'Future date not allowed';
 
         html += `<button type="button" class="${cls}" data-date="${dateStr}" ${disabled ? 'disabled' : ''} ${title ? `title="${title}"` : ''}>${d}</button>`;
       }

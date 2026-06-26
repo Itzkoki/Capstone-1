@@ -11,13 +11,16 @@
   <link rel="stylesheet" href="staff-management.css">
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="captcha.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body class="staff-page logged-in">
 
   <nav class="navbar" id="navbar">
     <a href="landingpage.html" class="navbar__brand">
       <div class="navbar__logo"><img src="barcarse logo.jpg" alt="BPS Logo"></div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -98,29 +101,88 @@
         New accounts are created with the default <strong>Staff</strong> role. Change the role afterwards if needed.
       </p>
       <div id="add-status" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.9rem;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <!-- Row 1: Name -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div>
           <label class="modal__label">First Name</label>
-          <input class="modal__select" id="add-first-name" type="text" autocomplete="off">
+          <input class="modal__select" id="add-first-name" type="text" autocomplete="off" style="margin-bottom:0">
         </div>
         <div>
           <label class="modal__label">Last Name</label>
-          <input class="modal__select" id="add-last-name" type="text" autocomplete="off">
+          <input class="modal__select" id="add-last-name" type="text" autocomplete="off" style="margin-bottom:0">
         </div>
       </div>
-      <label class="modal__label">Gender</label>
-      <select class="modal__select" id="add-gender">
-        <option value="">Prefer not to say</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-      </select>
-      <label class="modal__label">Email</label>
-      <input class="modal__select" id="add-email" type="email" autocomplete="off">
-      <label class="modal__label">Username</label>
-      <input class="modal__select" id="add-username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+      <!-- Row 2: Gender + Specialization -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label class="modal__label">Gender</label>
+          <select class="modal__select" id="add-gender" style="margin-bottom:0">
+            <option value="">Prefer not to say</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal__label">Specialization</label>
+          <input class="modal__select" id="add-specialization" type="text" autocomplete="off"
+                 placeholder="e.g. Clinical Psychologist" style="margin-bottom:0">
+        </div>
+      </div>
+
+      <!-- Row 3: Schedule (full width) -->
+      <label class="modal__label">Schedule <span style="font-weight:400;color:var(--text-body,#667085)">(Optional)</span></label>
+      <div style="background:#F8FAFC;border:1px solid #E6EAF1;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Monday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Mon
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Tuesday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Tue
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Wednesday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Wed
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Thursday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Thu
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Friday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Fri
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Saturday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Sat
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border:1.5px solid #E6EAF1;border-radius:8px;font-size:13px;font-weight:500;background:#fff;user-select:none;">
+            <input type="checkbox" class="sched-day-cb" value="Sunday" style="accent-color:#0A5C31;width:14px;height:14px;margin:0;"> Sun
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <select class="modal__select" id="sched-start" style="flex:1;margin:0;padding:7px 10px;font-size:13px;"></select>
+          <span style="font-size:13px;color:var(--text-body,#667085);white-space:nowrap;">to</span>
+          <select class="modal__select" id="sched-end" style="flex:1;margin:0;padding:7px 10px;font-size:13px;"></select>
+          <button type="button" id="sched-add-btn" style="padding:7px 14px;background:#0A5C31;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Add</button>
+        </div>
+        <div id="sched-display" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;max-height:62px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- Row 4: Email + Username -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label class="modal__label">Email</label>
+          <input class="modal__select" id="add-email" type="email" autocomplete="off" style="margin-bottom:0">
+        </div>
+        <div>
+          <label class="modal__label">Username</label>
+          <input class="modal__select" id="add-username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0">
+        </div>
+      </div>
+
+      <!-- Row 5: Password (full width) -->
       <label class="modal__label">Temporary Password</label>
       <input class="modal__select" id="add-password" type="password" autocomplete="new-password">
+
       <div class="modal__actions">
         <button class="btn-modal btn-modal--cancel" onclick="closeAddModal()">Cancel</button>
         <button class="btn-modal btn-modal--primary" id="add-save-btn">Create</button>
@@ -129,6 +191,46 @@
   </div>
 
   <script src="session.js"></script>
+  <script src="role-guard.js"></script>
+  <script src="captcha.js"></script>
+
+  <!-- ── Staff Management page-load EMAIL OTP gate ──────────────────────
+       A 6-digit code emailed to the staff member must be verified before the
+       staff list is accessible. Verified once per browser session.           -->
+  <script>
+    (function () {
+      const MODULE = 'staff_management';
+      if (BPSModuleOtp.isVerified(MODULE)) return;
+      const gate = document.createElement('div');
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          </div>
+          <h2 class="bps-community-gate__title">Email Verification</h2>
+          <p class="bps-community-gate__desc">For your security, please verify your email with a one-time code before accessing Staff Management.</p>
+          <div class="bps-community-gate__error" id="_bps_sm_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_sm_btn">
+            <span id="_bps_sm_label">Send Code &amp; Verify</span>
+          </button>
+        </div>`;
+      document.body.appendChild(gate);
+      document.getElementById('_bps_sm_btn').addEventListener('click', async function () {
+        const btn = this, label = document.getElementById('_bps_sm_label'), errEl = document.getElementById('_bps_sm_err');
+        btn.disabled = true; label.textContent = 'Sending code…'; errEl.style.display = 'none';
+        const ok = await BPSModuleOtp.verify(MODULE);
+        if (ok) {
+          gate.style.transition = 'opacity 0.3s ease'; gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          btn.disabled = false; label.textContent = 'Send Code & Verify';
+        }
+      });
+    })();
+  </script>
   <script>
     const API = 'http://localhost:5000/api';
     const token = BPSSession.getToken();
@@ -185,9 +287,16 @@
       tbody.innerHTML = data.data.map(s => {
         const name = escHtml(fullName(s));
         const active = s.is_active;
-        const statusBadge = active
-          ? '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#0A5C31;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Active'
-          : '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#c53030;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg> Inactive';
+        // 3-state lifecycle: Inactive (deactivated) / Active (never verified at
+        // login) / Verified (completed an email-code verification). Falls back to
+        // is_active for any legacy row missing a status value.
+        const status = s.status || (active ? 'active' : 'inactive');
+        const STATUS_BADGES = {
+          inactive: '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#c53030;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg> Inactive',
+          active:   '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#b7791f;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Active',
+          verified: '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:#0A5C31;vertical-align:middle;margin-right:3px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Verified',
+        };
+        const statusBadge = STATUS_BADGES[status] || STATUS_BADGES.active;
         const isSelf = s.staff_id === user.id;
         const statusBtn = isSelf
           ? ''
@@ -231,52 +340,153 @@
     // ── Activate / deactivate ──
     async function setStatus(id, isActive, name) {
       const verb = isActive ? 'Activate' : 'Deactivate';
-      if (!confirm(`${verb} ${name}?`)) return;
+      if (!await BPSModal.confirm(`${verb} ${name}?`, { title: `${verb} staff member`, confirmText: verb, danger: !isActive })) return;
       await apiFetch(`/staff/${id}/status`, { method: 'PATCH', body: JSON.stringify({ is_active: isActive }) });
       loadStaff();
       loadLogs();
     }
 
+    // ── Schedule builder ──
+    const addSchedule = [];
+
+    (function initSchedBuilder() {
+      const TIME_LABELS = {
+        '06:00':'6:00 AM','07:00':'7:00 AM','08:00':'8:00 AM','09:00':'9:00 AM',
+        '10:00':'10:00 AM','11:00':'11:00 AM','12:00':'12:00 PM','13:00':'1:00 PM',
+        '14:00':'2:00 PM','15:00':'3:00 PM','16:00':'4:00 PM','17:00':'5:00 PM',
+        '18:00':'6:00 PM','19:00':'7:00 PM','20:00':'8:00 PM','21:00':'9:00 PM','22:00':'10:00 PM',
+      };
+      const TIMES = Object.keys(TIME_LABELS);
+
+      function buildOptions(sel) {
+        sel.innerHTML = TIMES.map(v => `<option value="${v}">${TIME_LABELS[v]}</option>`).join('');
+      }
+
+      const startSel = document.getElementById('sched-start');
+      const endSel = document.getElementById('sched-end');
+      buildOptions(startSel);
+      buildOptions(endSel);
+      startSel.value = '09:00';
+      endSel.value = '17:00';
+
+      function renderDisplay() {
+        const el = document.getElementById('sched-display');
+        const DAY_SHORT = {Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat',Sunday:'Sun'};
+        if (!addSchedule.length) {
+          el.innerHTML = '<span style="font-size:12px;color:#98A2B3;font-style:italic;">No schedule added yet.</span>';
+          return;
+        }
+        el.innerHTML = addSchedule.map((e,i) => `
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#E8F5EE;border:1px solid #9ae6b4;border-radius:8px;padding:4px 10px;font-size:12.5px;font-weight:500;">
+            <span style="color:#0A5C31;font-weight:600;">${DAY_SHORT[e.day]||e.day}</span>
+            <span style="color:#475467;">${TIME_LABELS[e.start]||e.start} – ${TIME_LABELS[e.end]||e.end}</span>
+            <button type="button" onclick="removeSchedEntry(${i})" style="background:none;border:none;cursor:pointer;color:#c53030;font-size:14px;padding:0;line-height:1;" title="Remove">×</button>
+          </div>`).join('');
+      }
+
+      window.removeSchedEntry = function(i) { addSchedule.splice(i,1); renderDisplay(); };
+      window._renderSchedDisplay = renderDisplay;
+      window._resetSchedBuilder = function() {
+        addSchedule.length = 0;
+        document.querySelectorAll('.sched-day-cb').forEach(cb => cb.checked = false);
+        startSel.value = '09:00';
+        endSel.value = '17:00';
+        renderDisplay();
+      };
+
+      document.getElementById('sched-add-btn').addEventListener('click', () => {
+        const days = [...document.querySelectorAll('.sched-day-cb:checked')].map(cb => cb.value);
+        const start = startSel.value;
+        const end = endSel.value;
+        if (!days.length) { BPSModal.alert('Please select at least one day.', { title: 'Select a day' }); return; }
+        if (start >= end) { BPSModal.alert('End time must be after start time.', { title: 'Invalid time range' }); return; }
+        days.forEach(day => {
+          const idx = addSchedule.findIndex(e => e.day === day);
+          if (idx >= 0) addSchedule[idx] = { day, start, end };
+          else addSchedule.push({ day, start, end });
+        });
+        document.querySelectorAll('.sched-day-cb:checked').forEach(cb => cb.checked = false);
+        renderDisplay();
+      });
+
+      renderDisplay();
+    })();
+
     // ── Add staff modal ──
     function openAddModal() {
-      ['add-first-name','add-last-name','add-email','add-username','add-password'].forEach(id => document.getElementById(id).value = '');
+      ['add-first-name','add-last-name','add-specialization','add-email','add-username','add-password'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('add-gender').value = '';
+      if (window._resetSchedBuilder) window._resetSchedBuilder();
       hideAddStatus();
       document.getElementById('add-modal').classList.add('active');
     }
     function closeAddModal() { document.getElementById('add-modal').classList.remove('active'); }
+    const FIELD_MAP = {
+      first_name: 'add-first-name',
+      last_name:  'add-last-name',
+      email:      'add-email',
+      username:   'add-username',
+      password:   'add-password',
+    };
+    const FIELD_LABELS = {
+      first_name: 'First Name',
+      last_name:  'Last Name',
+      email:      'Email',
+      username:   'Username',
+      password:   'Temporary Password',
+    };
+
     function showAddStatus(msg, ok) {
       const el = document.getElementById('add-status');
-      el.textContent = msg;
+      el.innerHTML = msg;
       el.style.display = 'block';
-      el.style.cssText += ok
+      el.style.cssText = `display:block;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.9rem;white-space:pre-line;${ok
         ? 'color:#0A5C31;background:#f0fff4;border:1px solid #9ae6b4;'
-        : 'color:#e53e3e;background:#fff5f5;border:1px solid #feb2b2;';
+        : 'color:#c53030;background:#fff5f5;border:1px solid #feb2b2;'}`;
     }
-    function hideAddStatus() { document.getElementById('add-status').style.display = 'none'; }
+    function hideAddStatus() {
+      document.getElementById('add-status').style.display = 'none';
+      Object.values(FIELD_MAP).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.removeProperty('border-color');
+      });
+    }
+    function highlightErrors(errors) {
+      errors.forEach(e => {
+        const inputId = FIELD_MAP[e.field];
+        if (!inputId) return;
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.style.borderColor = '#e53e3e';
+        input.addEventListener('input', () => input.style.removeProperty('border-color'), { once: true });
+      });
+    }
 
     document.getElementById('add-staff-btn').addEventListener('click', openAddModal);
 
     document.getElementById('add-save-btn').addEventListener('click', async () => {
       hideAddStatus();
       const payload = {
-        first_name: document.getElementById('add-first-name').value.trim(),
-        last_name:  document.getElementById('add-last-name').value.trim(),
-        gender:     document.getElementById('add-gender').value,
-        email:      document.getElementById('add-email').value.trim(),
-        username:   document.getElementById('add-username').value.trim(),
-        password:   document.getElementById('add-password').value,
+        first_name:     document.getElementById('add-first-name').value.trim(),
+        last_name:      document.getElementById('add-last-name').value.trim(),
+        gender:         document.getElementById('add-gender').value,
+        specialization: document.getElementById('add-specialization').value.trim(),
+        email:          document.getElementById('add-email').value.trim(),
+        username:       document.getElementById('add-username').value.trim(),
+        password:       document.getElementById('add-password').value,
+        schedule:       [...addSchedule],
       };
       const data = await apiFetch('/staff', { method: 'POST', body: JSON.stringify(payload) });
       if (data.success) {
         closeAddModal();
         loadStaff();
         loadLogs();
+      } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+        const lines = data.errors.map(e => `• ${FIELD_LABELS[e.field] || e.field}: ${e.message}`).join('\n');
+        showAddStatus(lines, false);
+        highlightErrors(data.errors);
       } else {
-        const msg = data.message
-          || (Array.isArray(data.errors) && data.errors[0] && data.errors[0].message)
-          || 'Could not create staff account.';
-        showAddStatus(msg, false);
+        showAddStatus(data.message || 'Could not create staff account.', false);
       }
     });
 

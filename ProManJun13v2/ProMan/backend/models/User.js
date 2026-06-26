@@ -1,17 +1,37 @@
 const db = require('../config/db');
 
 const User = {
-  /**
-   * Create a new user in the database.
-   * @param {Object} userData - { full_name, email, password (hashed), contact_number }
-   * @returns {Object} The newly created user (without password)
-   */
+  async generateUserCode(role = 'client') {
+    const year = new Date().getFullYear();
+    // All `users` rows use the USR- prefix. The clinical-director code (CDR-)
+    // lives exclusively on the `staff` table; minting CDR here too would collide
+    // with staff_code in the merged audit view (auditController uses
+    // user_code || staff_code).
+    const prefix = `USR-${year}-`;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const last = await db.query(
+        `SELECT user_code FROM users WHERE user_code LIKE $1 ORDER BY user_code DESC LIMIT 1`,
+        [prefix + '%']
+      );
+      let seq = 1 + attempt;
+      if (last.rows.length > 0) {
+        const parsed = parseInt(last.rows[0].user_code.split('-').pop(), 10);
+        if (!isNaN(parsed)) seq = parsed + 1 + attempt;
+      }
+      const candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+      const taken = await db.query(`SELECT 1 FROM users WHERE user_code = $1`, [candidate]);
+      if (taken.rows.length === 0) return candidate;
+    }
+    return `${prefix}${String(Date.now()).slice(-4)}`;
+  },
+
   async create({ full_name, email, password, contact_number }) {
+    const user_code = await this.generateUserCode();
     const result = await db.query(
-      `INSERT INTO users (full_name, email, password, contact_number, role)
-       VALUES ($1, $2, $3, $4, 'client')
-       RETURNING id, full_name, email, contact_number, role, is_verified, created_at`,
-      [full_name, email, password, contact_number]
+      `INSERT INTO users (full_name, email, password, contact_number, role, user_code)
+       VALUES ($1, $2, $3, $4, 'client', $5)
+       RETURNING id, user_code, full_name, email, contact_number, role, is_verified, created_at`,
+      [full_name, email, password, contact_number, user_code]
     );
     return result.rows[0];
   },
@@ -23,12 +43,54 @@ const User = {
    */
   async findByEmail(email) {
     const result = await db.query(
-      `SELECT id, full_name, email, password, contact_number, role, is_verified, created_at
+      `SELECT id, user_code, full_name, email, password, contact_number, role, is_verified,
+              COALESCE(is_active, TRUE) AS is_active,
+              COALESCE(must_reset_password, FALSE) AS must_reset_password,
+              sessions_invalid_after, created_at
        FROM users
        WHERE email = $1`,
       [email]
     );
     return result.rows[0] || null;
+  },
+
+  /**
+   * Activate or deactivate (suspend) a client account. Enforced at login.
+   * @param {number} userId
+   * @param {boolean} isActive
+   */
+  async setActive(userId, isActive) {
+    const result = await db.query(
+      `UPDATE users SET is_active = $1, updated_at = NOW() WHERE id = $2
+       RETURNING id, email, full_name, COALESCE(is_active, TRUE) AS is_active`,
+      [isActive, userId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Flag (or clear) a forced password reset. When TRUE, the next successful
+   * login redirects the client to the reset-password page (no email sent).
+   * @param {number} userId
+   * @param {boolean} value
+   */
+  async setMustResetPassword(userId, value) {
+    await db.query(
+      `UPDATE users SET must_reset_password = $1, updated_at = NOW() WHERE id = $2`,
+      [value, userId]
+    );
+  },
+
+  /**
+   * Terminate all active sessions in real time: any JWT issued before now is
+   * rejected on its next request (live-checked in the auth middleware).
+   * @param {number} userId
+   */
+  async invalidateSessions(userId) {
+    await db.query(
+      `UPDATE users SET sessions_invalid_after = NOW(), updated_at = NOW() WHERE id = $1`,
+      [userId]
+    );
   },
 
   /**
@@ -77,7 +139,8 @@ const User = {
    */
   async findById(userId) {
     const result = await db.query(
-      `SELECT id, full_name, email, contact_number, role, is_verified, created_at
+      `SELECT id, user_code, full_name, email, contact_number, role, is_verified,
+              COALESCE(is_active, TRUE) AS is_active, sessions_invalid_after, created_at
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -92,7 +155,7 @@ const User = {
    */
   async findByIdWithPassword(userId) {
     const result = await db.query(
-      `SELECT id, full_name, email, password, contact_number, role, is_verified, created_at
+      `SELECT id, user_code, full_name, email, password, contact_number, role, is_verified, created_at
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -120,7 +183,7 @@ const User = {
   },
 
   async findAll({ role, limit = 50, offset = 0 } = {}) {
-    let query = `SELECT id, full_name, email, contact_number, role, is_verified, created_at, updated_at FROM users`;
+    let query = `SELECT id, user_code, full_name, email, contact_number, role, is_verified, created_at, updated_at FROM users`;
     const params = [];
     let idx = 1;
     if (role) {
@@ -134,17 +197,18 @@ const User = {
   },
 
   async updateRole(userId, role) {
+    const newCode = await this.generateUserCode(role);
     const result = await db.query(
-      `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2
-       RETURNING id, full_name, email, contact_number, role, is_verified`,
-      [role, userId]
+      `UPDATE users SET role = $1, user_code = $2, updated_at = NOW() WHERE id = $3
+       RETURNING id, user_code, full_name, email, contact_number, role, is_verified`,
+      [role, newCode, userId]
     );
     return result.rows[0] || null;
   },
 
   async findByRole(role) {
     const result = await db.query(
-      `SELECT id, full_name, email, contact_number, role, is_verified, created_at
+      `SELECT id, user_code, full_name, email, contact_number, role, is_verified, created_at
        FROM users WHERE role = $1 ORDER BY full_name`,
       [role]
     );

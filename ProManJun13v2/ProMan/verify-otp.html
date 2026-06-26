@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="verify-otp.css">
   <link rel="stylesheet" href="design-system.css">
+  <script src="fingerprint.js"></script>
 </head>
 <body class="auth-page">
 
@@ -21,7 +22,7 @@
         <img src="barcarse logo.jpg" alt="BPS Logo">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links">
@@ -37,6 +38,11 @@
     <div class="auth-card">
       <h1 class="auth-card__title">Enter OTP</h1>
       <p class="auth-card__subtitle">Enter the 6-digit code sent to <a href="#" id="user-email">name@company.com</a></p>
+
+      <div class="otp-spam-note" style="display:flex;gap:8px;align-items:flex-start;background:#fffaf0;border:1px solid #fbd38d;color:#9c5b15;border-radius:8px;padding:10px 12px;margin:0 0 18px;font-size:0.86rem;line-height:1.45;text-align:left;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0;margin-top:1px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span>If the verification code is not visible in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.</span>
+      </div>
 
       <form id="otp-form" novalidate>
         <!-- 6 individual OTP digit boxes -->
@@ -67,7 +73,7 @@
   <script>
     // ── Configuration ──────────────────────────────────
     const API_BASE = 'http://localhost:5000/api/auth';
-    const RESEND_COOLDOWN = 30; // seconds
+    const RESEND_COOLDOWN = 120; // seconds (2-minute resend rate limit)
 
     // ── DOM Elements ───────────────────────────────────
     const otpInputs = document.querySelectorAll('.otp-inputs input');
@@ -78,10 +84,19 @@
     const countdownEl = document.getElementById('countdown');
     const userEmailEl = document.getElementById('user-email');
 
-    // ── Populate email from registration ───────────────
+    // ── Populate email from registration (masked for display) ───────────────
+    function maskEmail(email) {
+      const s = String(email || '');
+      const at = s.indexOf('@');
+      if (at < 1) return s;
+      const local = s.slice(0, at);
+      const domain = s.slice(at + 1);
+      const shown = local.slice(0, 2);
+      return `${shown}${'•'.repeat(Math.max(3, local.length - 2))}@${domain}`;
+    }
     const storedUser = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
-    const userEmail = storedUser.email || 'name@company.com';
-    userEmailEl.textContent = userEmail;
+    const userEmail = storedUser.email || 'name@company.com';   // full address — used for API calls
+    userEmailEl.textContent = maskEmail(userEmail);             // masked — shown to the user
 
     // ── OTP Input Behavior ─────────────────────────────
     otpInputs.forEach((input, index) => {
@@ -123,18 +138,22 @@
         }
       });
 
-      // Handle paste — distribute digits across boxes
+      // Handle paste — always fill from the first box regardless of focus position
       input.addEventListener('paste', (e) => {
         e.preventDefault();
         const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
-        pasteData.split('').slice(0, 6).forEach((digit, i) => {
-          if (otpInputs[index + i]) {
-            otpInputs[index + i].value = digit;
-            otpInputs[index + i].classList.add('filled');
-            otpInputs[index + i].classList.remove('error');
-          }
+        const digits = pasteData.split('').slice(0, 6);
+        digits.forEach((digit, i) => {
+          otpInputs[i].value = digit;
+          otpInputs[i].classList.add('filled');
+          otpInputs[i].classList.remove('error');
         });
-        // Focus the next empty box or last box
+        // Clear any remaining inputs beyond the pasted length
+        for (let i = digits.length; i < otpInputs.length; i++) {
+          otpInputs[i].value = '';
+          otpInputs[i].classList.remove('filled');
+        }
+        // Focus the next empty box or the last box
         const nextEmpty = Array.from(otpInputs).findIndex(inp => !inp.value);
         if (nextEmpty !== -1) otpInputs[nextEmpty].focus();
         else otpInputs[otpInputs.length - 1].focus();
@@ -223,8 +242,9 @@
     // ── Resend Countdown Timer ─────────────────────────
     let resendTimer;
 
-    function startCountdown() {
-      let seconds = RESEND_COOLDOWN;
+    function startCountdown(initial) {
+      let seconds = initial || RESEND_COOLDOWN;
+      clearInterval(resendTimer);
       resendLink.classList.add('disabled');
       countdownEl.textContent = seconds;
 
@@ -244,8 +264,10 @@
       }, 1000);
     }
 
-    // Start initial countdown
-    startCountdown();
+    // The first resend is allowed immediately; the 2-minute cooldown timer only
+    // starts after the user clicks Resend (matches the OTP workflow).
+    resendLink.classList.remove('disabled');
+    resendLink.innerHTML = 'Resend code';
 
     // ── Resend OTP ─────────────────────────────────────
     resendLink.addEventListener('click', async (e) => {
@@ -266,21 +288,23 @@
 
         if (res.ok && data.success) {
           showStatus('A new verification code has been sent to your email.', 'success');
+          // Clear inputs only on a successful resend.
+          otpInputs.forEach(input => {
+            input.value = '';
+            input.classList.remove('filled', 'error');
+          });
+          otpInputs[0].focus();
+          startCountdown(data.retryAfter || RESEND_COOLDOWN);
         } else {
           showStatus(data.message || 'Failed to resend code.', 'error');
+          // If the server is rate-limiting, restart the timer for the remaining wait.
+          startCountdown(data.retryAfter || RESEND_COOLDOWN);
         }
       } catch (err) {
         showStatus('Unable to connect to server.', 'error');
+        resendLink.classList.remove('disabled');
+        resendLink.innerHTML = 'Resend code';
       }
-
-      // Clear inputs
-      otpInputs.forEach(input => {
-        input.value = '';
-        input.classList.remove('filled', 'error');
-      });
-      otpInputs[0].focus();
-
-      startCountdown();
     });
 
     // ── Auto-focus first input on load ─────────────────

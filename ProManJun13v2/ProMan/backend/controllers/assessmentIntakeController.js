@@ -1,6 +1,7 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
+const Case = require('../models/Case');
 const notificationService = require('../services/notificationService');
 
 /**
@@ -47,6 +48,15 @@ const submitAssessmentIntake = async (req, res, next) => {
     // A preferred schedule is required.
     if (!f.prefSchedule) {
       return res.status(400).json({ success: false, message: 'A preferred appointment schedule is required.' });
+    }
+
+    // Reject schedules in the past (date OR time). Authoritative server-side
+    // guard so a stale/forged client cannot book a slot that has already passed.
+    if (isNaN(new Date(f.prefSchedule).getTime()) || new Date(f.prefSchedule) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'The selected appointment date and time has already passed. Please choose a future schedule.',
+      });
     }
 
     // Validate daily limit (max 5 per day) and that the slot is free.
@@ -99,6 +109,28 @@ const submitAssessmentIntake = async (req, res, next) => {
     );
     const assessmentFormId = inserted.rows[0].id;
 
+    // ── Create a Case for this assessment intake ──
+    let assignedStaffId = null;
+    if (f.counselorStaffId) {
+      assignedStaffId = parseInt(f.counselorStaffId, 10) || null;
+    } else if (f.counselorStaff) {
+      const staffLookup = await db.query(
+        `SELECT staff_id FROM staff WHERE CONCAT(first_name, ' ', last_name) = $1 AND is_active = TRUE LIMIT 1`,
+        [f.counselorStaff]
+      );
+      if (staffLookup.rows.length > 0) assignedStaffId = staffLookup.rows[0].staff_id;
+    }
+
+    const newCase = await Case.create({
+      userId,
+      assignedPsychologistId: assignedStaffId,
+      intakeDate: new Date(),
+      serviceType: 'assessment',
+    });
+
+    // Link assessment intake form to the case
+    await db.query(`UPDATE assessment_intake_forms SET case_id = $1 WHERE id = $2`, [newCase.case_id, assessmentFormId]);
+
     const appointment = await Appointment.create({
       intakeFormId: null,
       assessmentFormId,
@@ -107,27 +139,31 @@ const submitAssessmentIntake = async (req, res, next) => {
       modality: f.modality || null,
     });
 
+    // Link appointment to the case
+    await db.query(`UPDATE appointments SET case_id = $1 WHERE id = $2`, [newCase.case_id, appointment.id]);
+
     // ── Role-based notifications (identical to counseling) ──
     try {
       await notificationService.notifyUser(
         userId, 'intake', 'Assessment Form & Appointment Submitted',
         'Your assessment intake form and preferred appointment schedule have been submitted for review. We’ll notify you once a staff member approves your schedule — payment will be requested only after that.',
-        'profile.html'
+        `profile.html?appt_id=${appointment.id}`
       );
     } catch (err) { console.error('Failed to send client assessment notification:', err.message); }
 
     try {
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['psychometrician', 'clinical_director'],
         'intake', 'New Client Assessment Form',
         `${userName} has submitted an assessment intake form and is awaiting review.${f.prefSchedule ? ' Preferred schedule: ' + new Date(f.prefSchedule).toLocaleString('en-PH') : ''}`,
-        'intake-submissions.html'
+        'case-dashboard.html'
       );
     } catch (err) { console.error('Failed to send staff assessment notifications:', err.message); }
 
     return res.status(201).json({
       success: true,
       message: 'Assessment intake form submitted for review.',
-      data: { appointment_id: appointment.id, created_at: appointment.created_at, appointment },
+      data: { case_id: newCase.case_id, appointment_id: appointment.id, created_at: appointment.created_at, appointment },
     });
   } catch (error) {
     next(error);

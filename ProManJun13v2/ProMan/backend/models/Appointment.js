@@ -29,6 +29,15 @@ const Appointment = {
     return result.rows[0] || null;
   },
 
+  /**
+   * Returns true when the appointment's assessment type is neurodevelopmental.
+   * Used to enforce Face-to-Face-only modality restriction.
+   */
+  isNeurodevelopmental(appt) {
+    return appt && appt.assessment_type &&
+      appt.assessment_type.toLowerCase() === 'neurodevelopmental';
+  },
+
   async findByIntakeFormId(intakeFormId) {
     const result = await db.query(
       `SELECT * FROM appointments WHERE intake_form_id = $1`,
@@ -84,6 +93,7 @@ const Appointment = {
              LEFT JOIN users c ON c.id = a.client_id
              LEFT JOIN users s ON s.id = a.staff_id
              WHERE a.status IN ('approved', 'confirmed')
+               AND a.case_id IS NOT NULL
                AND ABS(EXTRACT(EPOCH FROM (a.approved_datetime - $1::timestamp))) < 3600`;
     const params = [datetime];
     let idx = 2;
@@ -96,20 +106,28 @@ const Appointment = {
   },
 
   /**
-   * Staff approves the preferred datetime.
+   * Supervising Psychometrician confirms appointment with assessment type.
+   * Neurodevelopmental assessments are locked to Face-to-Face modality.
+   * Status goes directly to 'confirmed' — payment becomes available after this.
    */
-  async approve(id, staffId) {
+  async approve(id, staffId, assessmentType) {
     const appt = await this.findById(id);
     if (!appt) return null;
+
+    const isNeuro = assessmentType && assessmentType.toLowerCase() === 'neurodevelopmental';
+    const finalModality = isNeuro ? 'Face-to-Face' : (appt.modality || null);
+
     const result = await db.query(
       `UPDATE appointments
-       SET status = 'approved',
+       SET status = 'confirmed',
            approved_datetime = preferred_datetime,
            staff_id = $1,
+           assessment_type = $2,
+           modality = $3,
            updated_at = NOW()
-       WHERE id = $2
+       WHERE id = $4
        RETURNING *`,
-      [staffId, id]
+      [staffId, assessmentType || null, finalModality, id]
     );
     return result.rows[0] || null;
   },
@@ -198,7 +216,7 @@ const Appointment = {
     const result = await db.query(
       `SELECT COUNT(*)::int AS count
        FROM appointments
-       WHERE status NOT IN ('declined', 'cancelled')
+       WHERE status NOT IN ('declined', 'cancelled', 'completed')
          AND payment_status = 'paid_verified'
          AND (
            DATE(preferred_datetime) = $1::date
@@ -222,7 +240,7 @@ const Appointment = {
       `SELECT
          COALESCE(approved_datetime, proposed_datetime, preferred_datetime) AS booked_dt
        FROM appointments
-       WHERE status NOT IN ('declined', 'cancelled')
+       WHERE status NOT IN ('declined', 'cancelled', 'completed')
          AND payment_status = 'paid_verified'
          AND (
            DATE(preferred_datetime) = $1::date

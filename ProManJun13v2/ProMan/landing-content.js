@@ -23,12 +23,10 @@
     return ASSET_BASE + p;
   }
 
-  /* default inline icons used when the editor adds MORE cards/features
+  /* default inline icon used when the editor adds MORE service cards
      than the original page shipped with (so new ones aren't iconless) */
   var DEFAULT_SERVICE_ICON =
     '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm0-4h-2V7h2v8z"/></svg>';
-  var DEFAULT_FEATURE_ICON =
-    '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
 
   /* ---------- tiny helpers ---------- */
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -74,6 +72,10 @@
     setText($('.section-subheading', s), c.subheading);
   }
 
+  /* fallback drawer icon for editor-added cards that have no baked-in icon */
+  var DEFAULT_DRAWER_ICON_PATH =
+    '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm0-4h-2V7h2v8z"/>';
+
   function hydrateServices(c) {
     var s = sectionEl('services'); if (!s || !c) return;
     hydrateHeader(s, c);
@@ -81,6 +83,9 @@
     if (!grid || !Array.isArray(c.cards)) return;
     var cards = $all('.service-card', grid);
     var template = cards[0];
+    /* drawer content store created by landingpage's drawer script (same object
+       the drawer reads); fall back to a fresh map if it ran in a different order */
+    var store = window.BPS_SERVICES || (window.BPS_SERVICES = {});
 
     c.cards.forEach(function (data, i) {
       var card = cards[i];
@@ -88,11 +93,35 @@
         card = template.cloneNode(true);
         var ic = $('.service-card__icon', card);
         if (ic) ic.innerHTML = DEFAULT_SERVICE_ICON;
+        card.removeAttribute('data-svc'); /* force a fresh key below */
         grid.appendChild(card);
       }
       if (!card) return;
       setText($('.service-card__title', card), data.title);
       setText($('.service-card__text', card), data.text);
+      if (data.accent) card.setAttribute('data-accent', data.accent);
+
+      /* stable key so the detail drawer can look this card up on click */
+      var key = card.getAttribute('data-svc');
+      if (!key) { key = 'svc-' + i; card.setAttribute('data-svc', key); }
+
+      /* overlay the editable fields onto the drawer data (keep baked-in icon) */
+      var d = store[key] || {};
+      if (data.title)  d.title = data.title;
+      if (data.accent) d.accent = data.accent;
+      if (data.lead)   d.lead = data.lead;
+      if (data.about)  d.about = data.about;
+      if (Array.isArray(data.expect)   && data.expect.length)   d.expect = data.expect;
+      if (Array.isArray(data.idealFor) && data.idealFor.length) d.idealFor = data.idealFor;
+      if (Array.isArray(data.faqs)     && data.faqs.length)     d.faqs = data.faqs;
+      if (!d.icon)     d.icon = DEFAULT_DRAWER_ICON_PATH;
+      if (!d.accent)   d.accent = 'blue';
+      if (!d.lead)     d.lead = data.text || '';
+      if (!d.about)    d.about = '';
+      if (!d.expect)   d.expect = [];
+      if (!d.idealFor) d.idealFor = [];
+      if (!d.faqs)     d.faqs = [];
+      store[key] = d;
     });
     /* drop any leftover hardcoded cards beyond the saved count */
     cards.slice(c.cards.length).forEach(function (extra) {
@@ -109,6 +138,16 @@
     var s = sectionEl('mission_vision'); if (!s || !c) return;
     /* the label/heading/subheading live in the first .container */
     hydrateHeader($('.container', s) || s, c);
+
+    /* keep the two-tone heading: Vision = blue, Mission = green */
+    var headingEl = $('.section-heading', s);
+    if (headingEl) {
+      var h = (typeof c.heading === 'string' && c.heading.length) ? c.heading : headingEl.textContent;
+      headingEl.innerHTML = h
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/Vision/i, '<span class="mv-accent mv-accent--vision">$&</span>')
+        .replace(/Mission/i, '<span class="mv-accent mv-accent--mission">$&</span>');
+    }
 
     var mvCards = $all('.mv-card', s);
     var vision = mvCards[0];
@@ -143,57 +182,32 @@
       }
     }
 
-    setText($('.mv-history__title', s), c.history_title);
-    setText($('.mv-history__text', s), c.history_text);
-
-    var contacts = $all('.mv-contact__item', s);
-    setTrailingText(contacts[0], c.contact_email);
-    setTrailingText(contacts[1], c.contact_phone);
-    setTrailingText(contacts[2], c.contact_phone2);
-  }
-
-  function hydrateAbout(c) {
-    var s = sectionEl('about'); if (!s || !c) return;
-    var head = $('.about__grid > div', s) || s;
-    hydrateHeader(head, c);
-
-    /* stats */
-    var statsWrap = $('.about__stats', s);
-    if (statsWrap && Array.isArray(c.stats)) {
-      var statCards = $all('.stat-card', statsWrap);
-      var statTpl = statCards[0];
-      c.stats.forEach(function (data, i) {
-        var card = statCards[i];
-        if (!card && statTpl) { card = statTpl.cloneNode(true); statsWrap.appendChild(card); }
-        if (!card) return;
-        setText($('.stat-card__number', card), data.number);
-        setText($('.stat-card__label', card), data.label);
-      });
-      statCards.slice(c.stats.length).forEach(function (x) {
-        if (x && x.parentNode) x.parentNode.removeChild(x);
-      });
+    /* swap the Vision / Mission figure images if the CMS provides them.
+       Order matches the markup: figure[0] = Vision, figure[1] = Mission. */
+    var figs = $all('.mv-figure img', s);
+    if (figs[0] && typeof c.vision_image === 'string' && c.vision_image) {
+      figs[0].src = resolveAsset(c.vision_image);
+    }
+    if (figs[1] && typeof c.mission_image === 'string' && c.mission_image) {
+      figs[1].src = resolveAsset(c.mission_image);
     }
 
-    /* features */
-    var featWrap = $('.about__features', s);
-    if (featWrap && Array.isArray(c.features)) {
-      var featItems = $all('.feature-item', featWrap);
-      var featTpl = featItems[0];
-      c.features.forEach(function (data, i) {
-        var item = featItems[i];
-        if (!item && featTpl) {
-          item = featTpl.cloneNode(true);
-          var ic = $('.feature-item__icon', item);
-          if (ic) ic.innerHTML = DEFAULT_FEATURE_ICON;
-          featWrap.appendChild(item);
-        }
-        if (!item) return;
-        setText($('.feature-item__title', item), data.title);
-        setText($('.feature-item__text', item), data.text);
-      });
-      featItems.slice(c.features.length).forEach(function (x) {
-        if (x && x.parentNode) x.parentNode.removeChild(x);
-      });
+    /* history title is intentionally hardcoded in HTML — not overridden from DB */
+  }
+
+  /* NOTE: the "Why Choose Us" (about) section was removed — the `about`
+     section key now only positions/shows the hardcoded "Our Facilities"
+     carousel via applyOrderAndVisibility(), so there is no content hydrator. */
+
+  function hydratePartnerSchools(partners) {
+    if (!Array.isArray(partners) || !partners.length) return;
+    if (window.BPSPartnerCarousel && typeof window.BPSPartnerCarousel.build === 'function') {
+      window.BPSPartnerCarousel.build(partners.map(function (p) {
+        return {
+          school_name: p.school_name,
+          logo_path: resolveAsset(p.logo_path),
+        };
+      }));
     }
   }
 
@@ -202,6 +216,39 @@
     hydrateHeader(s, c);
     setText($('#cta-book', s), c.primary_label);
     setText($('#cta-contact', s), c.secondary_label);
+  }
+
+  /* Facilities section (lives in the "about" slot, data-ls="about").
+     Managed via Website Management → "Our Facilities": an eyebrow / heading /
+     subheading plus up to 5 landscape photo + caption pairs. The photos drive
+     the landing-page carousel through window.renderFacilities(). */
+  function hydrateFacilities(c) {
+    var s = sectionEl('about'); if (!s || !c) return;
+    setText($('.fac-eyebrow', s), c.label);
+    setText($('.fac-heading', s), c.heading);
+    setText($('.fac-sub', s), c.subheading);
+
+    var list = [];
+    // Preferred: a dynamic `facilities` array of { image, caption }.
+    if (Array.isArray(c.facilities)) {
+      c.facilities.forEach(function (f) {
+        var src = f && f.image;
+        if (src && typeof src === 'string' && src.trim()) {
+          list.push({ src: resolveAsset(src.trim()), caption: (f.caption || '') });
+        }
+      });
+    } else {
+      // Legacy fallback: flat fac1_image / fac1_caption … keys.
+      for (var i = 1; i <= 30; i++) {
+        var legacySrc = c['fac' + i + '_image'];
+        if (legacySrc && typeof legacySrc === 'string' && legacySrc.trim()) {
+          list.push({ src: resolveAsset(legacySrc.trim()), caption: c['fac' + i + '_caption'] || '' });
+        }
+      }
+    }
+    if (list.length && typeof window.renderFacilities === 'function') {
+      window.renderFacilities(list);
+    }
   }
 
   /* ---------- ordering + visibility ---------- */
@@ -237,9 +284,10 @@
     try { hydrateServices(content.services); } catch (e) {}
     try { hydrateTeamHeader(content.team); } catch (e) {}
     try { hydrateMissionVision(content.mission_vision); } catch (e) {}
-    try { hydrateAbout(content.about); } catch (e) {}
+    try { hydrateFacilities(content.about); } catch (e) {}
     try { hydrateCta(content.cta); } catch (e) {}
     try { applyOrderAndVisibility(data && data.sections); } catch (e) {}
+    try { hydratePartnerSchools(data && data.partners); } catch (e) {}
 
     /* team carousel from saved members (falls back to defaults if empty) */
     try {

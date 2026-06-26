@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Management | Barcarse Psychological Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="design-system.css">
+  <link rel="stylesheet" href="staff-management.css">
+  <link rel="stylesheet" href="intakeform.css">
+  <link rel="stylesheet" href="toast.css">
+  <link rel="stylesheet" href="captcha.css">
+  <script src="icons.js"></script>
+  <style>
+    /* ── Layout ───────────────────────────────────────────────────────────── */
+    .cm-layout {
+      display: flex;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+    .cm-sidebar {
+      width: 252px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1.5px solid #e2e8f0;
+      position: fixed;
+      top: 64px;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: width 0.22s cubic-bezier(.4,0,.2,1);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+    }
+    .cm-layout.sidebar-collapsed .cm-sidebar { width: 56px; }
+    .cm-layout.sidebar-collapsed .cm-sidebar-body { display: none; }
+    .cm-layout.sidebar-collapsed .cm-toggle-text { display: none; }
+
+    /* ── Main content ─────────────────────────────────────────────────────── */
+    .cm-main {
+      flex: 1;
+      margin-left: 252px;
+      padding: 36px 28px 56px;
+      transition: margin-left 0.22s cubic-bezier(.4,0,.2,1);
+      min-width: 0;
+    }
+    .cm-layout.sidebar-collapsed .cm-main { margin-left: 56px; }
+
+    /* ── Sidebar toggle button ────────────────────────────────────────────── */
+    .cm-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 16px;
+      background: none;
+      border: none;
+      border-bottom: 1.5px solid #e2e8f0;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a202c;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .cm-toggle:hover { background: #f8fafc; }
+    .cm-toggle-icon { width: 18px; height: 18px; flex-shrink: 0; fill: #64748b; transition: transform 0.22s; }
+    .cm-layout.sidebar-collapsed .cm-toggle-icon { transform: scaleX(-1); }
+    .cm-toggle-text { white-space: nowrap; overflow: hidden; }
+
+    /* ── Sidebar body ─────────────────────────────────────────────────────── */
+    .cm-sidebar-body { padding: 8px 0 24px; flex: 1; overflow-y: auto; }
+
+    .cm-sb-section { margin-bottom: 4px; }
+
+    .cm-sb-label {
+      display: block;
+      padding: 12px 16px 5px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    /* ── Service buttons ──────────────────────────────────────────────────── */
+    .cm-svc-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #475569;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .cm-svc-btn:hover { background: #f1f5f9; color: #1a202c; }
+    .cm-svc-btn.active { background: #EEF1FA; color: #1E3A8A; }
+    .cm-svc-btn svg { width: 16px; height: 16px; flex-shrink: 0; fill: currentColor; }
+    .cm-svc-btn .cm-svc-label { flex: 1; }
+
+    /* ── Section buttons ──────────────────────────────────────────────────── */
+    .cm-sec-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px 14px 7px 22px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #4a5568;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .cm-sec-btn:hover { background: #f8fafc; color: #1a202c; }
+    .cm-sec-btn.active { background: #EEF1FA; color: #1E3A8A; font-weight: 600; }
+    .cm-sec-btn .cm-sec-label { flex: 1; }
+    .cm-sec-terminal { color: #94a3b8; font-size: 12.5px; }
+    .cm-sec-terminal:hover { color: #64748b; }
+    .cm-sec-terminal.active { color: #475569; }
+
+    .cm-sec-divider { margin: 8px 14px; border-top: 1px solid #e2e8f0; }
+
+    /* ── Badges ───────────────────────────────────────────────────────────── */
+    .cm-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 18px;
+      padding: 0 5px;
+      background: #1E3A8A;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 9px;
+      letter-spacing: 0;
+      flex-shrink: 0;
+    }
+    .cm-svc-btn.active .cm-badge { background: #1E3A8A; }
+
+    /* ── Page header ──────────────────────────────────────────────────────── */
+    .case-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .case-header__title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: #1a202c; }
+    .case-header__count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #E11D48; color: #fff; font-size: 11px; font-weight: 800; line-height: 1; vertical-align: middle; margin-left: 10px; box-shadow: 0 0 0 2px #fff; font-family: 'Inter', sans-serif; }
+    .cm-breadcrumb { font-size: 13px; color: #94a3b8; margin-top: 3px; font-weight: 500; font-family: 'Inter', sans-serif; }
+
+    /* ── Table ────────────────────────────────────────────────────────────── */
+    .cases-table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.06); overflow: hidden; }
+    .cases-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 14px; }
+    .cases-table thead { background: #f8fafc; }
+    .cases-table th { padding: 14px 16px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+    .cases-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .cases-table tr:last-child td { border-bottom: none; }
+    .cases-table tbody tr { cursor: pointer; transition: background .15s; }
+    .cases-table tbody tr:hover { background: #f8fafc; }
+
+    /* ── Status badges ────────────────────────────────────────────────────── */
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+    .status-badge.pending { background: #fef3c7; color: #92400e; }
+    .status-badge.awaiting { background: #fed7aa; color: #9a3412; }
+    .status-badge.scheduled { background: #dbeafe; color: #1e40af; }
+    .status-badge.inprogress { background: #bfdbfe; color: #1d4ed8; }
+    .status-badge.completed { background: #d1fae5; color: #065f46; }
+    .status-badge.approved { background: #a7f3d0; color: #047857; }
+    .status-badge.rejected { background: #fecaca; color: #991b1b; }
+    .status-badge.released { background: #e9d5ff; color: #6b21a8; }
+    .status-badge.closed { background: #e2e8f0; color: #475569; }
+    .status-badge.drafting { background: #e0e7ff; color: #3730a3; }
+
+    /* ── Service tag on table rows ────────────────────────────────────────── */
+    .svc-tag { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+    .svc-tag.counseling { background: #dcfce7; color: #15803d; }
+    .svc-tag.assessment { background: #ede9fe; color: #6d28d9; }
+
+    /* ── Empty state ──────────────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+    .empty-state svg { width: 64px; height: 64px; fill: #cbd5e1; margin-bottom: 16px; }
+    .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 20px; color: #475569; margin-bottom: 8px; }
+
+    /* ── Case detail modal ────────────────────────────────────────────────── */
+    .case-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(4px); z-index: 9000; display: none; align-items: center; justify-content: center; }
+    .case-modal-overlay.open { display: flex; }
+    .case-modal { background: #fff; border-radius: 20px; width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,.15); animation: modalIn .25s ease; }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .case-modal__header { padding: 24px 28px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; }
+    .case-modal__header h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 800; color: #1a202c; margin: 0; }
+    .case-modal__close { background: none; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; transition: color .15s; }
+    .case-modal__close:hover { color: #ef4444; }
+    .case-modal__body { padding: 20px 28px 28px; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 20px; }
+    .detail-item label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; margin-bottom: 2px; }
+    .detail-item span { font-size: 14px; color: #1e293b; font-weight: 500; }
+
+    .section-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #334155; margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+    .form-pref-highlight { display: flex; align-items: center; gap: 10px; background: #fffbeb; border: 1.5px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 12px 14px; margin: 6px 0 14px; font-size: 14px; }
+    .form-pref-highlight svg { fill: #d97706; flex: 0 0 auto; }
+    .detail-item--pref { background: #fffbeb; border-radius: 8px; padding: 6px 10px; box-shadow: inset 0 0 0 1.5px #fcd34d; }
+
+    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+    .action-btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s; }
+    .action-btn.primary { background: var(--royal); border: 2px solid var(--royal); color: #fff; }
+    .action-btn.primary:hover { background: var(--royal-deep); border-color: var(--royal-deep); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,58,138,.35); }
+    .action-btn.primary:active { background: var(--royal-press); border-color: var(--royal-press); transform: translateY(0); }
+    .action-btn.primary:focus-visible { outline: 3px solid var(--royal-wash); outline-offset: 2px; }
+    .action-btn.primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .action-btn.danger { background: #fef2f2; color: #dc2626; border: 2px solid #fecaca; }
+    .action-btn.danger:hover { background: #dc2626; color: #fff; }
+    .action-btn.success { background: #f0fdf4; color: #16a34a; border: 2px solid #bbf7d0; }
+    .action-btn.success:hover { background: #16a34a; color: #fff; }
+    .action-btn.secondary { background: #f8fafc; color: #475569; border: 2px solid #e2e8f0; }
+    .action-btn.secondary:hover { background: #e2e8f0; }
+    .action-status-note { font-size: 13px; color: #16a34a; font-weight: 600; padding: 8px 14px; background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; }
+    .action-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; margin-top: 8px; padding: 7px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-left: 3px solid var(--royal); border-radius: 8px; width: 100%; }
+
+    .notes-list { list-style: none; padding: 0; margin: 0; }
+    .notes-list li { padding: 10px 0; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #475569; }
+    .notes-list li:last-child { border-bottom: none; }
+    .note-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+    .add-note-form { display: flex; gap: 8px; margin-top: 10px; }
+    .add-note-form textarea { flex: 1; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 13px; resize: vertical; min-height: 40px; }
+    .add-note-form textarea:focus { outline: none; border-color: #667eea; }
+
+    .audit-timeline { list-style: none; padding: 0; margin: 0; }
+    .audit-timeline li { padding: 8px 0 8px 20px; border-left: 2px solid #e2e8f0; font-size: 12px; color: #64748b; position: relative; }
+    .audit-timeline li::before { content: ''; position: absolute; left: -5px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: #667eea; }
+
+    .input-modal-field { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 13px; margin: 8px 0; box-sizing: border-box; }
+    .input-modal-field:focus { outline: none; border-color: #667eea; }
+
+    /* ── Select mode toggle button ────────────────────────────────────── */
+    .btn-select-mode {
+      padding: 6px 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      background: #fff;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all .15s;
+    }
+    .btn-select-mode:hover { border-color: #1E3A8A; color: #1E3A8A; }
+    .btn-select-mode.active { background: #1E3A8A; border-color: #1E3A8A; color: #fff; }
+
+    /* ── Checkbox column ──────────────────────────────────────────────── */
+    .col-check { width: 44px; padding-right: 0 !important; }
+    .row-checkbox { width: 15px; height: 15px; cursor: pointer; accent-color: #1E3A8A; }
+
+    /* ── Bulk action bar ──────────────────────────────────────────────── */
+    .bulk-bar {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      background: #EEF1FA;
+      border: 1.5px solid #C7D2F5;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      animation: fadeIn .15s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .bulk-bar.visible { display: flex; }
+    .bulk-count { font-size: 13px; font-weight: 600; color: #1E3A8A; flex: 1; }
+    .btn-delete-sel {
+      padding: 6px 20px;
+      background: transparent;
+      border: 2px solid #dc2626;
+      border-radius: 20px;
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 12.5px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .btn-delete-sel:hover { background: #dc2626; color: #fff; }
+
+    /* ── Delete confirmation modal ────────────────────────────────────── */
+    .del-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,.5);
+      backdrop-filter: blur(4px);
+      z-index: 9100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .del-modal-overlay.open { display: flex; }
+    .del-modal {
+      background: #fff;
+      border-radius: 18px;
+      width: 90%;
+      max-width: 420px;
+      padding: 36px 28px 28px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.18);
+      animation: modalIn .22s ease;
+      text-align: center;
+    }
+    .del-modal__icon {
+      width: 54px; height: 54px;
+      background: #fef2f2;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .del-modal__icon svg { width: 26px; height: 26px; fill: #dc2626; }
+    .del-modal h3 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 800; color: #1a202c; margin-bottom: 10px; }
+    .del-modal p { font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 24px; }
+    .del-modal__actions { display: flex; gap: 10px; justify-content: center; }
+    .del-modal__btn-cancel { padding: 10px 24px; border: 2px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; transition: background .15s; }
+    .del-modal__btn-cancel:hover { background: #e2e8f0; }
+    .del-modal__btn-confirm { padding: 10px 24px; border: none; border-radius: 10px; background: #dc2626; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; transition: background .15s; }
+    .del-modal__btn-confirm:hover { background: #b91c1c; }
+    .del-modal__btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cd-confirm-btn-ok { background: var(--royal) !important; }
+    .cd-confirm-btn-ok:hover { background: var(--royal-deep) !important; }
+    .cd-confirm-btn-danger { background: #dc2626 !important; }
+    .cd-confirm-btn-danger:hover { background: #b91c1c !important; }
+    .cd-prompt-input { display: block; width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 13px; font-size: 13.5px; font-family: 'Inter', sans-serif; color: #1a202c; resize: vertical; min-height: 72px; margin: 14px 0 20px; text-align: left; transition: border-color .15s; }
+    .cd-prompt-input:focus { outline: none; border-color: var(--royal); box-shadow: 0 0 0 3px rgba(30,58,138,.1); }
+
+    @media (max-width: 768px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .cases-table { font-size: 12px; }
+      .cases-table th, .cases-table td { padding: 10px 8px; }
+      .cm-sidebar { width: 56px; }
+      .cm-sidebar-body { display: none; }
+      .cm-toggle-text { display: none; }
+      .cm-main { margin-left: 56px; }
+    }
+  </style>
+  <!-- Shared PsyGen sidebar design (overrides the sidebar styles above) -->
+  <link rel="stylesheet" href="psygen-sidebar.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
+</head>
+
+<body data-role-guard="staff">
+  <nav class="navbar" id="navbar">
+    <a href="landingpage.html" class="navbar__brand">
+      <div class="navbar__logo">
+        <img src="barcarse logo.jpg" alt="BPS Logo">
+      </div>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
+    </a>
+    <div class="navbar__right">
+      <ul class="navbar__links" id="nav-links"></ul>
+      <a href="notifications.html" class="navbar__notif" id="notif-bell" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="navbar__notif-badge" id="notif-badge">0</span>
+      </a>
+      <a href="profile.html" class="navbar__profile" title="Profile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="cm-layout" id="cm-layout">
+
+    <!-- ═══ Sidebar ═══ -->
+    <aside class="cm-sidebar" id="cm-sidebar">
+
+      <div class="psg-brand">
+        <img src="PsyGen-Logo.png" class="psg-brand__logo" alt="Logo">
+        <div class="psg-brand__text">
+          <h1><span class="brand-psy">Case</span><span class="brand-gen">Mgmt</span></h1>
+          <p>Case Management</p>
+        </div>
+      </div>
+
+      <button class="cm-toggle" id="cm-toggle" title="Toggle sidebar">
+        <svg class="cm-toggle-icon" viewBox="0 0 24 24">
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+        <span class="cm-toggle-text">Case Management</span>
+      </button>
+
+      <div class="cm-sidebar-body">
+
+        <!-- SERVICES -->
+        <div class="cm-sb-section">
+          <span class="cm-sb-label">Services</span>
+
+          <button class="cm-svc-btn active" data-service="all">
+            <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>
+            <span class="cm-svc-label">All Services</span>
+            <span class="cm-badge" id="svc-badge-all" style="display:none"></span>
+          </button>
+
+          <button class="cm-svc-btn" data-service="counseling">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            <span class="cm-svc-label">Counseling</span>
+            <span class="cm-badge" id="svc-badge-counseling" style="display:none"></span>
+          </button>
+
+          <button class="cm-svc-btn" data-service="assessment">
+            <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span class="cm-svc-label">Assessment</span>
+            <span class="cm-badge" id="svc-badge-assessment" style="display:none"></span>
+          </button>
+        </div>
+
+        <!-- SECTION PROCESS -->
+        <div class="cm-sb-section">
+          <span class="cm-sb-label">Section Process</span>
+
+          <button class="cm-sec-btn active" data-filter="all">
+            <span class="cm-sec-label">All</span>
+            <span class="cm-badge" id="sec-badge-all" style="display:none"></span>
+          </button>
+
+          <button class="cm-sec-btn" data-filter="Pending Intake Review">
+            <span class="cm-sec-label">Intake Review</span>
+            <span class="cm-badge" id="sec-badge-intake" style="display:none"></span>
+          </button>
+
+          <button class="cm-sec-btn" data-filter="Awaiting Initial Payment">
+            <span class="cm-sec-label">Awaiting Payment</span>
+            <span class="cm-badge" id="sec-badge-payment" style="display:none"></span>
+          </button>
+
+          <button class="cm-sec-btn" data-filter="Scheduled">
+            <span class="cm-sec-label">Scheduled</span>
+            <span class="cm-badge" id="sec-badge-scheduled" style="display:none"></span>
+          </button>
+
+          <button class="cm-sec-btn" data-filter="assessment-phase">
+            <span class="cm-sec-label">Assessment</span>
+            <span class="cm-badge" id="sec-badge-assessment-sec" style="display:none"></span>
+          </button>
+
+          <div class="cm-sec-divider"></div>
+
+          <button class="cm-sec-btn cm-sec-terminal" data-filter="Closed">
+            <span class="cm-sec-label">Closed</span>
+          </button>
+
+          <button class="cm-sec-btn cm-sec-terminal" data-filter="Intake Rejected">
+            <span class="cm-sec-label">Rejected</span>
+          </button>
+        </div>
+
+        <!-- ARCHIVE — Clinical Director only -->
+        <div class="cm-sb-section" id="cd-archive-section" style="display:none">
+          <div class="cm-sec-divider"></div>
+          <button class="cm-sec-btn" id="archive-view-btn" onclick="toggleArchiveView()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="flex-shrink:0"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+            <span class="cm-sec-label">Case Archive</span>
+            <span class="cm-badge" id="archive-badge" style="display:none"></span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ═══ Main content ═══ -->
+    <main class="cm-main">
+      <div class="case-header">
+        <div>
+          <h1 class="case-header__title">Case Management <span class="case-header__count" id="case-count">0</span></h1>
+          <div class="cm-breadcrumb" id="cm-breadcrumb">All Services — All</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-select-mode" id="btn-select-mode" style="display:none" onclick="toggleSelectionMode()">Select</button>
+          <span id="poll-indicator" style="font-size:11px;color:#94a3b8;font-family:'Inter',sans-serif"></span>
+        </div>
+      </div>
+
+      <!-- Bulk action bar — shown only when cases are selected (CD only) -->
+      <div class="bulk-bar" id="bulk-bar">
+        <span class="bulk-count" id="bulk-count">0 cases selected</span>
+        <button class="btn-delete-sel" onclick="confirmBulkDelete()">Archive Selected</button>
+      </div>
+
+      <div class="cases-table-wrap" id="active-cases-wrap">
+        <table class="cases-table">
+          <thead>
+            <tr>
+              <th class="col-check" id="col-check-th" style="display:none">
+                <input type="checkbox" class="row-checkbox" id="select-all" title="Select all">
+              </th>
+              <th>Case ID</th>
+              <th>Client ID</th>
+              <th>Client</th>
+              <th>Status</th>
+              <th>Assigned Staff</th>
+              <th>Intake Date</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody id="cases-body">
+            <tr><td colspan="8"><div class="empty-state"><h3>Loading cases…</h3></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Archive panel (CD only, hidden by default) -->
+      <div id="archive-panel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <h2 style="font-size:20px;font-weight:700;color:var(--text-dark);margin:0">Case Archive</h2>
+            <p style="font-size:13px;color:#718096;margin:4px 0 0">Archived cases — restore or permanently delete.</p>
+          </div>
+          <input id="archive-search" type="text" placeholder="Search archived cases…"
+            style="padding:8px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;width:220px;outline:none"
+            oninput="filterArchive(this.value)">
+        </div>
+
+        <!-- Archive bulk bar -->
+        <div class="bulk-bar" id="archive-bulk-bar" style="background:#fef2f2;border-color:#fecaca">
+          <span class="bulk-count" id="archive-bulk-count">0 selected</span>
+          <button class="btn-delete-sel" style="background:#dc2626;border-color:#dc2626" onclick="confirmBulkPermDelete()">Delete Selected Forever</button>
+        </div>
+
+        <div class="cases-table-wrap">
+          <table class="cases-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="archive-select-all" title="Select all" onchange="onArchiveSelectAll(event)"></th>
+                <th>Case ID</th>
+                <th>Client ID</th>
+                <th>Client</th>
+                <th>Service</th>
+                <th>Status at Archive</th>
+                <th>Archived On</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="archive-body">
+              <tr><td colspan="8"><div class="empty-state"><h3>Loading…</h3></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Case Detail Modal -->
+  <div class="case-modal-overlay" id="case-modal">
+    <div class="case-modal">
+      <div class="case-modal__header">
+        <h2 id="modal-title">Case Detail</h2>
+        <button class="case-modal__close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="case-modal__body" id="modal-body">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Archive Confirmation Modal -->
+  <div class="del-modal-overlay" id="del-modal">
+    <div class="del-modal">
+      <div class="del-modal__icon">
+        <svg viewBox="0 0 24 24"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+      </div>
+      <h3>Archive Cases?</h3>
+      <p id="del-modal-msg">Are you sure you want to archive these cases? They will be hidden from the case list but all records are safely preserved and can be retrieved if needed.</p>
+      <div class="del-modal__actions">
+        <button class="del-modal__btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+        <button class="del-modal__btn-confirm" id="del-confirm-btn" onclick="executeBulkDelete()">Yes, Archive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permanent Delete Confirmation Modal -->
+  <div class="del-modal-overlay" id="perm-del-modal">
+    <div class="del-modal">
+      <div class="del-modal__icon" style="background:#fee2e2">
+        <svg viewBox="0 0 24 24" style="fill:#dc2626"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </div>
+      <h3 style="color:#dc2626">Permanently Delete?</h3>
+      <p id="perm-del-msg">This action <strong>cannot be undone</strong>. The case and all linked records (audit trail, notes, assessments) will be permanently erased.</p>
+      <div class="del-modal__actions">
+        <button class="del-modal__btn-cancel" onclick="closePermDelModal()">Cancel</button>
+        <button class="del-modal__btn-confirm" id="perm-del-confirm-btn" style="background:#dc2626;border-color:#dc2626">Delete Forever</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Confirm Modal -->
+  <div class="del-modal-overlay" id="cd-confirm-modal">
+    <div class="del-modal">
+      <h3 id="cd-confirm-title">Confirm</h3>
+      <p id="cd-confirm-msg"></p>
+      <div class="del-modal__actions">
+        <button class="del-modal__btn-cancel" onclick="cdConfirmNo()">Cancel</button>
+        <button class="del-modal__btn-confirm cd-confirm-btn-ok" id="cd-confirm-btn" onclick="cdConfirmYes()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Prompt Modal -->
+  <div class="del-modal-overlay" id="cd-prompt-modal">
+    <div class="del-modal" style="text-align:left">
+      <h3 id="cd-prompt-title" style="text-align:center">Enter value</h3>
+      <textarea class="cd-prompt-input" id="cd-prompt-input" rows="3" placeholder=""></textarea>
+      <div class="del-modal__actions">
+        <button class="del-modal__btn-cancel" onclick="cdPromptNo()">Cancel</button>
+        <button class="del-modal__btn-confirm cd-confirm-btn-ok" onclick="cdPromptYes()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="toast.js"></script>
+  <script src="bps-calendar.js"></script>
+  <script src="session.js"></script>
+  <script src="role-guard.js"></script>
+  <script src="navbar.js"></script>
+  <script src="captcha.js"></script>
+
+  <!-- ── Case Management page-load EMAIL OTP gate ───────────────────────
+       A 6-digit code emailed to the staff member must be verified before the
+       case list is accessible. Verified once per browser session.            -->
+  <script>
+    (function () {
+      const MODULE = 'case_management';
+      if (BPSModuleOtp.isVerified(MODULE)) return; // already verified this session
+      const gate = document.createElement('div');
+      gate.className = 'bps-community-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.innerHTML = `
+        <div class="bps-community-gate__card">
+          <div class="bps-community-gate__icon">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          </div>
+          <h2 class="bps-community-gate__title">Email Verification</h2>
+          <p class="bps-community-gate__desc">For your security, please verify your email with a one-time code before accessing Case Management.</p>
+          <div class="bps-community-gate__error" id="_bps_case_err"></div>
+          <button type="button" class="bps-community-gate__btn" id="_bps_case_btn">
+            <span id="_bps_case_label">Send Code &amp; Verify</span>
+          </button>
+        </div>`;
+      document.body.appendChild(gate);
+      document.getElementById('_bps_case_btn').addEventListener('click', async function () {
+        const btn = this, label = document.getElementById('_bps_case_label'), errEl = document.getElementById('_bps_case_err');
+        btn.disabled = true; label.textContent = 'Sending code…'; errEl.style.display = 'none';
+        const ok = await BPSModuleOtp.verify(MODULE);
+        if (ok) {
+          gate.style.transition = 'opacity 0.3s ease'; gate.style.opacity = '0';
+          setTimeout(() => { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 300);
+        } else {
+          btn.disabled = false; label.textContent = 'Send Code & Verify';
+        }
+      });
+    })();
+  </script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const token = sessionStorage.getItem('bps_token');
+    const user = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
+    const role = user.role || '';
+    let allCases = [];
+    let currentService = 'all';   // 'all' | 'counseling' | 'assessment'
+    let currentFilter = 'all';    // 'all' | exact status string
+    let lastCasesSnapshot = '';
+    let modalOpenCaseId = null;
+    let currentCaseData = null;
+    let pollTimer = null;
+    let selectedCases = new Set();
+    let selectionMode = false;
+    const POLL_INTERVAL_MS = 5000;
+
+    // ── System modal helpers (replace native confirm/prompt) ──────────────
+    let _cdConfirmCb = null;
+    function cdConfirm(title, msg, cb, danger) {
+      _cdConfirmCb = cb;
+      document.getElementById('cd-confirm-title').textContent = title;
+      document.getElementById('cd-confirm-msg').textContent = msg;
+      const btn = document.getElementById('cd-confirm-btn');
+      btn.className = 'del-modal__btn-confirm ' + (danger ? 'cd-confirm-btn-danger' : 'cd-confirm-btn-ok');
+      document.getElementById('cd-confirm-modal').classList.add('open');
+    }
+    function cdConfirmYes() {
+      document.getElementById('cd-confirm-modal').classList.remove('open');
+      if (_cdConfirmCb) { const cb = _cdConfirmCb; _cdConfirmCb = null; cb(); }
+    }
+    function cdConfirmNo() {
+      document.getElementById('cd-confirm-modal').classList.remove('open');
+      _cdConfirmCb = null;
+    }
+
+    let _cdPromptCb = null;
+    function cdPrompt(title, placeholder, cb) {
+      _cdPromptCb = cb;
+      document.getElementById('cd-prompt-title').textContent = title;
+      const inp = document.getElementById('cd-prompt-input');
+      inp.placeholder = placeholder || '';
+      inp.value = '';
+      document.getElementById('cd-prompt-modal').classList.add('open');
+      setTimeout(() => inp.focus(), 60);
+    }
+    function cdPromptYes() {
+      const val = document.getElementById('cd-prompt-input').value;
+      document.getElementById('cd-prompt-modal').classList.remove('open');
+      if (_cdPromptCb) { const cb = _cdPromptCb; _cdPromptCb = null; cb(val); }
+    }
+    function cdPromptNo() {
+      document.getElementById('cd-prompt-modal').classList.remove('open');
+      _cdPromptCb = null;
+    }
+
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+    // Statuses that are "done" — no active-case badge shown for these
+    const TERMINAL_STATUSES = new Set([
+      'Report Approved', 'Ready for Release', 'Released', 'Closed', 'Intake Rejected'
+    ]);
+
+    // Section filter → badge element id mapping (non-terminal only)
+    const SECTION_BADGE_MAP = {
+      'all':                        'sec-badge-all',
+      'Pending Intake Review':       'sec-badge-intake',
+      'Awaiting Initial Payment':    'sec-badge-payment',
+      'Scheduled':                   'sec-badge-scheduled',
+      'assessment-phase':            'sec-badge-assessment-sec',
+    };
+
+    // Filters that span more than one status value
+    const SECTION_FILTER_GROUPS = {
+      'assessment-phase': ['Assessment In Progress', 'Assessment Completed'],
+    };
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    function statusClass(s) {
+      if (!s) return '';
+      const l = s.toLowerCase();
+      if (l.includes('pending')) return 'pending';
+      if (l.includes('awaiting')) return 'awaiting';
+      if (l.includes('scheduled')) return 'scheduled';
+      if (l.includes('in progress')) return 'inprogress';
+      if (l.includes('completed')) return 'completed';
+      if (l.includes('approved') || l.includes('ready')) return 'approved';
+      if (l.includes('rejected')) return 'rejected';
+      if (l.includes('released')) return 'released';
+      if (l.includes('closed')) return 'closed';
+      if (l.includes('drafting')) return 'drafting';
+      return '';
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmtDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    function fmtDateTime(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function setBadge(id, count) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+      else { el.style.display = 'none'; }
+    }
+
+    // ── Badges + breadcrumb ───────────────────────────────────────────────
+
+    function updateBadges() {
+      // Service badges — count of non-terminal cases per service
+      const activeCases = allCases.filter(c => !TERMINAL_STATUSES.has(c.status));
+      setBadge('svc-badge-all', activeCases.length);
+      setBadge('svc-badge-counseling', activeCases.filter(c => c.service_type === 'counseling').length);
+      setBadge('svc-badge-assessment', activeCases.filter(c => c.service_type === 'assessment').length);
+
+      // Section badges — apply service filter first, then count per section
+      const svcFiltered = currentService === 'all'
+        ? allCases
+        : allCases.filter(c => c.service_type === currentService);
+
+      // "All" section badge = non-terminal in current service
+      setBadge('sec-badge-all', svcFiltered.filter(c => !TERMINAL_STATUSES.has(c.status)).length);
+
+      Object.entries(SECTION_BADGE_MAP).forEach(([statusVal, badgeId]) => {
+        if (statusVal === 'all') return;
+        const group = SECTION_FILTER_GROUPS[statusVal];
+        const count = group
+          ? svcFiltered.filter(c => group.includes(c.status)).length
+          : svcFiltered.filter(c => c.status === statusVal).length;
+        setBadge(badgeId, count);
+      });
+    }
+
+    function updateBreadcrumb() {
+      const svcLabel = currentService === 'all' ? 'All Services'
+        : currentService === 'counseling' ? 'Counseling' : 'Assessment';
+
+      let secLabel = 'All';
+      if (currentFilter !== 'all') {
+        const btn = document.querySelector(`.cm-sec-btn[data-filter="${CSS.escape(currentFilter)}"]`);
+        secLabel = btn ? btn.querySelector('.cm-sec-label').textContent.trim() : currentFilter;
+      }
+
+      document.getElementById('cm-breadcrumb').textContent = `${svcLabel} — ${secLabel}`;
+    }
+
+    // ── Data loading ──────────────────────────────────────────────────────
+
+    async function loadCases(silent = false) {
+      try {
+        const res = await fetch(API + '/cases', { headers });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const incoming = data.data || [];
+        const snapshot = JSON.stringify(incoming);
+        if (snapshot === lastCasesSnapshot) return;
+        lastCasesSnapshot = snapshot;
+        allCases = incoming;
+        renderCases();
+
+        if (!silent) updatePollIndicator();
+      } catch (e) {
+        if (!silent) {
+          console.error('Failed to load cases:', e);
+          document.getElementById('cases-body').innerHTML =
+            '<tr><td colspan="7"><div class="empty-state"><h3>Failed to load cases</h3><p>' + esc(e.message) + '</p></div></td></tr>';
+        }
+      }
+    }
+
+    function renderCases() {
+      let filtered = allCases;
+
+      if (currentService !== 'all') {
+        filtered = filtered.filter(c => c.service_type === currentService);
+      }
+      if (currentFilter !== 'all') {
+        const group = SECTION_FILTER_GROUPS[currentFilter];
+        filtered = group
+          ? filtered.filter(c => group.includes(c.status))
+          : filtered.filter(c => c.status === currentFilter);
+      }
+
+      document.getElementById('case-count').textContent = filtered.length;
+      updateBreadcrumb();
+      updateBadges();
+
+      // Show Select button for CD; show checkboxes only in selection mode
+      const isCD = role === 'clinical_director';
+      const showCheck = isCD && selectionMode;
+      const colSpan = showCheck ? 8 : 7;
+      const selectBtn = document.getElementById('btn-select-mode');
+      if (selectBtn) selectBtn.style.display = isCD ? '' : 'none';
+      const checkTh = document.getElementById('col-check-th');
+      if (checkTh) checkTh.style.display = showCheck ? '' : 'none';
+
+      const tbody = document.getElementById('cases-body');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state">`
+          + '<svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/></svg>'
+          + '<h3>No cases found</h3><p>No cases match this filter.</p></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => {
+        const svc = c.service_type || 'counseling';
+        const svcTag = `<span class="svc-tag ${esc(svc)}">${esc(svc)}</span>`;
+        const checkCell = showCheck
+          ? `<td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${esc(c.case_id)}"${selectedCases.has(c.case_id) ? ' checked' : ''}></td>`
+          : '';
+        return `
+        <tr onclick="openCase('${esc(c.case_id)}')">
+          ${checkCell}
+          <td><strong style="color:#667eea">${esc(c.case_id)}</strong></td>
+          <td><span style="font-size:11px;color:#764ba2;font-weight:700;background:#f3f0ff;padding:2px 8px;border-radius:6px">${esc(c.client_user_code || c.user_code || '—')}</span></td>
+          <td>${esc(c.client_name || '—')}${currentService === 'all' ? svcTag : ''}</td>
+          <td><span class="status-badge ${statusClass(c.status)}">${esc(c.status)}</span></td>
+          <td>${esc(c.psychologist_name || '—')}</td>
+          <td>${fmtDate(c.intake_date)}</td>
+          <td>${fmtDate(c.updated_at)}</td>
+        </tr>`;
+      }).join('');
+
+      // Re-attach checkbox event listeners after render
+      if (showCheck) {
+        document.querySelectorAll('.row-checkbox:not(#select-all)').forEach(cb => {
+          cb.addEventListener('change', onRowCheck);
+        });
+        const sa = document.getElementById('select-all');
+        if (sa) { sa.removeEventListener('change', onSelectAll); sa.addEventListener('change', onSelectAll); }
+        updateSelectionBar();
+      }
+    }
+
+    // ── Polling ───────────────────────────────────────────────────────────
+
+    function updatePollIndicator() {
+      const el = document.getElementById('poll-indicator');
+      if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function startPolling() {
+      stopPolling();
+      pollTimer = setInterval(() => {
+        if (document.visibilityState === 'hidden') return;
+        loadCases(true).then(updatePollIndicator);
+      }, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        loadCases(true).then(updatePollIndicator);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    });
+
+    // ── Sidebar interactions ──────────────────────────────────────────────
+
+    // Toggle collapse
+    document.getElementById('cm-toggle').addEventListener('click', () => {
+      document.getElementById('cm-layout').classList.toggle('sidebar-collapsed');
+    });
+
+    // Service buttons
+    document.querySelectorAll('.cm-svc-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cm-svc-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentService = btn.dataset.service;
+        // Reset section to "all" when switching service
+        currentFilter = 'all';
+        document.querySelectorAll('.cm-sec-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.cm-sec-btn[data-filter="all"]').classList.add('active');
+        renderCases();
+      });
+    });
+
+    // Section buttons
+    document.querySelectorAll('.cm-sec-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cm-sec-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderCases();
+      });
+    });
+
+    // ── Case detail modal ─────────────────────────────────────────────────
+
+    async function openCase(caseId) {
+      modalOpenCaseId = caseId;
+      const modal = document.getElementById('case-modal');
+      const body = document.getElementById('modal-body');
+      document.getElementById('modal-title').textContent = caseId;
+      body.innerHTML = '<div class="empty-state"><h3>Loading…</h3></div>';
+      modal.classList.add('open');
+
+      try {
+        const res = await fetch(API + '/cases/' + caseId, { headers });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+        renderCaseDetail(data.data);
+      } catch (e) {
+        body.innerHTML = '<div class="empty-state"><h3>Error</h3><p>' + esc(e.message) + '</p></div>';
+      }
+    }
+
+    // Fields that are internal/technical and should not be shown to the reviewer.
+    const FORM_HIDDEN_FIELDS = new Set(['id','case_id','user_id','client_id','staff_id','reviewed_by','review_status','reviewed_at','updated_at','is_minor_flag','status']);
+    function prettyLabel(key) {
+      return String(key).replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+    }
+    function formatFormValue(v) {
+      if (v === null || v === undefined || v === '') return '<span style="color:#94a3b8">—</span>';
+      if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+      if (typeof v === 'object') { try { return esc(JSON.stringify(v)); } catch (_) { return '—'; } }
+      return esc(String(v));
+    }
+
+    // Shared: render the submitted intake/assessment FORM details for a case.
+    // Works for both Counseling (intake_forms) and Assessment (assessment_intake_forms),
+    // chosen by service type, with the preferred schedule date highlighted.
+    function renderFormDetailsBlock(c) {
+      const isAssessment = (c.service_type || '').toLowerCase() === 'assessment';
+      const counselingForm = (c.intake_forms || [])[0];
+      const assessmentForm = (c.assessment_intake_forms || [])[0];
+      // Prefer the form that matches the service type, but fall back to whichever
+      // one actually has data — so a Counseling Intake Form always shows even if
+      // service_type is missing/mismatched.
+      let form = isAssessment ? (assessmentForm || counselingForm) : (counselingForm || assessmentForm);
+
+      // Final fallback: a counseling intake may still live as pending_intake_data
+      // on the appointment (submitted but not yet promoted to intake_forms after
+      // payment verification). Surface it so it never appears "missing".
+      let pendingNote = '';
+      if (!form && Array.isArray(c.appointments)) {
+        const appt = c.appointments.find(a => a && a.pending_intake_data);
+        if (appt) {
+          let pid = appt.pending_intake_data;
+          if (typeof pid === 'string') { try { pid = JSON.parse(pid); } catch (_) { pid = null; } }
+          if (pid && typeof pid === 'object') { form = pid; pendingNote = ' (pending payment verification)'; }
+        }
+      }
+
+      const formLabel = isAssessment ? 'Assessment Intake Form' : 'Counseling Intake Form';
+      let html = `<div class="section-title">${formLabel}${form ? ' — ' + esc(form.review_status || 'Pending Review') + pendingNote : ''}</div>`;
+      if (!form) {
+        return html + '<p style="color:#94a3b8;font-size:13px">No intake form has been submitted for this case yet.</p>';
+      }
+
+      // Surface the preferred schedule date first, highlighted.
+      const pref = form.preferred_schedule || form.preferred_datetime;
+      if (pref) {
+        html += `<div class="form-pref-highlight"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H5V8h14v13z"/></svg><span><strong>Preferred Schedule:</strong> ${esc(String(pref))}</span></div>`;
+      }
+
+      html += '<div class="detail-grid">';
+      Object.keys(form).forEach(k => {
+        if (FORM_HIDDEN_FIELDS.has(k)) return;
+        const isPref = k === 'preferred_schedule';
+        html += `<div class="detail-item${isPref ? ' detail-item--pref' : ''}"><label>${esc(prettyLabel(k))}</label><span>${formatFormValue(form[k])}</span></div>`;
+      });
+      html += `<div class="detail-item"><label>Submitted</label><span>${fmtDateTime(form.created_at)}</span></div>`;
+      html += '</div>';
+      return html;
+    }
+
+    // Psychometrician view: clicking a case shows the submitted intake/assessment
+    // FORM details (chosen by service type) with Approve/Reject Intake actions —
+    // instead of the full operational case record.
+    function renderIntakeReviewDetail(c) {
+      currentCaseData = c;
+      const body = document.getElementById('modal-body');
+
+      let html = `
+        <div class="detail-grid">
+          <div class="detail-item"><label>Case ID</label><span style="color:#667eea;font-weight:700">${esc(c.case_id)}</span></div>
+          <div class="detail-item"><label>Client</label><span>${esc(c.client_name || '—')}</span></div>
+          <div class="detail-item"><label>Service Type</label><span style="text-transform:capitalize">${esc(c.service_type || '—')}</span></div>
+          <div class="detail-item"><label>Status</label><span class="status-badge ${statusClass(c.status)}">${esc(c.status)}</span></div>
+        </div>`;
+      html += renderFormDetailsBlock(c);
+      html += `<div class="action-bar" id="action-bar">${buildActions(c)}</div>`;
+      body.innerHTML = html;
+    }
+
+    function renderCaseDetail(c) {
+      // Psychometricians review the form itself, not the operational case record.
+      if (role === 'psychometrician') { return renderIntakeReviewDetail(c); }
+
+      currentCaseData = c;
+      const body = document.getElementById('modal-body');
+
+      let html = `
+        <div class="detail-grid">
+          <div class="detail-item"><label>Case ID</label><span style="color:#667eea;font-weight:700">${esc(c.case_id)}</span></div>
+          <div class="detail-item"><label>Client ID</label><span style="color:#764ba2;font-weight:700">${esc(c.client_user_code || c.user_code || '—')}</span></div>
+          <div class="detail-item"><label>Status</label><span class="status-badge ${statusClass(c.status)}">${esc(c.status)}</span></div>
+          <div class="detail-item"><label>Client</label><span>${esc(c.client_name || '—')}</span></div>
+          <div class="detail-item"><label>Client Email</label><span>${esc(c.client_email || '—')}</span></div>
+          <div class="detail-item"><label>Assigned Staff</label><span>${esc(c.psychologist_name || 'Unassigned')}</span></div>
+          <div class="detail-item"><label>Intake Date</label><span>${fmtDate(c.intake_date)}</span></div>
+          <div class="detail-item"><label>Last Updated</label><span>${fmtDateTime(c.updated_at)}</span></div>
+        </div>
+      `;
+
+      // Full intake/assessment form details (counseling or assessment), with the
+      // preferred schedule date highlighted.
+      html += renderFormDetailsBlock(c);
+
+      if (c.appointments && c.appointments.length > 0) {
+        html += '<div class="section-title">Appointments (' + c.appointments.length + ')</div><ul class="notes-list">';
+        c.appointments.forEach(a => {
+          html += `<li>${esc(a.modality || 'Appointment')} — ${esc(a.status)}<span class="note-meta"> ${fmtDateTime(a.preferred_datetime || a.approved_datetime)}</span></li>`;
+        });
+        html += '</ul>';
+      }
+
+      if (c.assessments && c.assessments.length > 0) {
+        html += '<div class="section-title">Assessments (' + c.assessments.length + ')</div><ul class="notes-list">';
+        c.assessments.forEach(a => {
+          const astatus = a.completed_at ? 'Completed' : (a.started_at ? 'In Progress' : 'Pending');
+          html += `<li>${esc(a.psychologist_name || '—')} — ${astatus}<span class="note-meta"> Started ${fmtDateTime(a.started_at)}</span></li>`;
+        });
+        html += '</ul>';
+      }
+
+      if (c.reports && c.reports.length > 0) {
+        html += '<div class="section-title">Reports (' + c.reports.length + ')</div><ul class="notes-list">';
+        c.reports.forEach(r => {
+          const rcode = r.report_code ? `<span style="font-size:10px;color:#667eea;font-weight:700;background:#eef1fa;padding:2px 6px;border-radius:6px;margin-right:6px">${esc(r.report_code)}</span>` : '';
+          const locked = r.is_locked ? ' ' + ICON.lock : '';
+          // Reflect the signature-workflow stage (when set) instead of the raw status.
+          const stageLabel = reportStageLabel(r.signature_stage);
+          const statusText = stageLabel
+            ? `<span style="color:#b45309;font-weight:700">${stageLabel}</span>`
+            : esc(r.status);
+          html += `<li>${rcode}${statusText}${locked} (v${r.current_version || 1})
+            <span class="note-meta"> ${fmtDateTime(r.created_at)}</span>
+            <button onclick="openInPsyGen(${r.id})" style="margin-left:10px;padding:2px 10px;border:1.5px solid #667eea;border-radius:6px;background:#fff;color:#667eea;font-weight:700;font-size:11px;cursor:pointer">Open in PsyGen</button>
+          </li>`;
+        });
+        html += '</ul>';
+      }
+
+      if (c.payments && c.payments.length > 0) {
+        html += '<div class="section-title">Payments (' + c.payments.length + ')</div><ul class="notes-list">';
+        c.payments.forEach(p => {
+          html += `<li>${esc(p.reference_number || 'Payment')} — ${esc(p.status)} (₱${Number(p.amount_due || 0).toFixed(2)})<span class="note-meta"> ${fmtDateTime(p.created_at)}</span></li>`;
+        });
+        html += '</ul>';
+      }
+
+      html += '<div class="section-title">Notes</div>';
+      if (c.notes && c.notes.length > 0) {
+        html += '<ul class="notes-list">';
+        c.notes.forEach(n => {
+          html += `<li>${esc(n.content)}<span class="note-meta"> ${esc(n.author_name || '')} · ${esc(n.note_type || '')} · ${fmtDateTime(n.created_at)}</span></li>`;
+        });
+        html += '</ul>';
+      } else {
+        html += '<p style="color:#94a3b8;font-size:13px">No notes yet.</p>';
+      }
+
+      html += `
+        <div class="add-note-form">
+          <textarea id="new-note" placeholder="Add a note…"></textarea>
+          <button class="action-btn primary" onclick="addNote('${esc(c.case_id)}')" style="align-self:flex-end">Add</button>
+        </div>
+        <div class="action-bar" id="action-bar">${buildActions(c)}</div>
+      `;
+
+      body.innerHTML = html;
+    }
+
+    // Friendly label for a report's signature-workflow stage (null when not signing).
+    function reportStageLabel(stage) {
+      switch (stage) {
+        case 'supervising':       return 'Signature Required (Supervising)';
+        case 'quality_control':   return 'Signature Required (Quality Control)';
+        case 'psychologist':      return 'Signature Required (Psychologist)';
+        case 'ready_for_release': return 'Ready For Release';
+        case 'released':          return 'Released';
+        default:                  return '';
+      }
+    }
+
+    function openInPsyGen(reportId, caseId) {
+      if (reportId && reportId !== 'null' && reportId !== 'undefined') {
+        window.location.href = 'psych-reports.html?reportId=' + reportId;
+      } else {
+        window.location.href = 'psych-reports.html?create=1' + (caseId ? '&caseId=' + encodeURIComponent(caseId) : '');
+      }
+    }
+
+    function buildActions(c) {
+      const s = c.status;
+      const reportId = (c.reports && c.reports.length > 0) ? c.reports[0].id : null;
+      const isCD       = role === 'clinical_director';
+      const isSupPsy   = role === 'supervising_psychometrician';
+      const isPsymet   = role === 'psychometrician';
+      const isQC       = role === 'qc_psychometrician';
+      const isPsych    = role === 'psychologist';
+      const isAssignedPsych = String(user.id) === String(c.assigned_psychologist_id);
+      let btns = '';
+
+      if (s === 'Pending Intake Review' && (isPsymet || isCD)) {
+        btns += `<button class="action-btn success" onclick="reviewCase('${esc(c.case_id)}','approve')">${ICON.check} Approve Intake</button>`;
+        btns += `<button class="action-btn danger"  onclick="reviewCase('${esc(c.case_id)}','reject')">${ICON.x} Reject Intake</button>`;
+      }
+
+      if (s === 'Awaiting Initial Payment' && (isSupPsy || isCD)) {
+        const apptStatus = (c.appointments && c.appointments.length > 0) ? c.appointments[0].status : null;
+        if (apptStatus === 'confirmed') {
+          btns += `<span class="action-status-note">${ICON.checkCircle} Appointment confirmed — awaiting client payment</span>`;
+          btns += `<div class="action-hint"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Once the client pays, check and verify it in <a href="payments-admin.html" style="color:#1e3a8a;font-weight:700;text-decoration:underline;cursor:pointer">Payment Verification</a>.</div>`;
+        } else {
+          btns += `<button class="action-btn primary" onclick="openApptConfirm()">${ICON.calendar} Confirm Appointment Schedule</button>`;
+        }
+      }
+
+      if (s === 'Awaiting Appointment' && (isSupPsy || isCD)) {
+        btns += `<button class="action-btn primary" onclick="scheduleCase('${esc(c.case_id)}')">${ICON.calendar} Confirm Appointment</button>`;
+      }
+
+      if (s === 'Scheduled' && (isAssignedPsych || isCD)) {
+        btns += `<button class="action-btn primary" onclick="caseAction('${esc(c.case_id)}','assessment/start')">${ICON.play} Start Assessment</button>`;
+        btns += `<button class="action-btn danger"  onclick="caseAction('${esc(c.case_id)}','no-show')">No-Show</button>`;
+      }
+
+      if (s === 'Assessment In Progress' && (isAssignedPsych || isCD)) {
+        const completeLabel = c.service_type === 'counseling' ? ICON.check + ' Mark Session Complete' : ICON.check + ' Mark Assessment Complete';
+        btns += `<button class="action-btn success" onclick="completeAssessment('${esc(c.case_id)}')">${completeLabel}</button>`;
+      }
+
+      if (s === 'Assessment Completed' && isSupPsy) {
+        btns += `<button class="action-btn primary" onclick="openInPsyGen(${reportId}, '${esc(c.case_id)}')">${ICON.document} Create Report in PsyGen</button>`;
+      }
+
+      if (s === 'Report Drafting' && isSupPsy) {
+        btns += `<button class="action-btn primary" onclick="openInPsyGen(${reportId}, '${esc(c.case_id)}')">${ICON.document} Edit Report in PsyGen</button>`;
+      }
+      if (s === 'Report Drafting' && isQC) {
+        btns += `<button class="action-btn primary" onclick="openInPsyGen(${reportId}, '${esc(c.case_id)}')">${ICON.search} Review Report in PsyGen</button>`;
+      }
+
+      if (s === 'Awaiting Director Approval' && isPsych) {
+        btns += `<button class="action-btn primary" onclick="openInPsyGen(${reportId}, '${esc(c.case_id)}')">${ICON.scale} Review & Approve in PsyGen</button>`;
+      }
+
+      // Only the Clinical Director releases, and only once the report is fully
+      // signed (case at "Ready for Release").
+      if (s === 'Ready for Release' && isCD) {
+        btns += `<button class="action-btn primary" onclick="releaseReport('${esc(c.case_id)}', ${reportId})">${ICON.send} Release Report to Client</button>`;
+      }
+
+      if (s === 'Released' && isCD) {
+        btns += `<button class="action-btn secondary" onclick="caseAction('${esc(c.case_id)}','close')">${ICON.lock} Close Case</button>`;
+      }
+
+      return btns || '<span style="color:#94a3b8;font-size:13px">No actions available for your role at this stage.</span>';
+    }
+
+    // ── API action helpers ────────────────────────────────────────────────
+
+    async function caseAction(caseId, endpoint, payload = {}) {
+      const bar = document.getElementById('action-bar');
+      const btns = bar ? bar.querySelectorAll('button') : [];
+      btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+
+      try {
+        const res = await fetch(API + '/cases/' + caseId + '/' + endpoint, {
+          method: 'POST', headers, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Done', 'success');
+          await openCase(caseId);
+          lastCasesSnapshot = '';
+          await loadCases(true);
+        } else {
+          showToast(data.message || 'Error', 'error');
+          btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+        }
+      } catch (e) {
+        showToast('Request failed: ' + esc(e.message), 'error');
+        btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+      }
+    }
+
+    async function reviewCase(caseId, decision) {
+      if (decision === 'reject') {
+        cdPrompt('Rejection Reason', 'Please provide a reason for rejection:', (reason) => {
+          if (!reason || !reason.trim()) { showToast('A rejection reason is required.', 'error'); return; }
+          caseAction(caseId, 'review', { decision, reason });
+        });
+        return;
+      }
+      return caseAction(caseId, 'review', { decision });
+    }
+
+    function scheduleCase(caseId) {
+      const body = document.getElementById('modal-body');
+      const existingForm = document.getElementById('schedule-form');
+      if (existingForm) { existingForm.remove(); return; }
+
+      const form = document.createElement('div');
+      form.id = 'schedule-form';
+      form.innerHTML = `
+        <div class="section-title">Schedule Appointment</div>
+        <input type="datetime-local" class="input-modal-field" id="sched-datetime" required>
+        <select class="input-modal-field" id="sched-type">
+          <option value="Face-to-Face">Face-to-Face</option>
+          <option value="Online">Online</option>
+        </select>
+        <button class="action-btn primary" onclick="confirmSchedule('${esc(caseId)}')" style="margin-top:8px">Confirm Schedule</button>
+      `;
+      body.querySelector('.action-bar').before(form);
+      // Block past dates/times at the picker level (defense-in-depth with the server).
+      const dtField = document.getElementById('sched-datetime');
+      if (dtField) {
+        const n = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+        dtField.min = n.toISOString().slice(0, 16);
+      }
+    }
+
+    async function confirmSchedule(caseId) {
+      const dt = document.getElementById('sched-datetime').value;
+      const type = document.getElementById('sched-type').value;
+      if (!dt) { showToast('Please select a date and time', 'error'); return; }
+      if (new Date(dt) <= new Date()) { showToast('The appointment date and time must be in the future.', 'error'); return; }
+      return caseAction(caseId, 'schedule', { scheduledStart: dt, appointmentType: type });
+    }
+
+    async function completeAssessment(caseId) {
+      cdPrompt('Mark Assessment Complete', 'Assessment remarks (optional):', (remarks) => {
+        caseAction(caseId, 'assessment/complete', { remarks: remarks || '' });
+      });
+    }
+
+    async function approveReport(caseId, reportId) {
+      return caseAction(caseId, 'report/approve', { reportId });
+    }
+
+    async function rejectReport(caseId, reportId) {
+      cdPrompt('Request Revision', 'Revision notes (required):', (notes) => {
+        if (!notes || !notes.trim()) { showToast('Revision notes are required.', 'error'); return; }
+        caseAction(caseId, 'report/reject', { reportId, revisionNotes: notes });
+      });
+    }
+
+    async function releaseReport(caseId, reportId) {
+      cdConfirm('Release Report', 'Release this report to the client? This action cannot be undone.', () => {
+        caseAction(caseId, 'report/release', { reportId });
+      }, false);
+    }
+
+    // ── Inline appointment confirmation panel (SupPsy) ────────────────────
+
+    function openApptConfirm() {
+      const body = document.getElementById('modal-body');
+      const existing = document.getElementById('appt-confirm-form');
+      if (existing) { existing.remove(); return; }
+
+      const c = currentCaseData;
+      const appt = c && c.appointments && c.appointments[0];
+      if (!appt) { showToast('No appointment found for this case.', 'error'); return; }
+
+      const fmt = d => d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+      const isCounselingCase = c.service_type === 'counseling';
+      const aif = c.assessment_intake_forms && c.assessment_intake_forms[0];
+      const pid = appt.pending_intake_data;
+      const rawReferral = (aif && aif.reason_for_referral) || (pid && (pid.assessmentType || pid.assessment_type)) || '';
+
+      const typeMap = {
+        'neurodevelopmental assessment': 'neurodevelopmental',
+        'clinical assessment': 'clinical',
+
+        'pre-employment/neuropsychological': 'pre_employment',
+      };
+      const normalizedType = typeMap[rawReferral.toLowerCase()] || rawReferral.toLowerCase();
+
+      // Counseling cases have no assessment type — skip the field entirely
+      let assessmentTypeField = '';
+      if (!isCounselingCase) {
+        assessmentTypeField = rawReferral
+          ? `<input type="hidden" id="appt-confirm-type" value="${esc(normalizedType)}">
+             <div style="background:#EEF1FA;border:1.5px solid #c7d2f5;border-radius:20px;padding:8px 18px;font-size:13.5px;font-weight:600;color:#15306E;display:inline-block;">${esc(rawReferral)}</div>
+             <div style="font-size:11.5px;color:#718096;margin:4px 0 8px;">Client's selection — cannot be changed</div>`
+          : `<select id="appt-confirm-type" class="input-modal-field">
+               <option value="">— Select Assessment Type —</option>
+               <option value="neurodevelopmental">Neurodevelopmental</option>
+               <option value="clinical">Clinical</option>
+             </select>`;
+        assessmentTypeField = `<label style="font-size:12px;font-weight:600;color:#475569">Assessment Type <span style="color:#e53e3e">*</span></label>${assessmentTypeField}`;
+      }
+
+      const form = document.createElement('div');
+      form.id = 'appt-confirm-form';
+      form.style.cssText = 'margin-bottom:16px;padding:16px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px';
+      form.innerHTML = `
+        <div class="section-title" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:10px">Appointment Schedule Confirmation</div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px">
+          <div><strong>Client's Preferred Schedule:</strong> ${esc(fmt(appt.preferred_datetime))}</div>
+          ${appt.proposed_datetime ? `<div style="margin-top:4px;color:#8A6A18"><strong>Last Proposed:</strong> ${esc(fmt(appt.proposed_datetime))}</div>` : ''}
+          ${appt.client_response_notes ? `<div style="margin-top:4px;color:#475569"><strong>Client Notes:</strong> ${esc(appt.client_response_notes)}</div>` : ''}
+        </div>
+        ${assessmentTypeField}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <button class="action-btn success" onclick="confirmApptFromCase(${appt.id},'${esc(c.case_id)}')">${ICON.check} Approve This Schedule</button>
+          <button class="action-btn secondary" onclick="toggleProposeForm()">${ICON.calendar} Propose New Time</button>
+        </div>
+        <div id="propose-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0">
+          <label style="font-size:12px;font-weight:600;color:#475569;display:block;margin-bottom:6px">Select Date <span style="color:#e53e3e">*</span></label>
+          <div id="propose-cal-container" style="margin-bottom:10px;"></div>
+          <div id="propose-time-wrap" style="margin-bottom:10px;">
+            <label style="font-size:12px;font-weight:600;color:#475569;display:block;margin-bottom:4px">Time <span style="color:#e53e3e">*</span></label>
+            <select id="propose-time-select" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;">
+              <option value="">— pick a date first —</option>
+            </select>
+            <div id="propose-avail-msg" style="display:none;margin-top:6px;font-size:12px;font-weight:600;"></div>
+          </div>
+          <input type="hidden" id="propose-datetime">
+          <label style="font-size:12px;font-weight:600;color:#475569;margin-top:4px;display:block">Reason for Change <span style="color:#e53e3e">*</span></label>
+          <textarea id="propose-reason" placeholder="Required — explain why you need to change the schedule..." style="width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:4px;resize:vertical;min-height:70px;box-sizing:border-box;font-family:'Inter',sans-serif"></textarea>
+          <button class="action-btn primary" onclick="proposeApptFromCase(${appt.id},'${esc(c.case_id)}')" style="margin-top:8px">${ICON.send} Send Proposed Schedule</button>
+        </div>
+      `;
+      body.querySelector('.action-bar').before(form);
+    }
+
+    const PROPOSE_TIME_SLOTS  = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+    const PROPOSE_TIME_LABELS = {
+      '09:00':'9:00 AM','10:00':'10:00 AM','11:00':'11:00 AM','12:00':'12:00 PM',
+      '13:00':'1:00 PM','14:00':'2:00 PM','15:00':'3:00 PM','16:00':'4:00 PM','17:00':'5:00 PM'
+    };
+    let proposeCalendar = null;
+    let proposeDateStr = '';
+
+    function toggleProposeForm() {
+      const f = document.getElementById('propose-form');
+      if (!f) return;
+      const opening = f.style.display === 'none';
+      f.style.display = opening ? 'block' : 'none';
+      if (opening && !proposeCalendar) {
+        proposeCalendar = BPSCalendar.mount('#propose-cal-container', {
+          showTime: false,
+          onChange: async (isoVal) => {
+            proposeDateStr = isoVal.split('T')[0];
+            document.getElementById('propose-datetime').value = '';
+            const timeSelect = document.getElementById('propose-time-select');
+            const availMsg  = document.getElementById('propose-avail-msg');
+            timeSelect.innerHTML = '<option value="">Loading...</option>';
+            timeSelect.disabled = true;
+            try {
+              const res  = await fetch(API + '/appointments/availability?date=' + proposeDateStr, { headers });
+              const json = await res.json();
+              if (json.success) {
+                const avail = json.data;
+                // When the chosen date is today, hide slots that have already passed.
+                const nowDt = new Date();
+                const isToday = proposeDateStr === `${nowDt.getFullYear()}-${String(nowDt.getMonth()+1).padStart(2,'0')}-${String(nowDt.getDate()).padStart(2,'0')}`;
+                const isPastSlot = (slot) => {
+                  if (!isToday) return false;
+                  const [h, m] = slot.split(':').map(Number);
+                  const sd = new Date(nowDt); sd.setHours(h, m, 0, 0);
+                  return sd <= nowDt;
+                };
+                let html = '<option value="">Select time</option>';
+                PROPOSE_TIME_SLOTS.forEach(slot => {
+                  const booked = avail.bookedSlots && avail.bookedSlots.includes(slot);
+                  const past = isPastSlot(slot);
+                  html += past
+                    ? `<option value="${slot}" disabled>${PROPOSE_TIME_LABELS[slot]} — Unavailable</option>`
+                    : booked
+                    ? `<option value="${slot}" disabled>${PROPOSE_TIME_LABELS[slot]} — Booked</option>`
+                    : `<option value="${slot}">${PROPOSE_TIME_LABELS[slot]}</option>`;
+                });
+                timeSelect.innerHTML = html;
+                timeSelect.disabled = avail.isFull;
+                const color = avail.isFull ? '#e53e3e' : avail.remaining <= 1 ? '#e53e3e' : avail.remaining <= 3 ? '#d69e2e' : '#38a169';
+                availMsg.innerHTML = `<span style="color:${color};">●</span> <span style="color:${color};">${avail.isFull ? 'Fully booked — choose another date' : avail.remaining + ' of ' + avail.maxPerDay + ' slots available'}</span>`;
+                availMsg.style.display = 'flex';
+                timeSelect.onchange = () => {
+                  document.getElementById('propose-datetime').value = timeSelect.value ? `${proposeDateStr}T${timeSelect.value}` : '';
+                };
+              }
+            } catch (e) { timeSelect.innerHTML = '<option value="">Failed to load — try again</option>'; }
+          },
+        });
+      }
+    }
+
+    async function confirmApptFromCase(apptId, caseId) {
+      const isCounselingCase = currentCaseData && currentCaseData.service_type === 'counseling';
+      const assessmentTypeEl = document.getElementById('appt-confirm-type');
+      const assessmentType = assessmentTypeEl ? assessmentTypeEl.value : '';
+      if (!isCounselingCase && !assessmentType) { showToast('Please select an assessment type.', 'error'); return; }
+
+      const bar = document.getElementById('action-bar');
+      const btns = bar ? bar.querySelectorAll('button') : [];
+      btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+
+      const body = isCounselingCase ? {} : { assessment_type: assessmentType };
+      try {
+        const res = await fetch(API + '/appointments/' + apptId + '/approve', {
+          method: 'PUT', headers,
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Appointment confirmed! The client will be notified to proceed with payment.', 'success');
+          await openCase(caseId);
+          lastCasesSnapshot = '';
+          await loadCases(true);
+        } else {
+          showToast(data.message || 'Failed to confirm appointment.', 'error');
+          btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+        }
+      } catch (e) {
+        showToast('Request failed: ' + esc(e.message), 'error');
+        btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+      }
+    }
+
+    async function proposeApptFromCase(apptId, caseId) {
+      const dt = (document.getElementById('propose-datetime') || {}).value;
+      const reason = ((document.getElementById('propose-reason') || {}).value || '').trim();
+      if (!dt) { showToast('Please select a date and time from the calendar.', 'error'); return; }
+      if (!reason) { showToast('A reason for the schedule change is required.', 'error'); return; }
+
+      const bar = document.getElementById('action-bar');
+      const btns = bar ? bar.querySelectorAll('button') : [];
+      btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+
+      try {
+        const res = await fetch(API + '/appointments/' + apptId + '/propose-reschedule', {
+          method: 'PUT', headers,
+          body: JSON.stringify({ proposed_datetime: dt, staff_notes: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('New schedule proposed! The client has been notified.', 'success');
+          proposeCalendar = null; proposeDateStr = '';
+          await openCase(caseId);
+          lastCasesSnapshot = '';
+          await loadCases(true);
+        } else {
+          showToast(data.message || 'Failed to propose new schedule.', 'error');
+          btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+        }
+      } catch (e) {
+        showToast('Request failed: ' + esc(e.message), 'error');
+        btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+      }
+    }
+
+    async function addNote(caseId) {
+      const ta = document.getElementById('new-note');
+      const content = ta.value.trim();
+      if (!content) { showToast('Note cannot be empty', 'error'); return; }
+      ta.disabled = true;
+      await caseAction(caseId, 'notes', { noteType: 'General', content, isVisibleToClient: true });
+      ta.disabled = false;
+      ta.value = '';
+    }
+
+    function closeModal() {
+      document.getElementById('case-modal').classList.remove('open');
+      modalOpenCaseId = null;
+    }
+    document.getElementById('case-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // ── Toast ─────────────────────────────────────────────────────────────
+
+    function showToast(msg, type = 'info') {
+      if (typeof BPSToast !== 'undefined') {
+        BPSToast[type] ? BPSToast[type](msg) : BPSToast.info(msg);
+      }
+    }
+
+    // ── Selection & bulk delete (Clinical Director only) ──────────────────
+
+    function toggleSelectionMode() {
+      selectionMode = !selectionMode;
+      const btn = document.getElementById('btn-select-mode');
+      if (btn) {
+        btn.textContent = selectionMode ? 'Cancel' : 'Select';
+        btn.classList.toggle('active', selectionMode);
+      }
+      if (!selectionMode) {
+        // Exiting selection mode — clear all selections and hide bulk bar
+        selectedCases.clear();
+        document.getElementById('bulk-bar').classList.remove('visible');
+      }
+      renderCases();
+    }
+
+    function updateSelectionBar() {
+      const count = selectedCases.size;
+      document.getElementById('bulk-count').textContent =
+        count + ' case' + (count !== 1 ? 's' : '') + ' selected';
+      document.getElementById('bulk-bar').classList.toggle('visible', count > 0);
+
+      const sa = document.getElementById('select-all');
+      if (sa) {
+        const all = document.querySelectorAll('.row-checkbox:not(#select-all)');
+        sa.checked = all.length > 0 && [...all].every(cb => cb.checked);
+        sa.indeterminate = count > 0 && !sa.checked;
+      }
+    }
+
+    function onSelectAll(e) {
+      document.querySelectorAll('.row-checkbox:not(#select-all)').forEach(cb => {
+        cb.checked = e.target.checked;
+        if (e.target.checked) selectedCases.add(cb.value);
+        else selectedCases.delete(cb.value);
+      });
+      updateSelectionBar();
+    }
+
+    function onRowCheck(e) {
+      if (e.target.checked) selectedCases.add(e.target.value);
+      else selectedCases.delete(e.target.value);
+      updateSelectionBar();
+    }
+
+    function confirmBulkDelete() {
+      if (selectedCases.size === 0) return;
+      const n = selectedCases.size;
+      document.getElementById('del-modal-msg').innerHTML =
+        `Are you sure you want to archive <strong>${n} case${n !== 1 ? 's' : ''}</strong>? They will be hidden from the case list but all records — appointments, assessments, reports, and payments — are safely preserved.`;
+      document.getElementById('del-modal').classList.add('open');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('del-modal').classList.remove('open');
+    }
+    document.getElementById('del-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeDeleteModal();
+    });
+
+    async function executeBulkDelete() {
+      const btn = document.getElementById('del-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+
+      const ids = [...selectedCases];
+      let failed = 0;
+
+      for (const caseId of ids) {
+        try {
+          const res = await fetch(API + '/cases/' + encodeURIComponent(caseId), { method: 'DELETE', headers });
+          const data = await res.json();
+          if (!data.success) failed++;
+          else selectedCases.delete(caseId);
+        } catch { failed++; }
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Yes, Delete';
+      closeDeleteModal();
+      // Exit selection mode after delete
+      selectionMode = false;
+      const selBtn = document.getElementById('btn-select-mode');
+      if (selBtn) { selBtn.textContent = 'Select'; selBtn.classList.remove('active'); }
+      document.getElementById('bulk-bar').classList.remove('visible');
+      lastCasesSnapshot = '';
+      await loadCases(true);
+
+      const done = ids.length - failed;
+      if (failed > 0) showToast(`${done} archived, ${failed} failed.`, 'error');
+      else showToast(`${done} case${done !== 1 ? 's' : ''} archived.`, 'success');
+    }
+
+    // ── Case Archive (Clinical Director only) ─────────────────────────────
+
+    let allArchived = [];
+    let archiveViewOpen = false;
+    let selectedArchived = new Set();
+
+    if (role === 'clinical_director') {
+      document.getElementById('cd-archive-section').style.display = '';
+    }
+
+    async function toggleArchiveView() {
+      archiveViewOpen = !archiveViewOpen;
+      const btn = document.getElementById('archive-view-btn');
+      const panel = document.getElementById('archive-panel');
+      const wrap = document.getElementById('active-cases-wrap');
+
+      if (archiveViewOpen) {
+        btn.classList.add('active');
+        wrap.style.display = 'none';
+        panel.style.display = '';
+        document.getElementById('btn-select-mode').style.display = 'none';
+        document.getElementById('bulk-bar').classList.remove('visible');
+        document.getElementById('case-count').textContent = '';
+        document.getElementById('cm-breadcrumb').textContent = 'Case Archive';
+        selectedArchived.clear();
+        updateArchiveBulkBar();
+        await loadArchivedCases();
+      } else {
+        btn.classList.remove('active');
+        wrap.style.display = '';
+        panel.style.display = 'none';
+        document.getElementById('cm-breadcrumb').textContent =
+          (currentService === 'all' ? 'All Services' : currentService === 'counseling' ? 'Counseling' : 'Assessment') + ' — All';
+        document.getElementById('btn-select-mode').style.display = '';
+        renderCases();
+      }
+    }
+
+    async function loadArchivedCases() {
+      const tbody = document.getElementById('archive-body');
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>Loading…</h3></div></td></tr>';
+      try {
+        const res = await fetch(API + '/cases/archived', { headers });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+        allArchived = data.data || [];
+        const badge = document.getElementById('archive-badge');
+        if (allArchived.length > 0) { badge.textContent = allArchived.length; badge.style.display = 'inline-flex'; }
+        else { badge.style.display = 'none'; }
+        renderArchivedCases(allArchived);
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h3>Failed to load archived cases</h3><p>${esc(e.message)}</p></div></td></tr>`;
+      }
+    }
+
+    function updateArchiveBulkBar() {
+      const count = selectedArchived.size;
+      document.getElementById('archive-bulk-count').textContent =
+        count + ' case' + (count !== 1 ? 's' : '') + ' selected';
+      document.getElementById('archive-bulk-bar').classList.toggle('visible', count > 0);
+      const sa = document.getElementById('archive-select-all');
+      if (sa) {
+        const all = document.querySelectorAll('.archive-row-check');
+        sa.checked = all.length > 0 && [...all].every(cb => cb.checked);
+        sa.indeterminate = count > 0 && !sa.checked;
+      }
+    }
+
+    function onArchiveSelectAll(e) {
+      document.querySelectorAll('.archive-row-check').forEach(cb => {
+        cb.checked = e.target.checked;
+        if (e.target.checked) selectedArchived.add(cb.value);
+        else selectedArchived.delete(cb.value);
+      });
+      updateArchiveBulkBar();
+    }
+
+    function onArchiveRowCheck(e) {
+      if (e.target.checked) selectedArchived.add(e.target.value);
+      else selectedArchived.delete(e.target.value);
+      updateArchiveBulkBar();
+    }
+
+    function renderArchivedCases(list) {
+      const tbody = document.getElementById('archive-body');
+      document.getElementById('case-count').textContent = list.length;
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg><h3>No archived cases</h3><p>Cases you archive will appear here.</p></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(c => `
+        <tr>
+          <td><input type="checkbox" class="archive-row-check" value="${esc(c.case_id)}"
+            ${selectedArchived.has(c.case_id) ? 'checked' : ''} onchange="onArchiveRowCheck(event)"></td>
+          <td><span style="font-weight:600;color:var(--primary-dark)">${esc(c.case_id)}</span></td>
+          <td><span style="color:#6d28d9;font-weight:500">${esc(c.client_user_code || '—')}</span></td>
+          <td>${esc(c.client_name || '—')}</td>
+          <td><span class="svc-tag ${esc(c.service_type || '')}">${esc(c.service_type === 'assessment' ? 'Assessment' : 'Counseling')}</span></td>
+          <td><span class="status-badge ${statusClass(c.status)}">${esc(c.status)}</span></td>
+          <td style="color:#718096;font-size:13px">${fmtDate(c.archived_at)}</td>
+          <td style="display:flex;gap:6px;align-items:center">
+            <button onclick="restoreArchivedCase('${esc(c.case_id)}')"
+              style="padding:5px 12px;border:1.5px solid #0B6E3B;border-radius:8px;background:#fff;color:#0B6E3B;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+              Restore
+            </button>
+            <button onclick="confirmSinglePermDelete('${esc(c.case_id)}')"
+              style="padding:5px 12px;border:1.5px solid #dc2626;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+              Delete
+            </button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function filterArchive(q) {
+      const lower = q.toLowerCase();
+      const filtered = allArchived.filter(c =>
+        (c.case_id || '').toLowerCase().includes(lower) ||
+        (c.client_name || '').toLowerCase().includes(lower) ||
+        (c.client_email || '').toLowerCase().includes(lower) ||
+        (c.client_user_code || '').toLowerCase().includes(lower) ||
+        (c.status || '').toLowerCase().includes(lower)
+      );
+      renderArchivedCases(filtered);
+    }
+
+    async function restoreArchivedCase(caseId) {
+      cdConfirm('Restore Case', `Restore case ${caseId} to the active case list?`, async () => {
+        try {
+          const res = await fetch(`${API}/cases/${encodeURIComponent(caseId)}/restore`, { method: 'POST', headers });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+          showToast(`Case ${caseId} restored.`, 'success');
+          selectedArchived.delete(caseId);
+          lastCasesSnapshot = '';
+          await loadArchivedCases();
+          loadCases(true);
+        } catch (e) {
+          showToast(e.message || 'Failed to restore case.', 'error');
+        }
+      }, false);
+    }
+
+    // ── Permanent delete ──────────────────────────────────────────────────
+
+    let _permDeleteTarget = null; // 'single' | 'bulk'
+
+    function closePermDelModal() {
+      document.getElementById('perm-del-modal').classList.remove('open');
+      _permDeleteTarget = null;
+    }
+    document.getElementById('perm-del-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closePermDelModal();
+    });
+
+    function confirmSinglePermDelete(caseId) {
+      _permDeleteTarget = { type: 'single', caseId };
+      document.getElementById('perm-del-msg').innerHTML =
+        `This will permanently erase <strong>${esc(caseId)}</strong> and all linked records (audit trail, notes, assessments). This <strong>cannot be undone</strong>.`;
+      const btn = document.getElementById('perm-del-confirm-btn');
+      btn.onclick = executePermDelete;
+      document.getElementById('perm-del-modal').classList.add('open');
+    }
+
+    function confirmBulkPermDelete() {
+      if (selectedArchived.size === 0) return;
+      _permDeleteTarget = { type: 'bulk', ids: [...selectedArchived] };
+      const n = selectedArchived.size;
+      document.getElementById('perm-del-msg').innerHTML =
+        `This will permanently erase <strong>${n} case${n !== 1 ? 's' : ''}</strong> and all linked records. This <strong>cannot be undone</strong>.`;
+      const btn = document.getElementById('perm-del-confirm-btn');
+      btn.onclick = executePermDelete;
+      document.getElementById('perm-del-modal').classList.add('open');
+    }
+
+    async function executePermDelete() {
+      const btn = document.getElementById('perm-del-confirm-btn');
+      btn.disabled = true; btn.textContent = 'Deleting…';
+      try {
+        if (_permDeleteTarget.type === 'single') {
+          const res = await fetch(`${API}/cases/${encodeURIComponent(_permDeleteTarget.caseId)}/permanent`, { method: 'DELETE', headers });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+          selectedArchived.delete(_permDeleteTarget.caseId);
+          showToast(`Case ${_permDeleteTarget.caseId} permanently deleted.`, 'success');
+        } else {
+          const res = await fetch(`${API}/cases/permanent/bulk`, {
+            method: 'DELETE', headers,
+            body: JSON.stringify({ caseIds: _permDeleteTarget.ids }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+          _permDeleteTarget.ids.forEach(id => selectedArchived.delete(id));
+          showToast(`${(data.deleted || []).length} case(s) permanently deleted.`, 'success');
+        }
+        closePermDelModal();
+        updateArchiveBulkBar();
+        await loadArchivedCases();
+      } catch (e) {
+        showToast(e.message || 'Delete failed.', 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Delete Forever';
+      }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────
+
+    loadCases().then(() => {
+      updatePollIndicator();
+      startPolling();
+
+      // Deep-link: open a specific case when arrived from a notification
+      // (e.g. case-dashboard.html?case=CASE-2026-001).
+      const deepCase = new URLSearchParams(location.search).get('case');
+      if (deepCase && typeof openCase === 'function') {
+        openCase(deepCase);
+      }
+    });
+
+    // Pre-populate archive badge count without opening the panel
+    if (role === 'clinical_director') {
+      fetch(API + '/cases/archived', { headers })
+        .then(r => r.json())
+        .then(data => {
+          const count = (data.data || []).length;
+          const badge = document.getElementById('archive-badge');
+          if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+        })
+        .catch(() => {});
+    }
+  </script>
+</body>
+</html>

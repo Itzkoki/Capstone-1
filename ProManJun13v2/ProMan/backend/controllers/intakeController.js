@@ -1,8 +1,10 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 const Payment = require('../models/Payment');
 const Notification = require('../models/Notification');
+const Case = require('../models/Case');
+const securityEvents = require('../services/securityEvents');
 const { PAYMENT_CONFIG } = require('./paymentController');
 const { sweepUnpaidIntakes } = require('../services/intakeCleanup');
 const notificationService = require('../services/notificationService');
@@ -60,6 +62,15 @@ const submitIntakeForm = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A preferred appointment schedule is required.' });
     }
 
+    // Reject schedules in the past (date OR time). Authoritative server-side
+    // guard so a stale/forged client cannot book a slot that has already passed.
+    if (isNaN(new Date(f.prefSchedule).getTime()) || new Date(f.prefSchedule) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'The selected appointment date and time has already passed. Please choose a future schedule.',
+      });
+    }
+
     // Validate daily limit (max 5 per day) and that the slot is free.
     const schedDate = f.prefSchedule.split('T')[0];
     const MAX_PER_DAY = 5;
@@ -80,9 +91,8 @@ const submitIntakeForm = async (req, res, next) => {
       });
     }
 
-    // IMPORTANT: do NOT write to intake_forms here. The client's answers are held
-    // on the appointment (pending_intake_data) for staff review, and are only
-    // stored in intake_forms once staff verify the payment.
+    // Intake answers are held on the appointment (pending_intake_data) for staff
+    // review. They are only written to intake_forms once payment is verified.
     const appointment = await Appointment.create({
       intakeFormId: null,
       clientId: userId,
@@ -91,6 +101,28 @@ const submitIntakeForm = async (req, res, next) => {
       pendingIntakeData: f,
     });
 
+    // ── Create a Case for this intake ──
+    let assignedStaffId = null;
+    if (f.counselorStaffId) {
+      assignedStaffId = parseInt(f.counselorStaffId, 10) || null;
+    } else if (f.counselorStaff) {
+      const staffLookup = await db.query(
+        `SELECT staff_id FROM staff WHERE CONCAT(first_name, ' ', last_name) = $1 AND is_active = TRUE LIMIT 1`,
+        [f.counselorStaff]
+      );
+      if (staffLookup.rows.length > 0) assignedStaffId = staffLookup.rows[0].staff_id;
+    }
+
+    const newCase = await Case.create({
+      userId,
+      assignedPsychologistId: assignedStaffId,
+      intakeDate: new Date(),
+      serviceType: 'counseling',
+    });
+
+    // Link the appointment to the case
+    await db.query(`UPDATE appointments SET case_id = $1 WHERE id = $2`, [newCase.case_id, appointment.id]);
+
     // ── Role-Based Notifications ──────────────────────
 
     // 1. Notify the client (submitter)
@@ -98,9 +130,9 @@ const submitIntakeForm = async (req, res, next) => {
       await notificationService.notifyUser(
         userId,
         'intake',
-        'Intake Form & Appointment Submitted',
-        'Your intake form and preferred appointment schedule have been submitted for review. We\u2019ll notify you once a staff member approves your schedule — payment will be requested only after that.',
-        'profile.html'
+        'Counseling Form & Appointment Submitted',
+        'Your counseling form and preferred appointment schedule have been submitted for review. We’ll notify you once a staff member approves your schedule — payment will be requested only after that.',
+        `profile.html?appt_id=${appointment.id}`
       );
     } catch (err) {
       console.error('Failed to send client intake notification:', err.message);
@@ -108,11 +140,12 @@ const submitIntakeForm = async (req, res, next) => {
 
     // 2. Notify all staff members (action required)
     try {
-      await notificationService.notifyStaff(
+      await notificationService.notifyRoles(
+        ['psychometrician', 'clinical_director'],
         'intake',
         'New Client Intake Form',
         `${userName} has submitted an intake form and is awaiting review.${f.prefSchedule ? ' Preferred schedule: ' + new Date(f.prefSchedule).toLocaleString('en-PH') : ''}`,
-        'intake-submissions.html'
+        'case-dashboard.html'
       );
     } catch (err) {
       console.error('Failed to send staff intake notifications:', err.message);
@@ -164,6 +197,14 @@ const checkoutIntake = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A preferred schedule is required to book and pay.' });
     }
 
+    // Reject schedules in the past (date OR time) before taking payment.
+    if (isNaN(new Date(f.prefSchedule).getTime()) || new Date(f.prefSchedule) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'The selected appointment date and time has already passed. Please choose a future schedule.',
+      });
+    }
+
     // ── Age validation (min 5 years) ──
     if (f.dob) {
       const dobDate = new Date(f.dob);
@@ -203,13 +244,13 @@ const checkoutIntake = async (req, res, next) => {
         preferred_schedule, language_preference, session_modality, counselor_gender_pref,
         is_minor, guardian_name, guardian_contact, guardian_relation, minor_other_reason,
         emergency_name, emergency_address, emergency_contact, emergency_email, emergency_relation,
-        data_privacy_consent
+        data_privacy_consent, code_of_ethics_consent
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7, $8,$9,$10,$11, $12,$13,$14,$15, $16,$17,
-        $18,$19,$20,$21, $22,$23,$24,$25,$26, $27,$28,$29,$30,$31, $32
+        $18,$19,$20,$21, $22,$23,$24,$25,$26, $27,$28,$29,$30,$31, $32, $33
       ) RETURNING id, created_at`,
       [
-        userId, f.fullName || null, f.nickName || null, f.age ? parseInt(f.age) : null, f.dob || null,
+        userId, (f.fullName || [f.givenName, f.middleName, f.familyName].filter(Boolean).join(' ') || null), f.nickName || null, f.age ? parseInt(f.age) : null, f.dob || null,
         f.gender || null, f.civilStatus || null, f.address || null, f.cellphone || null, f.homePhone || null,
         f.email || null, f.concernDesc || null, f.reasonCounseling || null, f.sinceWhen || null, f.howLong || null,
         f.therapyBefore || null, f.medicationHistory || null, f.prefSchedule || null, f.language || null,
@@ -217,9 +258,34 @@ const checkoutIntake = async (req, res, next) => {
         f.guardianContact || null, f.guardianRelation || null, f.minorOtherReason || null, f.emerName || null,
         f.emerAddress || null, f.emerContact || null, f.emerEmail || null, f.emerRelation || null,
         f.dataPrivacyConsent === true || f.dataPrivacyConsent === 'true' || f.dataPrivacyConsent === 1,
+        f.codeOfEthicsConsent === true || f.codeOfEthicsConsent === 'true' || f.codeOfEthicsConsent === 1,
       ]
     );
     const intake = result.rows[0];
+
+    // ── 1b) Create a Case for this intake ──
+    // Resolve staff_id from the counselorStaff value (may be name or staff_id)
+    let assignedStaffId = null;
+    if (f.counselorStaffId) {
+      assignedStaffId = parseInt(f.counselorStaffId, 10) || null;
+    } else if (f.counselorStaff) {
+      // Legacy: staff was submitted by name; look up the staff_id
+      const staffLookup = await db.query(
+        `SELECT staff_id FROM staff WHERE CONCAT(first_name, ' ', last_name) = $1 AND is_active = TRUE LIMIT 1`,
+        [f.counselorStaff]
+      );
+      if (staffLookup.rows.length > 0) assignedStaffId = staffLookup.rows[0].staff_id;
+    }
+
+    const newCase = await Case.create({
+      userId,
+      assignedPsychologistId: assignedStaffId,
+      intakeDate: new Date(),
+      serviceType: 'counseling',
+    });
+
+    // Link the intake form to the case
+    await db.query(`UPDATE intake_forms SET case_id = $1 WHERE id = $2`, [newCase.case_id, intake.id]);
 
     // ── 2) Create the appointment ──
     const appointment = await Appointment.create({
@@ -228,6 +294,9 @@ const checkoutIntake = async (req, res, next) => {
       preferredDatetime: f.prefSchedule,
       modality: f.modality || null,
     });
+
+    // Link the appointment to the case
+    await db.query(`UPDATE appointments SET case_id = $1 WHERE id = $2`, [newCase.case_id, appointment.id]);
 
     // ── 3) Create the payment (7-minute hold, agreement recorded) ──
     const amountDue = paymentOption === 'full' ? PAYMENT_CONFIG.fullAmount : PAYMENT_CONFIG.halfAmount;
@@ -254,16 +323,20 @@ const checkoutIntake = async (req, res, next) => {
         'Your intake form has been submitted. Complete your payment to reserve your slot.', 'profile.html');
     } catch (_) {}
     try {
-      await notificationService.notifyStaff('intake', 'New Client Intake Form',
+      await notificationService.notifyRoles(['psychometrician', 'clinical_director'], 'intake', 'New Client Intake Form',
         `${userName} has submitted an intake form and is awaiting review.${f.prefSchedule ? ' Preferred schedule: ' + new Date(f.prefSchedule).toLocaleString('en-PH') : ''}`,
-        'intake-submissions.html');
+        'case-dashboard.html');
     } catch (_) {}
+
+    // Link the payment to the case
+    await db.query(`UPDATE payments SET case_id = $1 WHERE id = $2`, [newCase.case_id, payment.id]);
 
     const qrImage = paymentOption === 'full' ? PAYMENT_CONFIG.qr.full : PAYMENT_CONFIG.qr.half;
     return res.status(201).json({
       success: true,
       message: 'Intake saved. Please complete your payment within 7 minutes.',
       data: {
+        case_id: newCase.case_id,
         intake_form_id: intake.id,
         appointment_id: appointment.id,
         payment: {
@@ -286,8 +359,7 @@ const checkoutIntake = async (req, res, next) => {
 };
 
 /**
- * Build a form_data-like object from the flat DB row columns
- * so the frontend intake-submissions.html can render it consistently.
+ * Build a form_data-like object from the flat DB row columns.
  */
 function rowToFormData(row) {
   return {
@@ -322,6 +394,7 @@ function rowToFormData(row) {
     emerEmail: row.emergency_email,
     emerRelation: row.emergency_relation,
     dataPrivacyConsent: row.data_privacy_consent,
+    codeOfEthicsConsent: row.code_of_ethics_consent,
   };
 }
 
@@ -403,6 +476,11 @@ const getIntakeForm = async (req, res, next) => {
 
     // Clients can only view their own
     if (role === 'client' && row.user_id !== userId) {
+      securityEvents.record({
+        module: 'intake_scheduling', eventType: 'unauthorized_intake_access',
+        userId, subjectKind: 'user', ip: req.ip,
+        details: `Client #${userId} attempted to view intake form #${row.id} belonging to another client.`,
+      });
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 

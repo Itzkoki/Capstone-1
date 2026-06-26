@@ -1,12 +1,53 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 
+// ── Identity resolution across the two account tables ────────────────────────
+// Staff now live in the dedicated `staff` table (staff_id) while clients remain
+// in `users` (id). Teleconference rows store a bare numeric id in
+// psychologist_id / client_id / session_participants.user_id, so a name must be
+// resolved against the correct table. We disambiguate using the row's KNOWN role:
+//   • host/staff  → prefer the `staff` table, fall back to `users` (legacy staff)
+//   • client      → prefer `users`
+// These SQL fragments are reused by the queries below. `st`/`stp` = staff alias,
+// `u`/`up` = users alias.
+const STAFF_NAME = (st) => `NULLIF(TRIM(CONCAT_WS(' ', ${st}.first_name, ${st}.last_name)), '')`;
+
+// Fixed, ordered emoji alphabet (64 entries) used to render a session's
+// cryptographic fingerprint. The index math below maps each fingerprint byte to
+// one of these, so the mapping is deterministic and identical for everyone.
+const SECURITY_EMOJI_SET = [
+  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔',
+  '🦄','🐝','🦋','🐢','🐙','🐬','🐳','🦀','🌵','🌲','🍀','🌻','🌹','🍁','🍄','🌍',
+  '🍎','🍊','🍋','🍉','🍓','🍒','🍑','🥝','🌽','🥕','🍔','🍕','🌮','🍿','🍩','🍪',
+  '⚽','🏀','🎾','🏆','🎸','🎹','🎺','🎲','🚗','✈️','🚀','⛵','🏰','🗼','💎','🔔',
+];
+
 const TeleconferenceSession = {
   /**
    * Generate a secure access token for session participants.
    */
   generateAccessToken() {
     return crypto.randomBytes(32).toString('hex');
+  },
+
+  /**
+   * Derive a deterministic 4-emoji security fingerprint from a session's secret
+   * key (its access token). Uses SHA-256, then maps the first four bytes onto a
+   * fixed emoji alphabet. The same session key always yields the same emojis for
+   * every participant; a new session (new key) yields a different sequence.
+   *
+   * SECURITY: the raw key is NEVER returned or stored — only the derived emojis.
+   * @param {string} sessionKey
+   * @returns {string[]} four emoji strings (empty array if no key)
+   */
+  securityEmojis(sessionKey) {
+    if (!sessionKey) return [];
+    const digest = crypto.createHash('sha256').update(String(sessionKey)).digest();
+    const out = [];
+    for (let i = 0; i < 4; i++) {
+      out.push(SECURITY_EMOJI_SET[digest[i] % SECURITY_EMOJI_SET.length]);
+    }
+    return out;
   },
 
   /**
@@ -23,15 +64,15 @@ const TeleconferenceSession = {
   /**
    * Create a new teleconference session.
    */
-  async create({ meetingId, psychologistId, clientId, twilioRoomSid, twilioRoomName }) {
+  async create({ meetingId, psychologistId, clientId, twilioRoomSid, twilioRoomName, appointmentId }) {
     const accessToken = this.generateAccessToken();
     const meetingCode = this.generateMeetingCode();
     const result = await db.query(
       `INSERT INTO teleconference_sessions
-         (meeting_id, psychologist_id, client_id, access_token, meeting_code, twilio_room_sid, twilio_room_name, session_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'scheduled')
+         (meeting_id, psychologist_id, client_id, access_token, meeting_code, twilio_room_sid, twilio_room_name, session_status, appointment_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'scheduled', $8)
        RETURNING *`,
-      [meetingId, psychologistId, clientId || null, accessToken, meetingCode, twilioRoomSid || null, twilioRoomName || null]
+      [meetingId, psychologistId, clientId || null, accessToken, meetingCode, twilioRoomSid || null, twilioRoomName || null, appointmentId || null]
     );
     return result.rows[0];
   },
@@ -39,16 +80,16 @@ const TeleconferenceSession = {
   async findById(id) {
     const result = await db.query(
       `SELECT ts.*,
-              p.full_name AS psychologist_name,
-              p.email     AS psychologist_email,
+              COALESCE(${STAFF_NAME('stp')}, up.full_name) AS psychologist_name,
+              COALESCE(stp.email, up.email)                AS psychologist_email,
               c.full_name AS client_name,
               c.email     AS client_email,
               m.title     AS meeting_title
        FROM teleconference_sessions ts
-       LEFT JOIN users u ON FALSE
-       LEFT JOIN users p ON p.id = ts.psychologist_id
-       LEFT JOIN users c ON c.id = ts.client_id
-       LEFT JOIN meetings m ON m.id = ts.meeting_id
+       LEFT JOIN staff stp ON stp.staff_id = ts.psychologist_id
+       LEFT JOIN users up   ON up.id       = ts.psychologist_id
+       LEFT JOIN users c    ON c.id        = ts.client_id
+       LEFT JOIN meetings m ON m.id        = ts.meeting_id
        WHERE ts.id = $1`,
       [id]
     );
@@ -58,11 +99,12 @@ const TeleconferenceSession = {
   async findByMeetingId(meetingId) {
     const result = await db.query(
       `SELECT ts.*,
-              p.full_name AS psychologist_name,
+              COALESCE(${STAFF_NAME('stp')}, up.full_name) AS psychologist_name,
               c.full_name AS client_name
        FROM teleconference_sessions ts
-       LEFT JOIN users p ON p.id = ts.psychologist_id
-       LEFT JOIN users c ON c.id = ts.client_id
+       LEFT JOIN staff stp ON stp.staff_id = ts.psychologist_id
+       LEFT JOIN users up   ON up.id       = ts.psychologist_id
+       LEFT JOIN users c    ON c.id        = ts.client_id
        WHERE ts.meeting_id = $1`,
       [meetingId]
     );
@@ -75,13 +117,14 @@ const TeleconferenceSession = {
   async findByParticipant(userId, { status, limit = 20, offset = 0 } = {}) {
     let query = `
       SELECT ts.*,
-             p.full_name AS psychologist_name,
+             COALESCE(${STAFF_NAME('stp')}, up.full_name) AS psychologist_name,
              c.full_name AS client_name,
              m.title     AS meeting_title
       FROM teleconference_sessions ts
-      LEFT JOIN users p ON p.id = ts.psychologist_id
-      LEFT JOIN users c ON c.id = ts.client_id
-      LEFT JOIN meetings m ON m.id = ts.meeting_id
+      LEFT JOIN staff stp ON stp.staff_id = ts.psychologist_id
+      LEFT JOIN users up   ON up.id       = ts.psychologist_id
+      LEFT JOIN users c    ON c.id        = ts.client_id
+      LEFT JOIN meetings m ON m.id        = ts.meeting_id
       WHERE (ts.psychologist_id = $1
              OR ts.client_id = $1
              OR EXISTS (SELECT 1 FROM session_participants sp
@@ -107,13 +150,14 @@ const TeleconferenceSession = {
   async findAll({ status, limit = 50, offset = 0 } = {}) {
     let query = `
       SELECT ts.*,
-             p.full_name AS psychologist_name,
+             COALESCE(${STAFF_NAME('stp')}, up.full_name) AS psychologist_name,
              c.full_name AS client_name,
              m.title     AS meeting_title
       FROM teleconference_sessions ts
-      LEFT JOIN users p ON p.id = ts.psychologist_id
-      LEFT JOIN users c ON c.id = ts.client_id
-      LEFT JOIN meetings m ON m.id = ts.meeting_id
+      LEFT JOIN staff stp ON stp.staff_id = ts.psychologist_id
+      LEFT JOIN users up   ON up.id       = ts.psychologist_id
+      LEFT JOIN users c    ON c.id        = ts.client_id
+      LEFT JOIN meetings m ON m.id        = ts.meeting_id
       WHERE 1=1`;
     const params = [];
     let idx = 1;
@@ -161,9 +205,37 @@ const TeleconferenceSession = {
     return result.rows[0] || null;
   },
 
-  async startRecording(id) {
+  /**
+   * Host requests recording: marks the request pending WITHOUT starting it.
+   * Recording only actually starts once the client approves (see
+   * setRecordingResponse). Clears any prior decision so the client is asked fresh.
+   */
+  async requestRecording(id) {
     const result = await db.query(
-      `UPDATE teleconference_sessions SET recording_enabled = TRUE WHERE id = $1 RETURNING *`,
+      `UPDATE teleconference_sessions
+         SET recording_requested = TRUE,
+             recording_enabled = FALSE,
+             recording_response = NULL,
+             recording_consent_given = FALSE
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Fully reset/stop recording: not recording, no pending request, no decision.
+   */
+  async resetRecording(id) {
+    const result = await db.query(
+      `UPDATE teleconference_sessions
+         SET recording_enabled = FALSE,
+             recording_requested = FALSE,
+             recording_response = NULL,
+             recording_consent_given = FALSE
+       WHERE id = $1
+       RETURNING *`,
       [id]
     );
     return result.rows[0] || null;
@@ -178,18 +250,21 @@ const TeleconferenceSession = {
   },
 
   /**
-   * Store the client's recording decision as 1 (approved) or 0 (rejected),
-   * and keep the boolean consent flag in sync.
+   * Apply the client's recording decision. ON APPROVAL recording actually starts
+   * (recording_enabled = TRUE); on rejection it stays off. Either way the pending
+   * request is cleared.
    */
   async setRecordingResponse(id, response) {
-    const val = response ? 1 : 0;
+    const approved = !!response;
     const result = await db.query(
       `UPDATE teleconference_sessions
          SET recording_response = $1,
-             recording_consent_given = $2
+             recording_consent_given = $2,
+             recording_enabled = $2,
+             recording_requested = FALSE
        WHERE id = $3
        RETURNING *`,
-      [val, val === 1, id]
+      [approved ? 1 : 0, approved, id]
     );
     return result.rows[0] || null;
   },
@@ -210,14 +285,41 @@ const TeleconferenceSession = {
   },
 
   async getParticipants(sessionId) {
+    // Resolve each participant against the correct account table using the row's
+    // known role: clients live in `users`, host/staff in `staff` (with a
+    // `users` fallback for legacy staff accounts).
     const result = await db.query(
-      `SELECT sp.*, u.full_name, u.email, u.role AS user_role
+      `SELECT sp.*,
+              CASE WHEN sp.participant_role = 'client'
+                   THEN COALESCE(u.full_name, ${STAFF_NAME('st')})
+                   ELSE COALESCE(${STAFF_NAME('st')}, u.full_name)
+              END AS full_name,
+              -- Canonical display label used by the roster AND the video tile, so
+              -- camera/mic state (keyed by this value) lines up. Clients show
+              -- their full name; staff show "FirstName (Role)" — never staff_id.
+              CASE
+                WHEN sp.participant_role = 'client'
+                  THEN COALESCE(u.full_name, ${STAFF_NAME('st')}, 'Participant')
+                WHEN st.staff_id IS NOT NULL
+                  THEN COALESCE(st.first_name, ${STAFF_NAME('st')}, 'Staff')
+                       || COALESCE(' (' || INITCAP(REPLACE(st.role, '_', ' ')) || ')', '')
+                ELSE COALESCE(${STAFF_NAME('st')}, u.full_name, 'Participant')
+              END AS display_name,
+              CASE WHEN sp.participant_role = 'client'
+                   THEN COALESCE(u.email, st.email)
+                   ELSE COALESCE(st.email, u.email)
+              END AS email,
+              CASE WHEN sp.participant_role = 'client'
+                   THEN COALESCE(u.role, st.role)
+                   ELSE COALESCE(st.role, u.role)
+              END AS user_role
        FROM session_participants sp
-       JOIN users u ON u.id = sp.user_id
+       LEFT JOIN users u ON u.id       = sp.user_id
+       LEFT JOIN staff st ON st.staff_id = sp.user_id
        WHERE sp.session_id = $1
        ORDER BY
          CASE sp.participant_role WHEN 'host' THEN 0 WHEN 'client' THEN 1 ELSE 2 END,
-         u.full_name`,
+         full_name`,
       [sessionId]
     );
     return result.rows;
@@ -250,12 +352,83 @@ const TeleconferenceSession = {
   // Participant leaves the call voluntarily: clear joined_at so they drop out of
   // the "In this meeting" roster, but keep their admit_status (admitted) so they
   // can rejoin without waiting for the host again.
+  // Participant leaves voluntarily: drop them from the live roster (clear
+  // joined_at + connection_token) but KEEP reconnect_token_hash and stamp
+  // last_heartbeat = NOW() to START THE GRACE CLOCK. The seat stays bound to
+  // this device for SEAT_GRACE_MS after leaving; only the matching token may
+  // rejoin during that window. Once the grace window passes (no fresh
+  // heartbeat), the binding is considered expired and another device may claim
+  // the seat. The binding is also cleared immediately by a host remove /
+  // session end (see releaseSeat).
   async markLeft(sessionId, userId) {
     const result = await db.query(
-      `UPDATE session_participants SET joined_at = NULL WHERE session_id = $1 AND user_id = $2 RETURNING *`,
+      `UPDATE session_participants
+         SET joined_at = NULL, connection_token = NULL, last_heartbeat = NOW()
+       WHERE session_id = $1 AND user_id = $2 RETURNING *`,
       [sessionId, userId]
     );
     return result.rows[0] || null;
+  },
+
+  // ── Live-call seat lock (duplicate-entry prevention) ──
+
+  // True if this participant currently holds an ACTIVE seat: joined AND
+  // heartbeating within the freshness window. A stale heartbeat means the
+  // previous connection dropped, so the seat is considered free.
+  async isSeatActive(sessionId, userId, freshnessMs = 30000) {
+    const p = await this.getParticipant(sessionId, userId);
+    if (!p || !p.joined_at || !p.last_heartbeat) return false;
+    return (Date.now() - new Date(p.last_heartbeat).getTime()) < freshnessMs;
+  },
+
+  // Claim the seat for this join: store the per-connection token, the durable
+  // reconnect-token HASH, and mark the participant joined + freshly heartbeating.
+  async claimSeat(sessionId, userId, connectionToken, reconnectTokenHash = null) {
+    const result = await db.query(
+      `UPDATE session_participants
+         SET connection_token = $3, reconnect_token_hash = $4,
+             joined_at = NOW(), last_heartbeat = NOW()
+       WHERE session_id = $1 AND user_id = $2
+       RETURNING *`,
+      [sessionId, userId, connectionToken, reconnectTokenHash]
+    );
+    return result.rows[0] || null;
+  },
+
+  // Refresh last_heartbeat ONLY if the presented connection token matches the
+  // seat holder. A device without the token cannot keep the seat alive.
+  // Returns true if the heartbeat was accepted.
+  async touchHeartbeat(sessionId, userId, connectionToken) {
+    const result = await db.query(
+      `UPDATE session_participants
+         SET last_heartbeat = NOW()
+       WHERE session_id = $1 AND user_id = $2 AND connection_token = $3
+       RETURNING id`,
+      [sessionId, userId, connectionToken]
+    );
+    return result.rowCount === 1;
+  },
+
+  // Free the seat (on leave / removal / session end).
+  async releaseSeat(sessionId, userId) {
+    await db.query(
+      `UPDATE session_participants
+         SET connection_token = NULL, reconnect_token_hash = NULL, last_heartbeat = NULL
+       WHERE session_id = $1 AND user_id = $2`,
+      [sessionId, userId]
+    );
+  },
+
+  // Free EVERY participant's seat + device binding for a session (used when the
+  // host ends the call for all — no token can reconnect afterward).
+  async releaseAllSeats(sessionId) {
+    await db.query(
+      `UPDATE session_participants
+         SET joined_at = NULL, connection_token = NULL,
+             reconnect_token_hash = NULL, last_heartbeat = NULL
+       WHERE session_id = $1`,
+      [sessionId]
+    );
   },
 
   // Host removes a participant from the meeting: block re-entry (denied) and
@@ -263,7 +436,8 @@ const TeleconferenceSession = {
   async removeParticipant(sessionId, userId) {
     const result = await db.query(
       `UPDATE session_participants
-         SET admit_status = 'denied', joined_at = NULL
+         SET admit_status = 'denied', joined_at = NULL,
+             connection_token = NULL, reconnect_token_hash = NULL, last_heartbeat = NULL
        WHERE session_id = $1 AND user_id = $2
        RETURNING *`,
       [sessionId, userId]
@@ -293,9 +467,11 @@ const TeleconferenceSession = {
   async getMessages(sessionId, sinceId = 0) {
     const result = await db.query(
       `SELECT sm.id, sm.session_id, sm.user_id, sm.message, sm.created_at,
-              u.full_name, u.role AS user_role
+              COALESCE(u.full_name, ${STAFF_NAME('st')}) AS full_name,
+              COALESCE(u.role, st.role)                  AS user_role
        FROM session_messages sm
-       LEFT JOIN users u ON u.id = sm.user_id
+       LEFT JOIN users u  ON u.id       = sm.user_id
+       LEFT JOIN staff st ON st.staff_id = sm.user_id
        WHERE sm.session_id = $1 AND sm.id > $2
        ORDER BY sm.id ASC`,
       [sessionId, sinceId]
@@ -338,11 +514,13 @@ const TeleconferenceSession = {
 
   async getLogs(sessionId) {
     const result = await db.query(
-      `SELECT sl.*, u.full_name AS participant_name
+      `SELECT sl.*,
+              COALESCE(${STAFF_NAME('st')}, u.full_name) AS participant_name
        FROM session_logs sl
-       LEFT JOIN users u ON u.id = sl.participant_id
+       LEFT JOIN users u  ON u.id       = sl.participant_id
+       LEFT JOIN staff st ON st.staff_id = sl.participant_id
        WHERE sl.session_id = $1
-       ORDER BY sl.created_at ASC`,
+       ORDER BY sl.created_at DESC, sl.id DESC`,
       [sessionId]
     );
     return result.rows;

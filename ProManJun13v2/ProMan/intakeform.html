@@ -13,6 +13,9 @@
   <link rel="stylesheet" href="toast.css">
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="captcha.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 <body class="intake-page logged-in">
 
@@ -23,7 +26,7 @@
         <img src="barcarse logo.jpg" alt="BPS Logo">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -74,28 +77,59 @@
     <!-- ============================================ -->
     <div class="select-screen" id="privacy-consent-screen">
       <div class="select-screen__head">
-        <h1 class="select-screen__title">Data Privacy Act Consent</h1>
-        <p class="select-screen__subtitle">Please read and agree to the following before starting your intake form.</p>
+        <h1 class="select-screen__title">Data Privacy &amp; Ethics Consent</h1>
+        <p class="select-screen__subtitle">Please read and agree to both notices below before starting your intake form.</p>
       </div>
 
-      <div class="consent-card">
-        <div class="consent-card__body">
-          <p>In compliance with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, its Implementing Rules and Regulations, and applicable issuances of the National Privacy Commission, <strong>Barcarse Psychological Services</strong> collects and processes your personal and sensitive personal information for the following purposes:</p>
-          <ul class="consent-list">
-            <li>To assess your needs, schedule appointments, and deliver counseling and psychological assessment services.</li>
-            <li>To create and maintain your clinical and case records.</li>
-            <li>To contact you and, where necessary, your emergency contact or guardian.</li>
-            <li>To comply with legal, regulatory, and professional obligations.</li>
-          </ul>
-          <p>Your information is kept <strong>strictly confidential</strong>, stored securely, and is accessed only by authorized personnel. It will not be shared with third parties without your consent, except as required or permitted by law. You have the right to access, correct, and object to the processing of your data, and to withdraw this consent at any time, subject to legal and clinical limitations.</p>
+      <div class="consent-shell">
+        <!-- Data Privacy Act Consent -->
+        <div class="consent-card">
+          <h3 class="consent-card__title">
+            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            Data Privacy Act Consent
+          </h3>
+          <div class="consent-card__body">
+            <p>In compliance with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, its Implementing Rules and Regulations, and applicable issuances of the National Privacy Commission, <strong>Barcarse Psychological Services</strong> collects and processes your personal and sensitive personal information for the following purposes:</p>
+            <ul class="consent-list">
+              <li>To assess your needs, schedule appointments, and deliver counseling and psychological assessment services.</li>
+              <li>To create and maintain your clinical and case records.</li>
+              <li>To contact you and, where necessary, your emergency contact or guardian.</li>
+              <li>To comply with legal, regulatory, and professional obligations.</li>
+            </ul>
+            <p>Your information is kept <strong>strictly confidential</strong>, stored securely, and is accessed only by authorized personnel. It will not be shared with third parties without your consent, except as required or permitted by law. You have the right to access, correct, and object to the processing of your data, and to withdraw this consent at any time, subject to legal and clinical limitations.</p>
+          </div>
+
+          <label class="consent-agree" for="privacy-consent-checkbox">
+            <input type="checkbox" id="privacy-consent-checkbox" onchange="onConsentToggle()">
+            <span>I have read and understood this notice. I freely give my consent to the collection and processing of my personal and sensitive personal information for the purposes stated above.</span>
+          </label>
         </div>
 
-        <label class="consent-agree" for="privacy-consent-checkbox">
-          <input type="checkbox" id="privacy-consent-checkbox" onchange="onConsentToggle()">
-          <span>I have read and understood this notice. I freely give my consent to the collection and processing of my personal and sensitive personal information for the purposes stated above.</span>
-        </label>
+        <!-- Philippine Code of Ethics for Psychologists -->
+        <div class="consent-card">
+          <h3 class="consent-card__title">
+            <svg viewBox="0 0 24 24"><path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9h-3v-6H9v6H6v-9l6-4.5zM11 14h2v5h-2v-5z"/></svg>
+            Philippine Code of Ethics for Psychologists
+          </h3>
+          <div class="consent-card__body">
+            <p>Barcarse Psychological Services adheres to the <strong>Code of Ethics for Philippine Psychologists</strong> of the Psychological Association of the Philippines (PAP) and the <strong>Philippine Psychology Act of 2009 (Republic Act No. 10029)</strong>. In rendering counseling and psychotherapy services, our practitioners are guided by the following core principles:</p>
+            <ul class="consent-list">
+              <li><strong>Respect for the Dignity of Persons and Peoples</strong> — we uphold your worth, rights, autonomy, and informed consent throughout your care.</li>
+              <li><strong>Competence</strong> — services are provided only within our practitioners' areas of training, competence, and licensure.</li>
+              <li><strong>Responsibility</strong> — we are accountable for the appropriate, caring, and professional conduct of every session.</li>
+              <li><strong>Integrity</strong> — we provide honest, objective, and fair professional services, free from conflicts of interest.</li>
+              <li><strong>Confidentiality</strong> — information shared in counseling is disclosed only with your consent or as required by law and professional standards.</li>
+            </ul>
+            <p>I understand the professional and ethical standards under which counseling and psychotherapy are provided, including the limits of confidentiality where disclosure is required or permitted by law.</p>
+          </div>
 
-        <div class="consent-actions">
+          <label class="consent-agree" for="ethics-consent-checkbox">
+            <input type="checkbox" id="ethics-consent-checkbox" onchange="onConsentToggle()">
+            <span>I have read and understood the Philippine Code of Ethics for Psychologists, and I acknowledge and accept the professional and ethical standards described above.</span>
+          </label>
+        </div>
+
+        <div class="consent-actions consent-actions--full">
           <button type="button" class="select-back-btn" onclick="declineConsent()">← Back</button>
           <button type="button" class="btn-consent-continue" id="btn-consent-continue" disabled onclick="agreeConsent()">I Agree &amp; Continue</button>
         </div>
@@ -161,20 +195,31 @@
         <h2 class="intake-card__title">Personal Details</h2>
 
         <div class="field">
-          <label for="fullName">Full Name <span class="req">*</span></label>
-          <input type="text" id="fullName" placeholder="e.g. Juan Dela Cruz" required>
-          <div class="field__error-msg" id="err-fullName">Full name is required.</div>
+          <label for="familyName">Family Name (Apelyido) <span class="req">*</span></label>
+          <input type="text" id="familyName" placeholder="e.g. Dela Cruz" required oninput="restrictToName(this)">
+          <div class="field__error-msg" id="err-familyName">Family name is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="givenName">Given Name (Pangalan) <span class="req">*</span></label>
+          <input type="text" id="givenName" placeholder="e.g. Juan" required oninput="restrictToName(this)">
+          <div class="field__error-msg" id="err-givenName">Given name is required.</div>
+        </div>
+
+        <div class="field">
+          <label for="middleName">Middle Name (Gitnang Pangalan)</label>
+          <input type="text" id="middleName" placeholder="e.g. Santos" oninput="restrictToName(this)">
         </div>
 
         <div class="field">
           <label for="nickName">Nickname (Optional)</label>
-          <input type="text" id="nickName" placeholder="e.g. JD">
+          <input type="text" id="nickName" placeholder="e.g. JD" oninput="restrictToName(this)">
         </div>
 
         <div class="field-row" style="overflow: visible; position: relative; z-index: 10;">
           <div class="field">
             <label for="age">Age <span class="req">*</span></label>
-            <input type="number" id="age" placeholder="e.g. 25" min="5" max="120" required>
+            <input type="number" id="age" placeholder="Auto-calculated from date of birth" min="5" max="120" required readonly>
             <div class="field__error-msg" id="err-age">Age must be at least 5.</div>
           </div>
           <div class="field field--dob">
@@ -187,8 +232,8 @@
             <div class="dob-calendar" id="dob-calendar">
               <div class="dob-cal__header">
                 <div class="dob-cal__selects">
-                  <select id="dob-month-select"></select>
-                  <select id="dob-year-select"></select>
+                  <select id="dob-month-select" data-bps-skip></select>
+                  <select id="dob-year-select" data-bps-skip></select>
                 </div>
               </div>
               <div class="dob-cal__weekdays">
@@ -241,12 +286,12 @@
         <div class="field-row">
           <div class="field">
             <label for="cellphone">Cellphone Number <span class="req">*</span></label>
-            <input type="tel" id="cellphone" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required>
+            <input type="tel" id="cellphone" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-cellphone">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
           </div>
           <div class="field">
             <label for="homePhone">Landline</label>
-            <input type="tel" id="homePhone" placeholder="(02) XXXX-XXXX">
+            <input type="tel" id="homePhone" placeholder="(02) XXXX-XXXX" oninput="restrictToPhone(this)">
           </div>
         </div>
 
@@ -348,7 +393,32 @@
       <div class="intake-card">
         <h2 class="intake-card__title">Appointment Scheduling Preferences</h2>
 
+        <!-- Step 1: Preferred Gender (always visible first) -->
         <div class="field">
+          <label>Preferred Gender of Counselor/Therapist <span class="req">*</span></label>
+          <div class="radio-group" id="counselorGender-group">
+            <label class="radio-option"><input type="radio" name="counselorGender" value="Male"><span>Male</span></label>
+            <label class="radio-option"><input type="radio" name="counselorGender" value="Female"><span>Female</span></label>
+            <label class="radio-option"><input type="radio" name="counselorGender" value="No preference"><span>No preference</span></label>
+          </div>
+          <div class="field__error-msg" id="err-counselorGender">Please select an option.</div>
+        </div>
+
+        <!-- Step 2: Counselor picker (appears after gender is selected) -->
+        <div class="field staff-field" id="staff-field">
+          <label for="counselorStaff">Choose a Counselor / Therapist <span class="req">*</span></label>
+          <div class="staff-picker">
+            <select id="counselorStaff" class="staff-select" onchange="onStaffChange()">
+              <option value="">Select a staff member</option>
+            </select>
+            <span class="staff-expertise" id="staff-expertise"></span>
+          </div>
+          <div class="field__hint" id="staff-hint">Showing staff matching your preference.</div>
+          <div class="field__error-msg" id="err-counselorStaff">Please choose a staff member.</div>
+        </div>
+
+        <!-- Step 3: Calendar (appears after counselor is selected, filtered by their schedule) -->
+        <div class="field step-reveal" id="cal-section">
           <label>Preferred Schedule (Date and Time) <span class="req">*</span></label>
           <input type="hidden" id="prefSchedule" required>
           <div class="cal-widget" id="cal-widget">
@@ -356,7 +426,7 @@
               <button type="button" class="cal-nav" id="cal-prev" title="Previous month">
                 <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
               </button>
-              <div class="cal-title" id="cal-title">May 2026</div>
+              <div class="cal-title" id="cal-title">June 2026</div>
               <button type="button" class="cal-nav" id="cal-next" title="Next month">
                 <svg viewBox="0 0 24 24" width="18" height="18"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
               </button>
@@ -386,7 +456,8 @@
           <div class="field__error-msg" id="err-prefSchedule">Please select a date and time.</div>
         </div>
 
-        <div class="field">
+        <!-- Step 4: Language (appears after date + time are selected) -->
+        <div class="field step-reveal" id="lang-section">
           <label>Session Language Preference <span class="req">*</span></label>
           <div class="radio-group" id="language-group">
             <label class="radio-option"><input type="radio" name="language" value="English"><span>English</span></label>
@@ -399,7 +470,8 @@
           <div class="field__error-msg" id="err-language">Please select a language.</div>
         </div>
 
-        <div class="field">
+        <!-- Step 5: Modality (appears after language is selected) -->
+        <div class="field step-reveal" id="mod-section">
           <label>Session Modality <span class="req">*</span></label>
           <div class="radio-group" id="modality-group">
             <label class="radio-option"><input type="radio" name="modality" value="Online"><span>Online (Zoom, Google Meet, etc.)</span></label>
@@ -408,27 +480,9 @@
           <div class="field__error-msg" id="err-modality">Please select a session modality.</div>
         </div>
 
-        <div class="field">
-          <label>Preferred Gender of Counselor/Therapist <span class="req">*</span></label>
-          <div class="radio-group" id="counselorGender-group">
-            <label class="radio-option"><input type="radio" name="counselorGender" value="Male"><span>Male</span></label>
-            <label class="radio-option"><input type="radio" name="counselorGender" value="Female"><span>Female</span></label>
-            <label class="radio-option"><input type="radio" name="counselorGender" value="No preference"><span>No preference</span></label>
-          </div>
-          <div class="field__error-msg" id="err-counselorGender">Please select an option.</div>
-        </div>
-
-        <!-- Staff picker: appears after a gender preference is chosen -->
-        <div class="field staff-field" id="staff-field">
-          <label for="counselorStaff">Choose a Counselor / Therapist <span class="req">*</span></label>
-          <div class="staff-picker">
-            <select id="counselorStaff" class="staff-select" onchange="onStaffChange()">
-              <option value="">Select a staff member</option>
-            </select>
-            <span class="staff-expertise" id="staff-expertise"></span>
-          </div>
-          <div class="field__hint" id="staff-hint">Showing staff matching your preference.</div>
-          <div class="field__error-msg" id="err-counselorStaff">Please choose a staff member.</div>
+        <!-- Heads Up (appears after modality is selected) -->
+        <div class="schedule-note step-reveal" id="headsup-section">
+          <strong>Heads up:</strong> if your chosen slot is already full, we will place you in the nearest available schedule and notify you by call or message.
         </div>
       </div>
 
@@ -459,12 +513,12 @@
         <div class="conditional-section" id="minor-yes-section">
           <div class="field">
             <label for="guardianName">Full Name of Parent or Guardian <span class="req">*</span></label>
-            <input type="text" id="guardianName" placeholder="Parent / Guardian full name">
+            <input type="text" id="guardianName" placeholder="Parent / Guardian full name" oninput="restrictToName(this)">
             <div class="field__error-msg" id="err-guardianName">Guardian name is required for minor clients.</div>
           </div>
           <div class="field">
             <label for="guardianContact">Parent / Guardian Contact Number <span class="req">*</span></label>
-            <input type="tel" id="guardianContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX">
+            <input type="tel" id="guardianContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-guardianContact">Valid contact number is required.</div>
           </div>
           <div class="field">
@@ -505,7 +559,7 @@
 
         <div class="field">
           <label for="emerName">Full Name <span class="req">*</span></label>
-          <input type="text" id="emerName" placeholder="Emergency contact full name" required>
+          <input type="text" id="emerName" placeholder="Emergency contact full name" required oninput="restrictToName(this)">
           <div class="field__error-msg" id="err-emerName">Emergency contact name is required.</div>
         </div>
 
@@ -518,7 +572,7 @@
         <div class="field-row">
           <div class="field">
             <label for="emerContact">Contact Number <span class="req">*</span></label>
-            <input type="tel" id="emerContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" required>
+            <input type="tel" id="emerContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" required oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-emerContact">Enter a valid phone number.</div>
           </div>
           <div class="field">
@@ -574,6 +628,7 @@
   <!-- ===== SCRIPTS ===== -->
   <script src="session.js"></script>
   <script src="toast.js"></script>
+  <script src="captcha.js"></script>
   <script>
 
     let currentStep = 1;
@@ -584,9 +639,9 @@
     // ============================================
     const intakeSelection = {
       serviceType: '',       // 'Counseling' | 'Assessment'
-      assessmentType: '',    // 'Forensics' | 'Neurodevelopmental'
-      forensicSubtype: '',   // 'Annulment' | 'VAWC' | 'Child Adoption' | 'Child Custody'
+      assessmentType: '',
       dataPrivacyConsent: false, // set true when the client agrees to the Data Privacy Act consent
+      codeOfEthicsConsent: false, // set true when the client agrees to the Philippine Code of Ethics
     };
 
     function showSelectScreen(id) {
@@ -599,7 +654,6 @@
     function chooseService(service) {
       intakeSelection.serviceType = service;
       intakeSelection.assessmentType = '';
-      intakeSelection.forensicSubtype = '';
       if (service === 'Counseling') {
         showPrivacyConsent();
       } else {
@@ -612,30 +666,44 @@
     // DATA PRIVACY ACT CONSENT (gate before form)
     // ============================================
     function showPrivacyConsent() {
-      // reset the consent control each time the gate is shown
-      const cb = document.getElementById('privacy-consent-checkbox');
+      // reset BOTH consent controls each time the gate is shown
+      const privacy = document.getElementById('privacy-consent-checkbox');
+      const ethics = document.getElementById('ethics-consent-checkbox');
       const btn = document.getElementById('btn-consent-continue');
-      if (cb) cb.checked = false;
+      if (privacy) privacy.checked = false;
+      if (ethics) ethics.checked = false;
       if (btn) btn.disabled = true;
       intakeSelection.dataPrivacyConsent = false;
+      intakeSelection.codeOfEthicsConsent = false;
       showSelectScreen('privacy-consent-screen');
     }
 
+    // Continue is enabled only when BOTH the DPA and the Code of Ethics are agreed.
     function onConsentToggle() {
-      const cb = document.getElementById('privacy-consent-checkbox');
-      document.getElementById('btn-consent-continue').disabled = !cb.checked;
+      const privacy = document.getElementById('privacy-consent-checkbox');
+      const ethics = document.getElementById('ethics-consent-checkbox');
+      const ready = !!(privacy && privacy.checked) && !!(ethics && ethics.checked);
+      document.getElementById('btn-consent-continue').disabled = !ready;
     }
 
-    function agreeConsent() {
-      const cb = document.getElementById('privacy-consent-checkbox');
-      if (!cb || !cb.checked) return;
+    async function agreeConsent() {
+      const privacy = document.getElementById('privacy-consent-checkbox');
+      const ethics = document.getElementById('ethics-consent-checkbox');
+      if (!privacy || !privacy.checked || !ethics || !ethics.checked) return;
+
+      // ── CAPTCHA verification before accessing intake form ──
+      const captchaPassed = await BPSCaptcha.verify('intake_form');
+      if (!captchaPassed) return; // user cancelled or failed
+
       intakeSelection.dataPrivacyConsent = true;
+      intakeSelection.codeOfEthicsConsent = true;
       beginIntakeForm();
     }
 
     function declineConsent() {
       // Return to the start of the selection flow
       intakeSelection.dataPrivacyConsent = false;
+      intakeSelection.codeOfEthicsConsent = false;
       showSelectScreen('service-select');
     }
 
@@ -643,7 +711,6 @@
       if (intakeSelection.serviceType === 'Counseling') return 'Counseling';
       let label = 'Assessment';
       if (intakeSelection.assessmentType) label += ' — ' + intakeSelection.assessmentType;
-      if (intakeSelection.forensicSubtype) label += ' (' + intakeSelection.forensicSubtype + ')';
       return label;
     }
 
@@ -660,54 +727,70 @@
     function resetSelection() {
       intakeSelection.serviceType = '';
       intakeSelection.assessmentType = '';
-      intakeSelection.forensicSubtype = '';
       document.getElementById('intake-form-flow').style.display = 'none';
       showSelectScreen('service-select');
     }
 
     // ============================================
     // STAFF DIRECTORY (used by the counselor picker)
+    // Sourced LIVE from Staff Management (the `staff` table) via the public
+    // staff-directory API, so only eligible, active clinical staff appear. The
+    // staff member's Specialization is shown here (it is intentionally hidden in
+    // the Staff Management table itself).
     // ============================================
-    const STAFF_DIRECTORY = [
-      { name: 'Dr. Maria Santos',     gender: 'Female', expertise: 'Clinical Psychologist · Forensic Assessment' },
-      { name: 'Dr. Andrea Reyes',     gender: 'Female', expertise: 'Child & Neurodevelopmental Psychologist' },
-      { name: 'Dr. Liza Fernandez',   gender: 'Female', expertise: 'Family & Marital Counseling' },
-      { name: 'Ms. Carla Mendoza',    gender: 'Female', expertise: 'Psychometrician · Counseling Support' },
-      { name: 'Dr. Jose Rivera',      gender: 'Male',   expertise: 'Clinical Psychologist · Forensic & Custody Evaluations' },
-      { name: 'Dr. Mark Villanueva',  gender: 'Male',   expertise: 'Neurodevelopmental Assessment' },
-      { name: 'Dr. Daniel Cruz',      gender: 'Male',   expertise: 'Adult Counseling & Trauma' },
-      { name: 'Mr. Paolo Aquino',     gender: 'Male',   expertise: 'Psychometrician · Counseling Support' },
-    ];
+    const STAFF_DIRECTORY_API = 'http://localhost:5000/api/staff-directory/assignable?service=counseling';
 
-    function populateStaff(preference) {
-      const field   = document.getElementById('staff-field');
-      const select  = document.getElementById('counselorStaff');
+    async function populateStaff(preference) {
+      const field    = document.getElementById('staff-field');
+      const select   = document.getElementById('counselorStaff');
       const hint     = document.getElementById('staff-hint');
       const expertise = document.getElementById('staff-expertise');
 
-      let list;
+      // Reset all downstream sections
+      select.innerHTML = '<option value=””>Loading staff…</option>';
+      expertise.textContent = '';
+      expertise.classList.remove('show');
+      document.getElementById('cal-section').classList.remove('show');
+      document.getElementById('lang-section').classList.remove('show');
+      document.getElementById('mod-section').classList.remove('show');
+      document.getElementById('headsup-section').classList.remove('show');
+      document.getElementById('prefSchedule').value = '';
+      showError('counselorStaff', false);
+      field.classList.add('show');
+
+      let list = [];
+      try {
+        const qs = (preference === 'Male' || preference === 'Female')
+          ? `&gender=${encodeURIComponent(preference)}` : '';
+        const res = await fetch(STAFF_DIRECTORY_API + qs);
+        const data = await res.json().catch(() => ({}));
+        list = (data && data.success && Array.isArray(data.data)) ? data.data : [];
+      } catch {
+        list = [];
+      }
+
       if (preference === 'Male' || preference === 'Female') {
-        list = STAFF_DIRECTORY.filter(s => s.gender === preference);
-        hint.textContent = 'Showing ' + preference.toLowerCase() + ' staff. Expertise is shown beside each name.';
+        hint.textContent = 'Showing ' + preference.toLowerCase() + ' staff. Specialization is shown beside each name.';
       } else {
-        list = STAFF_DIRECTORY.slice();
         hint.textContent = 'No preference selected — showing all available staff.';
       }
 
-      // Rebuild the dropdown
-      select.innerHTML = '<option value="">Select a staff member</option>';
+      select.innerHTML = '<option value=””>Select a staff member</option>';
+      if (!list.length) {
+        select.innerHTML = '<option value=””>No matching staff available</option>';
+        hint.textContent = 'No staff match your preference right now. Try “No preference”, or contact us for assistance.';
+        return;
+      }
       list.forEach(s => {
+        const spec = s.specialization || '';
         const opt = document.createElement('option');
-        opt.value = s.name;
-        opt.textContent = s.name + ' — ' + s.expertise;
-        opt.dataset.expertise = s.expertise;
+        opt.value = s.staff_id;
+        opt.textContent = spec ? (s.name + ' — ' + spec) : s.name;
+        opt.dataset.expertise = spec;
+        opt.dataset.staffName = s.name;
+        opt.dataset.schedule = JSON.stringify(s.schedule || []);
         select.appendChild(opt);
       });
-
-      expertise.textContent = '';
-      expertise.classList.remove('show');
-      field.classList.add('show');
-      showError('counselorStaff', false);
     }
 
     function onStaffChange() {
@@ -715,6 +798,7 @@
       const expertise = document.getElementById('staff-expertise');
       const opt = select.options[select.selectedIndex];
       const exp = opt ? opt.dataset.expertise : '';
+
       if (exp) {
         expertise.textContent = exp;
         expertise.classList.add('show');
@@ -723,6 +807,20 @@
         expertise.classList.remove('show');
       }
       showError('counselorStaff', false);
+
+      // Reset downstream sections whenever counselor changes
+      document.getElementById('lang-section').classList.remove('show');
+      document.getElementById('mod-section').classList.remove('show');
+      document.getElementById('headsup-section').classList.remove('show');
+
+      if (opt && opt.value) {
+        const schedule = JSON.parse(opt.dataset.schedule || '[]');
+        if (window._calSetSchedule) window._calSetSchedule(schedule);
+        document.getElementById('cal-section').classList.add('show');
+      } else {
+        document.getElementById('cal-section').classList.remove('show');
+        document.getElementById('prefSchedule').value = '';
+      }
     }
 
     // ===== STEPPER =====
@@ -750,12 +848,83 @@
     function goToStep(step) {
       // Validate current step before moving forward
       if (step > currentStep) {
-        if (!validateStep(currentStep)) return;
+        if (!validateStep(currentStep)) { showSectionError(currentStep, true); return; }
+        showSectionError(currentStep, false);
       }
       currentStep = step;
       updateStepper();
       showPanel(step);
       if (step === 7) buildReview();
+    }
+
+    // Show / hide a "missing or invalid input in this section" banner below the
+    // current step's navigation buttons when the user tries to advance.
+    function showSectionError(step, show) {
+      const panel = document.getElementById('panel-' + step);
+      if (!panel) return;
+      const nav = panel.querySelector('.intake-nav');
+      if (!nav) return;
+      let msg = panel.querySelector('.section-error-msg');
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'section-error-msg';
+        msg.style.cssText = 'margin-top:12px;padding:11px 14px;border-radius:10px;background:#fff1f1;border:1px solid #f3c2c2;color:#b91c1c;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;';
+        msg.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" style="fill:#dc2626;flex:0 0 auto;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><span>Please complete or correct the highlighted fields in this section before continuing.</span>';
+        nav.insertAdjacentElement('afterend', msg);
+      }
+      msg.style.display = show ? 'flex' : 'none';
+    }
+
+    // ── Strict free-text validation ───────────────────────────────────────
+    // Rejects gibberish, repeated/keyboard patterns, numeric/symbol-only,
+    // placeholder text and too-short answers; requires real, descriptive words.
+    function validateMeaningfulText(raw, minWords, minChars) {
+      minWords = minWords || 5; minChars = minChars || 20;
+      const text = (raw || '').trim();
+      if (!text) return { valid: false, message: 'This field is required.' };
+      if (text.length < minChars) return { valid: false, message: `Please describe in more detail — at least ${minChars} characters of meaningful text are required.` };
+
+      const lower = text.toLowerCase();
+      const alnum = lower.replace(/[^a-z0-9]/g, '');
+
+      // Placeholder / non-answers
+      const placeholders = ['test','sample','tbd','tobefollow','tofollow','na','none','nothing','ok','okay','yes','no','asap','xxx','idk'];
+      if (placeholders.includes(alnum)) return { valid: false, message: 'Please enter a real description of your concern, not placeholder text.' };
+
+      // Numeric only
+      if (/^[0-9\s]+$/.test(text)) return { valid: false, message: 'Numbers alone are not a valid description. Please describe your concern in words.' };
+      // Symbol only
+      if (/^[^a-zA-Z0-9\s]+$/.test(text)) return { valid: false, message: 'Symbols alone are not a valid description. Please describe your concern in words.' };
+      // Repeated single character (aaaaaa, !!!!!!)
+      if (/(.)\1{5,}/.test(text)) return { valid: false, message: 'Repeated characters are not a valid description. Please write a meaningful explanation.' };
+
+      const words = text.split(/\s+/).filter(Boolean);
+      const KEYBOARD_ROWS = ['qwertyuiop','asdfghjkl','zxcvbnm','1234567890','qwertyuiopasdfghjklzxcvbnm','poiuytrewq','lkjhgfdsa','mnbvcxz'];
+      function isKeyboardRun(w) {
+        if (w.length < 4) return false;
+        return KEYBOARD_ROWS.some(row => row.includes(w) || row.split('').reverse().join('').includes(w));
+      }
+      function looksLikeWord(w) {
+        const a = w.toLowerCase().replace(/[^a-z]/g, '');
+        if (a.length < 2) return false;
+        if (!/[aeiouy]/.test(a)) return false;          // real words contain a vowel
+        if (/(.)\1{2,}/.test(a)) return false;          // aaa within a word
+        if (isKeyboardRun(a)) return false;             // asdf / qwer
+        const vowels = (a.match(/[aeiouy]/g) || []).length;
+        const ratio = vowels / a.length;
+        if (ratio < 0.15 || ratio > 0.85) return false; // gibberish consonant/vowel ratio
+        return true;
+      }
+
+      const realWords = words.filter(looksLikeWord);
+      if (realWords.length < minWords) {
+        return { valid: false, message: `Please provide a clear, complete description using at least ${minWords} real words (avoid random characters or keyboard patterns).` };
+      }
+      // Guard against one long gibberish token padded to length
+      if (words.length === 1 && words[0].length >= minChars && realWords.length < 2) {
+        return { valid: false, message: 'This does not look like a real description. Please write a meaningful explanation in full words.' };
+      }
+      return { valid: true, message: '' };
     }
 
     // ===== VALIDATION =====
@@ -766,6 +935,14 @@
       if (inp) { show ? inp.classList.add('field-error') : inp.classList.remove('field-error'); }
     }
 
+    // Like showError, but also sets a custom message on the error element so the
+    // user is told exactly why the entry was rejected.
+    function setFieldError(id, show, message) {
+      const el = document.getElementById('err-' + id);
+      if (el && show && message) el.textContent = message;
+      showError(id, show);
+    }
+
     function getRadio(name) {
       const checked = document.querySelector('input[name="'+name+'"]:checked');
       return checked ? checked.value : '';
@@ -774,10 +951,20 @@
     const phPhoneRegex = /^(\+63|0)9\d{9}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    // Strip non-name characters (letters, spaces, hyphens, apostrophes, periods only)
+    function restrictToName(el) {
+      el.value = el.value.replace(/[^a-zA-ZÀ-ÿñÑ\s\-'.]/g, '');
+    }
+    // Strip non-phone characters (digits, +, spaces, hyphens, parentheses only)
+    function restrictToPhone(el) {
+      el.value = el.value.replace(/[^0-9+\s\-()]/g, '');
+    }
+
     function validateStep(step) {
       let valid = true;
       if (step === 1) {
-        const fullName = document.getElementById('fullName').value.trim();
+        const familyName = document.getElementById('familyName').value.trim();
+        const givenName = document.getElementById('givenName').value.trim();
         const age = parseInt(document.getElementById('age').value);
         const dob = document.getElementById('dob').value;
         const gender = getRadio('gender');
@@ -786,7 +973,8 @@
         const cell = document.getElementById('cellphone').value.trim().replace(/[\s-]/g,'');
         const em = document.getElementById('email').value.trim();
 
-        showError('fullName', !fullName); if (!fullName) valid = false;
+        showError('familyName', !familyName); if (!familyName) valid = false;
+        showError('givenName', !givenName); if (!givenName) valid = false;
         showError('age', !age || age < 5); if (!age || age < 5) valid = false;
         // DOB: required AND must be at least 5 years old
         let dobInvalid = false;
@@ -815,8 +1003,14 @@
         const since = document.getElementById('sinceWhen').value.trim();
         const howLong = document.getElementById('howLong').value;
 
-        showError('concernDesc', desc.length < 20); if (desc.length < 20) valid = false;
-        showError('reasonCounseling', !reason); if (!reason) valid = false;
+        const descCheck = validateMeaningfulText(desc, 5, 20);
+        setFieldError('concernDesc', !descCheck.valid, descCheck.message);
+        if (!descCheck.valid) valid = false;
+
+        const reasonCheck = validateMeaningfulText(reason, 4, 15);
+        setFieldError('reasonCounseling', !reasonCheck.valid, reasonCheck.message);
+        if (!reasonCheck.valid) valid = false;
+
         showError('sinceWhen', !since); if (!since) valid = false;
         showError('howLong', !howLong); if (!howLong) valid = false;
       }
@@ -899,6 +1093,11 @@
         if (radio.name === 'language') {
           document.getElementById('language-specify').classList.toggle('show', radio.value === 'Other');
           showError('language', false);
+          document.getElementById('mod-section').classList.add('show');
+        }
+        if (radio.name === 'modality') {
+          showError('modality', false);
+          document.getElementById('headsup-section').classList.add('show');
         }
         if (radio.name === 'isMinor') {
           document.getElementById('minor-yes-section').classList.toggle('show', radio.value === 'Yes');
@@ -1084,8 +1283,27 @@
       let viewYear = today.getFullYear();
       let viewMonth = today.getMonth();
       let selectedDate = null;
-      let fullDates = new Set(); // Dates that have 5+ bookings
-      let dateAvailabilityCache = {}; // Cache: 'YYYY-MM-DD' -> { count, bookedSlots, isFull, remaining }
+      let fullDates = new Set();
+      let dateAvailabilityCache = {};
+      let counselorSchedule = []; // [{day, start, end}] from selected counselor
+
+      const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+      // Expose a reset/re-init function for when a counselor is selected
+      window._calSetSchedule = function(schedule) {
+        counselorSchedule = schedule || [];
+        selectedDate = null;
+        hiddenInput.value = '';
+        selectedLabel.textContent = 'No date selected';
+        timeSelect.value = '';
+        availabilityLabel.style.display = 'none';
+        fullDates = new Set();
+        dateAvailabilityCache = {};
+        viewYear = today.getFullYear();
+        viewMonth = today.getMonth();
+        renderCalendar();
+        loadMonthAvailability();
+      };
 
       const ALL_TIME_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
       const TIME_LABELS = {
@@ -1164,16 +1382,19 @@
           const isFull = fullDates.has(dateStr);
           const isSelected = selectedDate && selectedDate.getTime() === date.getTime();
           const cached = dateAvailabilityCache[dateStr];
+          const isOnSchedule = counselorSchedule.length === 0
+            || counselorSchedule.some(s => s.day === DAY_NAMES[date.getDay()]);
 
           let cls = 'cal-day';
           if (isToday) cls += ' cal-day--today';
           if (isSelected) cls += ' cal-day--selected';
-          if (isPast) cls += ' cal-day--disabled';
+          if (isPast || !isOnSchedule) cls += ' cal-day--disabled';
           else if (isFull) cls += ' cal-day--full';
 
-          const disabled = isPast || isFull;
+          const disabled = isPast || isFull || !isOnSchedule;
           let titleAttr = '';
-          if (isFull) titleAttr = 'Fully booked (5/5 clients)';
+          if (!isOnSchedule && !isPast) titleAttr = 'Counselor not available on this day';
+          else if (isFull) titleAttr = 'Fully booked (5/5 clients)';
           else if (isPast) titleAttr = 'Past date';
           else if (cached) titleAttr = `${cached.remaining} slot${cached.remaining !== 1 ? 's' : ''} available`;
 
@@ -1206,13 +1427,37 @@
         });
       }
 
-      // Update time <select> based on booked slots
+      // Has this slot ('HH:MM') already passed for the selected day? Only the
+      // current calendar day is affected — past days are disabled outright and
+      // future days are always ahead of "now".
+      function isPastSlot(slot) {
+        if (!selectedDate) return false;
+        const now = new Date();
+        const sameDay = selectedDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        if (!sameDay) return false;
+        const [h, m] = slot.split(':').map(Number);
+        const slotDt = new Date(now); slotDt.setHours(h, m, 0, 0);
+        return slotDt <= now;
+      }
+
+      // Update time <select> based on booked slots and counselor's schedule
       function updateTimeSlots(avail) {
-        // Reset all options
+        let schedStart = null;
+        let schedEnd = null;
+        if (counselorSchedule.length > 0 && selectedDate) {
+          const entry = counselorSchedule.find(s => s.day === DAY_NAMES[selectedDate.getDay()]);
+          if (entry) { schedStart = entry.start; schedEnd = entry.end; }
+        }
+
         let html = '<option value="">Select time</option>';
         ALL_TIME_SLOTS.forEach(slot => {
+          if (schedStart && slot < schedStart) return;
+          if (schedEnd && slot >= schedEnd) return;
           const isBooked = avail && avail.bookedSlots && avail.bookedSlots.includes(slot);
-          if (isBooked) {
+          const isPast = isPastSlot(slot);
+          if (isPast) {
+            html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Unavailable</option>`;
+          } else if (isBooked) {
             html += `<option value="${slot}" disabled class="slot-booked">${TIME_LABELS[slot]} — Booked</option>`;
           } else {
             html += `<option value="${slot}">${TIME_LABELS[slot]}</option>`;
@@ -1251,6 +1496,8 @@
           const dt = new Date(hiddenInput.value);
           selectedLabel.innerHTML = `Selected: <strong>${dt.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at ${dt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}</strong>`;
           showError('prefSchedule', false);
+          // Reveal language section once a full date+time is confirmed
+          document.getElementById('lang-section').classList.add('show');
         } else if (selectedDate) {
           selectedLabel.innerHTML = `Date: <strong>${selectedDate.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong> — please select a time`;
           hiddenInput.value = '';
@@ -1276,8 +1523,7 @@
 
       timeSelect.addEventListener('change', updateHiddenInput);
 
-      renderCalendar();
-      loadMonthAvailability();
+      // Calendar renders when a counselor is selected via _calSetSchedule()
     })();
 
     // ===== ACKNOWLEDGMENT =====
@@ -1299,10 +1545,11 @@
         { title: 'Service Requested', rows: [
           ['Service Type', intakeSelection.serviceType || '—'],
           ...(intakeSelection.assessmentType ? [['Assessment Type', intakeSelection.assessmentType]] : []),
-          ...(intakeSelection.forensicSubtype ? [['Forensic Case Type', intakeSelection.forensicSubtype]] : []),
         ]},
         { title: 'Personal Details', rows: [
-          ['Full Name', document.getElementById('fullName').value],
+          ['Family Name (Apelyido)', document.getElementById('familyName').value],
+          ['Given Name (Pangalan)', document.getElementById('givenName').value],
+          ['Middle Name (Gitnang Pangalan)', document.getElementById('middleName').value || '—'],
           ['Nickname', document.getElementById('nickName').value || '—'],
           ['Age', document.getElementById('age').value],
           ['Date of Birth', document.getElementById('dob').value],
@@ -1328,7 +1575,7 @@
           ['Language', langVal],
           ['Modality', getRadio('modality')],
           ['Counselor Gender Pref.', getRadio('counselorGender')],
-          ['Chosen Counselor/Therapist', document.getElementById('counselorStaff').value || '—'],
+          ['Chosen Counselor/Therapist', (function(){ const sel = document.getElementById('counselorStaff'); return sel.options[sel.selectedIndex]?.dataset?.staffName || '—'; })()],
         ]},
         { title: 'Minor Client Information', rows: [
           ['Is Minor', getRadio('isMinor')],
@@ -1364,17 +1611,20 @@
 
     // ===== SUBMIT =====
     async function submitForm() {
-      if (!intakeSelection.dataPrivacyConsent) {
-        BPSToast.warning('Please provide your Data Privacy Act consent before submitting.', { title: 'Consent Required' });
+      if (!intakeSelection.dataPrivacyConsent || !intakeSelection.codeOfEthicsConsent) {
+        BPSToast.warning('Please provide your Data Privacy Act and Code of Ethics consent before submitting.', { title: 'Consent Required' });
         return;
       }
 
       const data = {
         serviceType: intakeSelection.serviceType,
         assessmentType: intakeSelection.assessmentType,
-        forensicSubtype: intakeSelection.forensicSubtype,
         dataPrivacyConsent: intakeSelection.dataPrivacyConsent,
-        fullName: document.getElementById('fullName').value,
+        codeOfEthicsConsent: intakeSelection.codeOfEthicsConsent,
+        familyName: document.getElementById('familyName').value,
+        givenName: document.getElementById('givenName').value,
+        middleName: document.getElementById('middleName').value,
+        fullName: [document.getElementById('givenName').value, document.getElementById('middleName').value, document.getElementById('familyName').value].filter(Boolean).join(' '),
         nickName: document.getElementById('nickName').value,
         age: document.getElementById('age').value,
         dob: document.getElementById('dob').value,
@@ -1394,7 +1644,8 @@
         language: getRadio('language') === 'Other' ? document.getElementById('languageOther').value : getRadio('language'),
         modality: getRadio('modality'),
         counselorGender: getRadio('counselorGender'),
-        counselorStaff: document.getElementById('counselorStaff').value,
+        counselorStaff: (function(){ const sel = document.getElementById('counselorStaff'); return sel.options[sel.selectedIndex]?.dataset?.staffName || ''; })(),
+        counselorStaffId: document.getElementById('counselorStaff').value,
         isMinor: getRadio('isMinor'),
         guardianName: document.getElementById('guardianName').value,
         guardianContact: document.getElementById('guardianContact').value,

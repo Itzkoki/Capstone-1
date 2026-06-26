@@ -1,10 +1,17 @@
 const bcrypt = require('bcryptjs'); // pure-JS bcrypt — no native binary (avoids ELF header issues)
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const Staff = require('../models/Staff');
+const StaffVerification = require('../models/StaffVerification');
 const LoginAttempt = require('../models/LoginAttempt');
+const { sendVerificationEmail } = require('../services/emailService');
 
 // Keep the existing hashing strength — do NOT weaken.
 const SALT_ROUNDS = 12;
+// OTP rules (kept identical to the client flow): a code is valid for exactly
+// 2 minutes, and a fresh resend is only permitted once every 2 minutes.
+const OTP_EXPIRY_MINUTES = 2;
+const OTP_RESEND_COOLDOWN_SECONDS = 120;
 
 // Generic responses — never reveal which part of the attempt failed.
 const INVALID_CREDENTIALS = 'Invalid credentials.';
@@ -17,6 +24,44 @@ const getClientIp = (req) =>
 
 const fullName = (staff) =>
   [staff.first_name, staff.last_name].filter(Boolean).join(' ').trim() || staff.username;
+
+const generateOTP = () => crypto.randomInt(100000, 999999).toString();
+
+// Issue the final JWT + user payload after both factors pass.
+const issueSession = (staff) => {
+  const token = jwt.sign(
+    { id: staff.staff_id, username: staff.username, role: staff.role, type: 'staff' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+  );
+  return {
+    token,
+    user: {
+      id: staff.staff_id,
+      full_name: fullName(staff),
+      username: staff.username,
+      email: staff.email,
+      role: staff.role,
+    },
+  };
+};
+
+// Generate + store + email a fresh one-time code for the staff member.
+const sendStaffOtp = async (staff) => {
+  const otp = generateOTP();
+  const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  await StaffVerification.create(staff.staff_id, otpHash, expiresAt);
+  await sendVerificationEmail(staff.email, otp, fullName(staff));
+};
+
+// Mask an email for safe display in the verification prompt (e.g. j***@x.com).
+const maskEmail = (email) => {
+  if (!email || !email.includes('@')) return email || '';
+  const [local, domain] = email.split('@');
+  const head = local.slice(0, 1);
+  return `${head}${'*'.repeat(Math.max(1, local.length - 1))}@${domain}`;
+};
 
 // ── POST /api/staff-auth/login ───────────────────────────
 // Login-only: there is NO public staff registration. Accounts are created
@@ -54,11 +99,17 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: INVALID_CREDENTIALS });
     };
 
-    if (!staff || !staff.is_active) {
-      // For an inactive account we run the bcrypt path-less fail so timing is
-      // similar, but still hide the reason. (Inactive accounts simply cannot
-      // sign in regardless of password.)
+    if (!staff) {
+      // Unknown username — generic fail (anti-enumeration).
       return await failGeneric();
+    }
+    if (!staff.is_active) {
+      // Suspended/deactivated account: tell the user explicitly so a CD-issued
+      // suspension is clear (Action Center "Suspend Account").
+      return res.status(403).json({
+        suspended: true,
+        message: 'Your account has been suspended. Please contact the moderator.',
+      });
     }
 
     const isMatch = await bcrypt.compare(password, staff.password_hash);
@@ -66,31 +117,34 @@ const login = async (req, res, next) => {
       return await failGeneric();
     }
 
-    // ── Success — reset the failed-attempt counter ──
+    // ── Password OK — reset the failed-attempt counter ──
     await LoginAttempt.clearFailedAttempts(username);
 
-    const payload = {
-      id: staff.staff_id,
-      username: staff.username,
-      role: staff.role,
-      type: 'staff',
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-    });
+    // ── Second factor: email verification code on EVERY login ──
+    // We do NOT issue a JWT yet. A one-time code is emailed and must be
+    // confirmed via /verify-otp before a session is granted. Accounts always
+    // have an email (required at creation); if delivery fails we surface a
+    // clear error rather than silently bypassing the second factor.
+    try {
+      await sendStaffOtp(staff);
+    } catch (emailError) {
+      console.error('⚠️  Failed to send staff verification email:', emailError.message);
+      return res.status(502).json({
+        success: false,
+        message: 'We could not send your verification code. Please try again in a moment.',
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      requiresVerification: true,
+      message: 'A verification code has been sent to your email.',
       data: {
-        token,
-        user: {
-          id: staff.staff_id,
-          full_name: fullName(staff),
-          username: staff.username,
-          email: staff.email,
-          role: staff.role,
-        },
+        username: staff.username,
+        email_hint: maskEmail(staff.email),
+        expires_in_minutes: OTP_EXPIRY_MINUTES,
+        // A code was just sent, so the 2-minute resend cooldown starts now.
+        resend_cooldown_seconds: OTP_RESEND_COOLDOWN_SECONDS,
       },
     });
   } catch (error) {
@@ -98,4 +152,77 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { login, SALT_ROUNDS };
+// ── POST /api/staff-auth/verify-otp ──────────────────────
+// Confirms the emailed code and, on success, issues the session JWT and
+// promotes the account's status to 'verified'.
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { username, otp } = req.body;
+
+    const staff = await Staff.findByUsername(username);
+    // Enumeration-safe generic failure.
+    const invalid = () =>
+      res.status(400).json({ success: false, message: 'Invalid code. Please try again.' });
+
+    if (!staff || !staff.is_active) return invalid();
+
+    const record = await StaffVerification.findByStaffId(staff.staff_id);
+    if (!record) return invalid();
+
+    if (new Date() > new Date(record.expires_at)) {
+      await StaffVerification.deleteByStaffId(staff.staff_id);
+      return res.status(400).json({
+        success: false,
+        message: 'Code has expired. Please request a new one.',
+      });
+    }
+
+    const isValid = await bcrypt.compare(String(otp || ''), record.otp_hash);
+    if (!isValid) return invalid();
+
+    // Single-use: consume the code, and promote status to 'verified'.
+    await StaffVerification.deleteByStaffId(staff.staff_id);
+    const verified = await Staff.markVerified(staff.staff_id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: issueSession(verified || staff),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── POST /api/staff-auth/resend-otp ──────────────────────
+// Re-sends a fresh code for an in-progress login. Generic response to avoid
+// account enumeration.
+const resendOtp = async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    const staff = await Staff.findByUsername(username);
+    if (staff && staff.is_active && staff.email) {
+      // Resend rate limit: first resend is free, then a 2-minute cooldown
+      // (matches the Teleconference OTP workflow). Enforced server-side.
+      const rs = await StaffVerification.resendStatus(staff.staff_id, OTP_RESEND_COOLDOWN_SECONDS);
+      if (!rs.allowed) {
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${rs.retryAfter} second(s) before requesting another code.`,
+          retryAfter: rs.retryAfter,
+        });
+      }
+      try { await sendStaffOtp(staff); }
+      catch (e) { console.error('⚠️  Failed to resend staff OTP:', e.message); }
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'If the account is valid, a new verification code has been sent.',
+      retryAfter: OTP_RESEND_COOLDOWN_SECONDS,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, verifyOtp, resendOtp, SALT_ROUNDS };

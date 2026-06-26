@@ -94,9 +94,67 @@
     .modal-btn--reschedule:hover {
       background: #6b46c1;
     }
+
+    /* ── Bulk select ── */
+    .btn-select-notif {
+      padding: 8px 20px;
+      border: 1.5px solid #1E3A8A;
+      background: #fff;
+      color: #1E3A8A;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .btn-select-notif.active {
+      background: #1E3A8A;
+      color: #fff;
+    }
+    .notif-bulk-bar {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .notif-bulk-bar.visible { display: flex; }
+    .notif-bulk-bar__count { font-size: 14px; font-weight: 600; color: #2d3748; }
+    .btn-delete-sel-notif {
+      padding: 7px 20px;
+      border: 1.5px solid #e53e3e;
+      background: transparent;
+      color: #e53e3e;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .btn-delete-sel-notif:hover { background: #fff5f5; }
+    .notif-card__cb-wrap {
+      display: flex;
+      align-items: flex-start;
+      padding-top: 3px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .notif-card__cb {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: #1E3A8A;
+    }
   </style>
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="bps-ui.css">
+  <script src="bps-ui.js"></script>
 </head>
 
 <body class="notif-page logged-in">
@@ -111,7 +169,7 @@
             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
         </svg>
       </div>
-      <span class="navbar__title">Barcarse Psychological Services</span>
+      <h3 class="navbar__title">Barcarse Psychological Services</h3>
     </a>
     <div class="navbar__right">
       <ul class="navbar__links"></ul>
@@ -143,7 +201,10 @@
         <h1 class="notif-header__title">Notification Center</h1>
         <p class="notif-header__subtitle" id="notif-status">All caught up!</p>
       </div>
-      <button class="btn-mark-read" id="mark-all-read">Mark all as read</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn-select-notif" id="btn-select-notif" onclick="toggleSelectionMode()">Select</button>
+        <button class="btn-mark-read" id="mark-all-read">Mark all as read</button>
+      </div>
     </div>
 
     <!-- Search -->
@@ -158,6 +219,16 @@
     <!-- Filter tabs -->
     <div class="notif-filters" id="notif-filters">
       <!-- Filter tabs are rendered dynamically (role-aware) by buildFilterTabs() -->
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="notif-bulk-bar" id="notif-bulk-bar">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;color:#2d3748;flex-shrink:0;">
+        <input type="checkbox" id="notif-select-all" onchange="toggleSelectAllNotifs(this.checked)" style="width:17px;height:17px;accent-color:#1E3A8A;cursor:pointer;">
+        Select All
+      </label>
+      <span class="notif-bulk-bar__count" id="notif-sel-count">0 selected</span>
+      <button class="btn-delete-sel-notif" id="btn-delete-sel-notif" onclick="confirmBulkDeleteNotif()" style="display:none;">Delete Selected</button>
     </div>
 
     <!-- Notification list -->
@@ -203,9 +274,25 @@
           width="22" height="22" style="fill:#1E3A8A;vertical-align:middle;margin-right:6px;">
           <path
             d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-        </svg>Intake Form Details</h2>
+        </svg><span id="intake-modal-title">Form Details</span></h2>
       <div id="intake-modal-body">
         <p>Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BULK DELETE MODAL ===== -->
+  <div class="modal-overlay" id="notif-delete-modal">
+    <div class="modal-content" style="max-width:440px;text-align:center;">
+      <button class="modal-close" onclick="closeNotifDeleteModal()">&times;</button>
+      <div style="width:56px;height:56px;background:#fff5f5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" width="28" height="28" style="fill:#e53e3e;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </div>
+      <h3 style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px;">Delete Notifications?</h3>
+      <p style="font-size:14px;color:#718096;margin-bottom:24px;" id="notif-delete-msg">These notifications will be permanently deleted.</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="modal-btn" style="background:#f3f4f6;color:#374151;" onclick="closeNotifDeleteModal()">Cancel</button>
+        <button class="modal-btn modal-btn--decline" onclick="executeBulkDeleteNotif()">Yes, Delete</button>
       </div>
     </div>
   </div>
@@ -229,6 +316,8 @@
     let notifications = [];
     let activeFilter = 'all';
     let paymentsByAppt = {};
+    let selectedNotifs = new Set();
+    let notifSelectionMode = false;
 
     /* ══════════════════════════════════════════════════════════
        NOTIFICATION CATEGORIES — colors + icons (client & staff)
@@ -312,7 +401,7 @@
         </div>`;
 
       try {
-        const res = await fetch(`${API_BASE}?limit=50`, {
+        const res = await fetch(`${API_BASE}?limit=500`, {
           headers: authHeaders,
         });
 
@@ -337,7 +426,7 @@
               title: n.title,
               text: n.message,
               time: timeAgo(n.created_at),
-              action: getActionLabel(n.type, { link: n.link }),
+              action: getActionLabel(n.type, { link: n.link, title: n.title }),
               link: n.link,
               apptId,
               unread: !n.is_read,
@@ -380,13 +469,29 @@
         case 'report': return 'View Report';
         case 'community': return 'View Article';
         case 'intake': return 'View Details';
-        case 'payment': return 'Complete Payment';
+        case 'payment': {
+          const title = (n && n.title) || '';
+          // Supervising Psychometrician verifies a submitted payment.
+          if (title.includes('Awaiting Verification')) return 'Verify Payment';
+          // Client confirmation that their slot is reserved — read-only details.
+          if (title.includes('Slot Confirmed') || title.includes('Payment Verified')) return 'View Details';
+          return 'Complete Payment';
+        }
         case 'request':
         case 'ticket':
           // Rejection notifications get "Submit Again" which re-opens the form.
           // Approval notifications get "Click Payment".
           if (n && n.link && n.link.includes('resubmit=1')) return 'Submit Again';
           if (n && n.link && n.link.includes('request-payment.html')) return 'Click Payment';
+          // Report-request payment awaiting verification → opens the Payment
+          // Verification module (Supervising Psychometrician).
+          if (n && n.link && n.link.includes('payments-admin.html')) return 'Verify Payment';
+          // CD: modified report submitted for final review → opens the concern
+          // review (original concern + modified report + uploaded PDF + actions).
+          if (n && n.title === 'Requested Concern Modified') return 'View Details';
+          // Report-concern notifications open the report (with the concern overlay)
+          // in the report module — not a "ticket". Label them "View Report".
+          if (n && n.link && n.link.includes('concern=')) return 'View Report';
           return 'View Ticket';
         default: return 'View';
       }
@@ -429,8 +534,12 @@
         // Staff gets Approve/Reject for pending community posts
         const isPendingReview = isStaff && n.category === 'community' && n.text.includes('review');
         const isIntakeAction = isStaff && n.category === 'intake' && n.text.includes('awaiting review');
+        // Client "Proof of Payment Received" is purely informational — no action.
+        const isProofReceived = n.category === 'payment' && n.title && n.title.includes('Proof of Payment Received');
 
-        if (isPendingReview) {
+        if (isProofReceived) {
+          actionButtons = '';
+        } else if (isPendingReview) {
           actionButtons = `
             <button class="notif-card__action" onclick="handleAction(${n.id})" style="background:#1E3A8A;color:#fff;">Review Posts</button>
           `;
@@ -438,7 +547,7 @@
           actionButtons = `
             <button class="notif-card__action" onclick="handleAction(${n.id})" style="background:#15306E;color:#fff;">Review Form</button>
           `;
-        } else if (n.link) {
+        } else if (n.link && !(n.title && n.title.includes('Awaiting Schedule Confirmation'))) {
           actionButtons = `<button class="notif-card__action" onclick="handleAction(${n.id})">${n.action}</button>`;
         }
 
@@ -446,6 +555,7 @@
         return `
           <div class="notif-card ${n.unread ? 'unread' : ''}" data-id="${n.id}" data-category="${n.category}" style="--cat:${meta.color};--cat-ink:${meta.ink}">
             <div class="notif-card__top">
+              ${notifSelectionMode ? `<label class="notif-card__cb-wrap"><input type="checkbox" class="notif-card__cb" onchange="toggleNotifSelect(${n.id},this.checked)" ${selectedNotifs.has(n.id)?'checked':''}></label>` : ''}
               <div class="notif-card__content">
                 <div class="notif-card__cat">
                   <span class="notif-cat-badge">${catIconSvg(n.category, 14)}<span class="notif-cat-badge__label">${meta.label}</span></span>
@@ -455,11 +565,13 @@
                 <div class="notif-card__text">${n.text}</div>
                 <div class="notif-card__time">${n.time}</div>
               </div>
-              <div class="notif-card__actions">
+              ${!notifSelectionMode ? `<div class="notif-card__actions">
                 ${actionButtons}
-                ${n.unread ? `<button class="notif-card__action notif-card__action--read" onclick="markRead(${n.id})" title="Mark as read"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></button>` : ''}
+                ${n.unread
+                  ? `<button class="notif-card__action notif-card__action--toggle" onclick="markRead(${n.id})" title="Mark as read">Mark as read</button>`
+                  : `<button class="notif-card__action notif-card__action--toggle" onclick="markUnread(${n.id})" title="Mark as unread">Mark as unread</button>`}
                 <button class="notif-card__action notif-card__action--delete" onclick="deleteNotif(${n.id})" title="Delete"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-              </div>
+              </div>` : ''}
             </div>
           </div>
         `;
@@ -509,6 +621,24 @@
       BPSToast.info('Notification marked as read.', { title: 'Read', duration: 2000 });
     }
 
+    // ── Mark single notification as UNREAD (API) ──────────
+    async function markUnread(id) {
+      try {
+        await fetch(`${API_BASE}/${id}/unread`, {
+          method: 'PUT',
+          headers: authHeaders,
+        });
+      } catch (err) {
+        console.error('Failed to mark notification as unread:', err);
+      }
+
+      const n = notifications.find(n => n.id === id);
+      if (n) n.unread = true;
+      updateCounts();
+      renderNotifications();
+      BPSToast.info('Notification marked as unread.', { title: 'Unread', duration: 2000 });
+    }
+
     // ── Mark all as read (API) ────────────────────────────
     async function markAllRead() {
       try {
@@ -543,6 +673,31 @@
       BPSToast.info('Notification deleted.', { title: 'Deleted', duration: 2000 });
     }
 
+    // Fetch a released report's signed PDF (with auth) and open it in a new tab.
+    const REPORTS_API = 'http://localhost:5000/api/reports';
+    async function openClientReportPdf(reportId) {
+      // Open the tab synchronously (still within the click gesture) so it isn't
+      // blocked, then stream the PDF blob into it once fetched.
+      const tab = window.open('', '_blank');
+      try {
+        const res = await fetch(`${REPORTS_API}/${reportId}/client-pdf`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) {
+          let msg = 'Report unavailable.';
+          try { const j = await res.json(); msg = j.message || msg; } catch (_) {}
+          if (tab) tab.close();
+          BPSToast.error(msg, { title: 'Could not open report' });
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        if (tab) { tab.location.href = url; } else { window.location.href = url; }
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } catch (e) {
+        if (tab) tab.close();
+        BPSToast.error('Could not open your report.', { title: 'Error' });
+      }
+    }
+
     // ── Action handler — show detail modal or navigate ─────
     async function handleAction(id) {
       const n = notifications.find(n => n.id === id);
@@ -551,9 +706,25 @@
       // Mark as read first
       if (n.unread) markRead(id);
 
+      // Released psychological report: open the signed PDF directly. This must
+      // run inside the click gesture so the browser allows the new tab, and the
+      // PDF endpoint needs the auth header (a plain link navigation can't send it).
+      if (n.link && n.link.indexOf('client-report:') === 0) {
+        const reportId = n.link.split(':')[1];
+        await openClientReportPdf(reportId);
+        return;
+      }
+
       // For appointment notifications, show appointment detail modal scoped
-      // to just the appointment this notification is about.
+      // to just the appointment this notification is about — UNLESS the link
+      // points to case management (e.g. "Appointment Confirmation Needed" for
+      // the Supervising Psychometrician), in which case redirect there so the
+      // specific client case opens.
       if (n.category === 'appointment') {
+        if (n.link && n.link.indexOf('case-dashboard.html') === 0) {
+          window.location.href = n.link;
+          return;
+        }
         await showAppointmentModal(n.apptId);
         return;
       }
@@ -564,12 +735,19 @@
         return;
       }
 
-      // For intake notifications — staff goes to review page, client sees detail modal
+      // For intake notifications — show detail modal when appt_id is in the link;
+      // for staff "awaiting review" intake notifications, always go to case dashboard.
       if (n.category === 'intake') {
-        if (isStaff) {
-          window.location.href = 'intake-submissions.html';
-        } else {
-          await showIntakeDetailModal();
+        let hasApptId = false;
+        if (n && n.link) {
+          try { hasApptId = !!new URL('http://x/' + n.link).searchParams.get('appt_id'); } catch (_) {}
+        }
+        if (hasApptId) {
+          await showIntakeDetailModal(n);
+        } else if (isStaff && n.text && n.text.includes('awaiting review')) {
+          window.location.href = 'case-dashboard.html';
+        } else if (n.link) {
+          window.location.href = n.link;
         }
         return;
       }
@@ -596,6 +774,7 @@
     }
 
     async function showAppointmentModal(apptId = currentApptId) {
+      notifCalendars = {}; // reset so BPSCalendar remounts on freshly rebuilt DOM
       currentApptId = (apptId === undefined || apptId === null) ? null : apptId;
       document.getElementById('appt-modal').classList.add('active');
       const body = document.getElementById('appt-modal-body');
@@ -626,13 +805,15 @@
           return;
         }
 
-        // Show only the appointment this notification refers to. When the id is
-        // known, show that one; otherwise fall back to the single current
-        // appointment so previous appointments are never stacked here.
+        // Show only the appointment this notification refers to.
         let list = json.data;
         if (currentApptId != null) {
           const match = list.filter(a => String(a.id) === String(currentApptId));
-          list = match.length ? match : pickCurrentAppointment(list);
+          if (!match.length) {
+            body.innerHTML = '<p style="color:#a0aec0;">This appointment is no longer available. It may have been removed or the link has expired.</p>';
+            return;
+          }
+          list = match;
         } else {
           list = pickCurrentAppointment(list);
         }
@@ -660,7 +841,7 @@
           // payment locks the schedule.
           const payRec = paymentsByAppt[a.id];
           const isPaid = a.payment_status === 'paid_verified' || (payRec && payRec.status === 'verified');
-          const canEdit = ['pending_review', 'approved', 'reschedule_proposed'].includes(a.status)
+          const canEdit = ['pending_review', 'approved'].includes(a.status)
             || (a.status === 'confirmed' && !isPaid);
           const canCancel = false;
 
@@ -676,7 +857,7 @@
               <div style="margin-top:10px;padding:14px 16px;background:#EAF5EE;border-radius:10px;border:1px solid #9ae6b4;">
                 <p style="font-size:14px;color:#0A5C31;font-weight:700;"><svg viewBox="0 0 24 24" width="16" height="16" style="fill:#0A5C31;vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Schedule Approved by Staff</p>
                 <p style="font-size:15px;color:#1a202c;font-weight:700;margin-top:4px;">${fmtDate(a.approved_datetime || a.preferred_datetime)}</p>
-                <p style="font-size:12.5px;color:#4a5568;margin-top:6px;">Please confirm this booking. Once confirmed, you'll be asked to complete payment to reserve your slot. To request a different time, use <strong>View Details → Edit Appointment</strong> below.</p>
+                <p style="font-size:12.5px;color:#4a5568;margin-top:6px;">Please confirm this booking. Once confirmed, you'll be asked to complete payment to reserve your slot.</p>
                 <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
                   <button onclick="confirmAppointment(${a.id})" style="padding:10px 24px;background:#0B6E3B;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#095a30'" onmouseout="this.style.background='#0B6E3B'"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#fff;vertical-align:middle;margin-right:4px;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Confirm Booking</button>
                 </div>
@@ -696,6 +877,10 @@
                   <label style="font-size:13px;font-weight:600;color:#553c9a;display:block;margin-bottom:6px;">Select your preferred date and time:</label>
                   <div id="notif-cal-container-${a.id}"></div>
                   <input type="hidden" id="new-dt-${a.id}">
+                  <div style="margin-top:10px;">
+                    <label style="font-size:13px;font-weight:600;color:#553c9a;display:block;margin-bottom:4px;">Reason for change <span style="color:#e53e3e;">*</span></label>
+                    <textarea id="reschedule-reason-${a.id}" placeholder="Required — explain why you need to change the schedule..." style="width:100%;padding:10px;border:1.5px solid #d6bcfa;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;min-height:60px;resize:vertical;box-sizing:border-box;"></textarea>
+                  </div>
                   <div style="display:flex;gap:8px;margin-top:10px;">
                     <button onclick="submitNewSchedule(${a.id})" style="padding:8px 20px;background:#C0922E;color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Submit New Time</button>
                     <button onclick="document.getElementById('reschedule-inline-${a.id}').style.display='none'" style="padding:8px 20px;background:#fff;color:#718096;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;">Cancel</button>
@@ -721,38 +906,6 @@
               </div>`;
           }
 
-          // Build View Details expandable content (Edit available only during negotiation)
-          let detailsContent = `
-              <div id="appt-details-${a.id}" style="display:none;margin-top:14px;padding:16px;background:#f7fafc;border-radius:12px;border:1px solid #e2e8f0;animation:fadeIn 0.2s ease;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:14px;">
-                  <div><span style="color:#718096;font-weight:500;">Preferred:</span> <strong>${fmtDate(a.preferred_datetime)}</strong></div>
-                  ${a.approved_datetime ? `<div><span style="color:#718096;font-weight:500;">Approved:</span> <strong style="color:#0B6E3B;">${fmtDate(a.approved_datetime)}</strong></div>` : ''}
-                  ${a.proposed_datetime ? `<div><span style="color:#718096;font-weight:500;">Proposed:</span> <strong style="color:#8A6A18;">${fmtDate(a.proposed_datetime)}</strong></div>` : ''}
-                  ${a.modality ? `<div><span style="color:#718096;font-weight:500;">Modality:</span> <strong>${a.modality}</strong></div>` : ''}
-                  ${a.staff_name ? `<div><span style="color:#718096;font-weight:500;">Staff:</span> <strong>${a.staff_name}</strong></div>` : ''}
-                  ${a.staff_notes ? `<div style="grid-column:1/-1;"><span style="color:#718096;font-weight:500;">Staff Notes:</span> <strong>${a.staff_notes}</strong></div>` : ''}
-                </div>
-                ${canEdit ? `<div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #edf2f7;">
-                  <button onclick="toggleEditInline(${a.id})" style="padding:10px 24px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(102,126,234,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(102,126,234,0.3)'"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#fff;vertical-align:middle;margin-right:4px;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Edit Appointment</button>
-                </div>` : ''}
-                ${canEdit ? `<div id="edit-inline-${a.id}" style="display:none;margin-top:14px;padding:16px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
-                  <label style="font-size:13px;font-weight:700;color:#2d3748;display:block;margin-bottom:8px;"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#2d3748;vertical-align:middle;margin-right:4px;"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg> Select new date and time:</label>
-                  <div id="edit-cal-container-${a.id}"></div>
-                  <div id="edit-time-container-${a.id}" style="margin-top:10px;">
-                    <label style="font-size:12px;font-weight:600;color:#718096;display:block;margin-bottom:4px;">Time:</label>
-                    <select id="edit-time-${a.id}" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;">
-                      <option value="">Select time</option>
-                    </select>
-                  </div>
-                  <div id="edit-avail-${a.id}" style="display:none;margin-top:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;"></div>
-                  <input type="hidden" id="edit-dt-${a.id}">
-                  <div style="display:flex;gap:8px;margin-top:12px;">
-                    <button onclick="submitEditAppointment(${a.id})" style="padding:10px 24px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Save Changes</button>
-                    <button onclick="document.getElementById('edit-inline-${a.id}').style.display='none'" style="padding:10px 24px;background:#fff;color:#718096;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;cursor:pointer;">Cancel</button>
-                  </div>
-                </div>` : ''}
-              </div>`;
-
           return `
             <div style="padding:16px 0;border-bottom:1px solid #edf2f7;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -762,13 +915,12 @@
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
                 <div><span style="color:#718096;">Preferred:</span> <strong>${fmtDate(a.preferred_datetime)}</strong></div>
                 ${a.modality ? `<div><span style="color:#718096;">Modality:</span> <strong>${a.modality}</strong></div>` : ''}
+                ${a.approved_datetime ? `<div><span style="color:#718096;">Approved:</span> <strong style="color:#0B6E3B;">${fmtDate(a.approved_datetime)}</strong></div>` : ''}
+                ${a.proposed_datetime && a.status !== 'reschedule_proposed' ? `<div><span style="color:#718096;">Proposed:</span> <strong style="color:#8A6A18;">${fmtDate(a.proposed_datetime)}</strong></div>` : ''}
                 ${a.staff_name ? `<div><span style="color:#718096;">Staff:</span> <strong>${a.staff_name}</strong></div>` : ''}
+                ${a.staff_notes ? `<div style="grid-column:1/-1;"><span style="color:#718096;">Staff Notes:</span> <strong>${a.staff_notes}</strong></div>` : ''}
               </div>
               ${statusInfo}
-              <div style="margin-top:12px;">
-                <button onclick="toggleApptDetails(${a.id})" style="padding:8px 20px;background:#edf2f7;color:#2d3748;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#edf2f7'"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:#2d3748;vertical-align:middle;margin-right:4px;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> View Details</button>
-              </div>
-              ${detailsContent}
             </div>`;
         }).join('');
       } catch (err) {
@@ -782,46 +934,129 @@
     }
 
     // ── Intake Form Detail Modal ──────────────────────────
-    async function showIntakeDetailModal() {
+    async function showIntakeDetailModal(n) {
       document.getElementById('intake-modal').classList.add('active');
       const body = document.getElementById('intake-modal-body');
-      body.innerHTML = '<p style="color:#718096;">Loading your intake form...</p>';
+      body.innerHTML = '<p style="color:#718096;">Loading your form...</p>';
 
       try {
-        // Fetch intake forms AND appointments in parallel
-        const [intakeRes, apptRes] = await Promise.all([
-          fetch('http://localhost:5000/api/intake-forms', { headers: authHeaders }),
-          fetch('http://localhost:5000/api/appointments', { headers: authHeaders }),
-        ]);
-        const json = await intakeRes.json();
-        const apptJson = await apptRes.json();
-
-        if (!json.success || !json.data || !json.data.length) {
-          body.innerHTML = '<p style="color:#a0aec0;">No intake forms found.</p>';
-          return;
+        // Extract appointment ID from notification link (e.g. "profile.html?appt_id=42")
+        let apptId = null;
+        if (n && n.link) {
+          try { apptId = new URL('http://x/' + n.link).searchParams.get('appt_id'); } catch (_) {}
         }
 
-        // Show the latest form
-        const f = json.data[0];
-        const fd = typeof f.form_data === 'string' ? JSON.parse(f.form_data) : f.form_data;
+        const notifTitle = (n && n.title) ? n.title.toLowerCase() : '';
+        const isAssessment = notifTitle.includes('assessment');
+
+        // Set modal title immediately so it's never stale from a previous session
+        document.getElementById('intake-modal-title').textContent = isAssessment ? 'Assessment Form Details' : 'Counseling Form Details';
+
+        let fd, isAssessmentForm, linkedAppt = null, formCreatedAt;
+
+        if (apptId) {
+          // New path: fetch exact form data for this specific appointment
+          const previewRes = await fetch(`http://localhost:5000/api/appointments/${apptId}/intake-preview`, { headers: authHeaders });
+          const previewJson = await previewRes.json();
+          if (!previewJson.success) {
+            body.innerHTML = '<p style="color:#a0aec0;">Form data is not available.</p>';
+            return;
+          }
+          fd = typeof previewJson.form_data === 'string' ? JSON.parse(previewJson.form_data) : previewJson.form_data;
+          isAssessmentForm = previewJson.form_type === 'assessment';
+          formCreatedAt = previewJson.created_at;
+
+          // Fetch the appointment itself for the linked appointment section
+          const apptRes = await fetch(`http://localhost:5000/api/appointments/${apptId}`, { headers: authHeaders });
+          const apptJson = await apptRes.json();
+          if (apptJson.success) linkedAppt = apptJson.data;
+        } else {
+          // Fallback for old notifications that have no appt_id in the link
+          const apiUrl = isAssessment
+            ? 'http://localhost:5000/api/assessment-intake-forms'
+            : 'http://localhost:5000/api/intake-forms';
+          const [formRes, apptRes] = await Promise.all([
+            fetch(apiUrl, { headers: authHeaders }),
+            fetch('http://localhost:5000/api/appointments', { headers: authHeaders }),
+          ]);
+          const formJson = await formRes.json();
+          const apptJson = await apptRes.json();
+          if (!formJson.success || !formJson.data || !formJson.data.length) {
+            body.innerHTML = '<p style="color:#a0aec0;">No form found.</p>';
+            return;
+          }
+          const f = formJson.data[0];
+          fd = typeof f.form_data === 'string' ? JSON.parse(f.form_data) : f.form_data;
+          isAssessmentForm = isAssessment;
+          formCreatedAt = f.created_at;
+          if (apptJson.success && apptJson.data && apptJson.data.length) {
+            linkedAppt = isAssessment
+              ? apptJson.data.find(a => a.assessment_form_id === f.id)
+              : apptJson.data.find(a => a.intake_form_id === f.id);
+          }
+        }
+
         if (!fd) {
           body.innerHTML = '<p style="color:#a0aec0;">Form data is not available.</p>';
           return;
         }
 
-        // Find linked appointment
-        let linkedAppt = null;
-        if (apptJson.success && apptJson.data && apptJson.data.length) {
-          linkedAppt = apptJson.data.find(a => a.intake_form_id === f.id) || apptJson.data[0];
-        }
-
         const statusBg = { pending: '#fefcbf', reviewed: '#EEF1FA', approved: '#F0FAEC', rejected: '#fed7d7' };
         const statusColor = { pending: '#975a16', reviewed: '#2a4365', approved: '#0A5C31', rejected: '#742a2a' };
+        const statusLabel = isAssessmentForm ? 'Assessment' : 'Counseling';
+        document.getElementById('intake-modal-title').textContent = isAssessmentForm ? 'Assessment Form Details' : 'Counseling Form Details';
 
-        const sections = [
+        let sections;
+        if (isAssessmentForm) {
+          const fullName = [fd.givenName, fd.middleName, fd.familyName].filter(Boolean).join(' ');
+          sections = [
+            {
+              title: 'Client Information', fields: [
+                { lbl: 'Full Name', val: fullName },
+                { lbl: 'Nickname', val: fd.nickname },
+                { lbl: 'Age', val: fd.age },
+                { lbl: 'Birthdate', val: fd.birthdate },
+                { lbl: 'Sex', val: fd.sex },
+                { lbl: 'Contact Number', val: fd.contactNumber },
+                { lbl: 'Email', val: fd.email },
+                { lbl: 'Home Address', val: fd.homeAddress, full: true },
+              ]
+            },
+            {
+              title: 'Background', fields: [
+                { lbl: 'Reason for Referral', val: fd.reasonForReferral },
+                { lbl: 'Primary Language', val: fd.primaryLanguage },
+                { lbl: 'Answering For', val: fd.answeringFor },
+              ]
+            },
+            {
+              title: 'Assessment History', fields: [
+                { lbl: 'Assessed Before', val: fd.assessedBefore },
+                { lbl: 'Details', val: fd.assessedBeforeDetails, full: true },
+              ]
+            },
+            {
+              title: 'Diagnoses & Interventions', fields: [
+                { lbl: 'Existing Diagnoses', val: fd.existingDiagnoses },
+                { lbl: 'Diagnosis Details', val: fd.existingDiagnosesDetails, full: true },
+                { lbl: 'Current Interventions', val: fd.interventions },
+                { lbl: 'Other Intervention', val: fd.interventionOther },
+              ]
+            },
+            {
+              title: 'Preferences', fields: [
+                { lbl: 'Preferred Schedule', val: fd.prefSchedule ? fmtDate(fd.prefSchedule) : '' },
+                { lbl: 'Modality', val: fd.modality },
+              ]
+            },
+          ];
+        } else {
+          sections = [
           {
             title: 'Personal Information', fields: [
-              { lbl: 'Full Name', val: fd.fullName },
+              { lbl: 'Family Name (Apelyido)', val: fd.familyName || fd.fullName },
+              { lbl: 'Given Name (Pangalan)', val: fd.givenName },
+              { lbl: 'Middle Name (Gitnang Pangalan)', val: fd.middleName },
               { lbl: 'Nickname', val: fd.nickName },
               { lbl: 'Age', val: fd.age },
               { lbl: 'Date of Birth', val: fd.dob },
@@ -873,10 +1108,11 @@
             ]
           },
         ];
+        }
 
         let html = `<div style="margin-bottom:16px;">
-          <span style="padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;background:${statusBg[f.status] || '#f3f4f6'};color:${statusColor[f.status] || '#6b7280'};">${f.status}</span>
-          <span style="color:#a0aec0;font-size:13px;margin-left:8px;">Submitted ${timeAgo(f.created_at)}</span>
+          <span style="padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;background:${isAssessmentForm ? '#EEF1FA' : '#F0FAEC'};color:${isAssessmentForm ? '#2a4365' : '#0A5C31'};">${statusLabel}</span>
+          <span style="color:#a0aec0;font-size:13px;margin-left:8px;">Submitted ${timeAgo(formCreatedAt)}</span>
         </div>`;
 
         // ── Appointment Status Section ──
@@ -999,7 +1235,11 @@
           <p style="font-size:11.5px;color:#718096;margin-top:10px;">Enter the exact amount and include your reference number in the GCash note so we can match your payment.</p>
           <div style="margin-top:12px;">
             <label style="font-size:12.5px;font-weight:700;color:#2d3748;display:block;margin-bottom:6px;">Upload proof of payment (JPG, PNG, or PDF · max 5 MB)</label>
-            <input type="file" id="proof-${pay.id}" accept="image/jpeg,image/png,application/pdf" style="font-size:13px;">
+            <label class="file-pick" for="proof-${pay.id}">
+              <input type="file" id="proof-${pay.id}" accept="image/jpeg,image/png,application/pdf" style="display:none" onchange="this.closest('.file-pick').querySelector('.file-pick__name').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+              <span class="file-pick__btn"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Choose File</span>
+              <span class="file-pick__name">No file chosen</span>
+            </label>
             <div style="margin-top:10px;">
               <button onclick="uploadApptProof(${pay.id})" style="padding:10px 22px;background:linear-gradient(135deg,#1E3A8A,#15306E);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Submit Proof of Payment</button>
             </div>
@@ -1066,11 +1306,30 @@
       modal.classList.add('active');
       body.innerHTML = '<p style="color:#718096;">Loading meeting details...</p>';
 
-      // The notification link points at the specific meeting: meetings.html?join=<id>
-      const m = (n && n.link) ? String(n.link).match(/join=(\d+)/) : null;
-      const sessionId = m ? parseInt(m[1], 10) : null;
+      // The notification link is meetings.html?join=<id>&invite=<token>. We use
+      // join=<id> to load the meeting details, and the single-use invite token
+      // (if present) for the actual entry so the client joins via the secure
+      // single-use redeem flow.
+      const m  = (n && n.link) ? String(n.link).match(/join=(\d+)/) : null;
+      const im = (n && n.link) ? String(n.link).match(/[?&]invite=([^&]+)/) : null;
+      const sessionId  = m  ? parseInt(m[1], 10) : null;
+      const inviteToken = im ? im[1] : null;
 
       if (!sessionId) {
+        // Older notifications stored an invite-only link (no join=<id>). We can't
+        // load meeting details without the id, but we can still join via the
+        // single-use token.
+        if (inviteToken) {
+          body.innerHTML = `
+            <p style="font-size:14px;color:#4a5568;margin-bottom:20px;">Your scheduled meeting is ready. Click below to join.</p>
+            <div style="display:flex;justify-content:flex-end;">
+              <button onclick="window.location.href='meetings.html?invite=${inviteToken}'"
+                style="padding:12px 26px;background:#1E3A8A;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">
+                Join Meeting →
+              </button>
+            </div>`;
+          return;
+        }
         body.innerHTML = '<p style="color:#e53e3e;">This meeting link is no longer valid.</p>';
         return;
       }
@@ -1090,12 +1349,19 @@
           return;
         }
 
+        // Prefer the single-use invite token for entry; keep join=<id> too so the
+        // meetings page can open the session view (OTP first, then redeem). Fall
+        // back to the normal join deep-link for staff / re-opened notifications.
+        const joinHref = inviteToken
+          ? `meetings.html?join=${s.id}&invite=${inviteToken}`
+          : `meetings.html?join=${s.id}`;
+
         body.innerHTML = `
           <p style="font-size:14px;color:#4a5568;margin-bottom:6px;">Meeting</p>
           <p style="font-weight:700;font-size:16px;margin-bottom:20px;">${s.meeting_title || 'Consultation Session'} <span style="font-weight:600;color:#718096;font-size:13px;">(${s.meeting_code || ('#' + s.id)})</span></p>
           <p style="font-size:14px;color:#4a5568;margin-bottom:20px;">Your scheduled meeting is ready. Click below to join.</p>
           <div style="display:flex;justify-content:flex-end;">
-            <button onclick="window.location.href='meetings.html?join=${s.id}'"
+            <button onclick="window.location.href='${joinHref}'"
               style="padding:12px 26px;background:#1E3A8A;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">
               Join Meeting →
             </button>
@@ -1119,6 +1385,11 @@
       });
     });
 
+    // Close notif delete modal on backdrop click
+    document.getElementById('notif-delete-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeNotifDeleteModal();
+    });
+
     // ── Inline appointment actions (Confirm / Decline / Reschedule) ──
     async function confirmAppointment(apptId) {
       try {
@@ -1140,7 +1411,7 @@
     }
 
     async function declineAppointment(apptId) {
-      if (!confirm('Are you sure you want to decline this appointment?')) return;
+      if (!await BPSModal.confirm('Are you sure you want to decline this appointment?', { title: 'Decline appointment', confirmText: 'Decline', danger: true })) return;
       try {
         const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/decline`, {
           method: 'PUT',
@@ -1179,6 +1450,8 @@
 
     async function submitNewSchedule(apptId) {
       const input = document.getElementById(`new-dt-${apptId}`);
+      const reasonEl = document.getElementById(`reschedule-reason-${apptId}`);
+      const reason = reasonEl ? reasonEl.value.trim() : '';
       if (!input || !input.value) {
         BPSToast.warning('Please select a date and time.', { title: 'Missing Date' });
         return;
@@ -1187,11 +1460,15 @@
         BPSToast.warning('Please select a future date and time.', { title: 'Invalid Date' });
         return;
       }
+      if (!reason) {
+        BPSToast.warning('Please provide a reason for the schedule change.', { title: 'Reason Required' });
+        return;
+      }
       try {
         const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/request-change`, {
           method: 'PUT',
           headers: authHeaders,
-          body: JSON.stringify({ new_datetime: input.value, notes: 'Client proposed new time from notifications' }),
+          body: JSON.stringify({ new_datetime: input.value, notes: reason }),
         });
         const json = await res.json();
         if (json.success) {
@@ -1214,105 +1491,94 @@
       }
     }
 
-    // ── Edit Appointment Inline ──────────────────────────
-    let editCalendars = {};
+    // ── Bulk select helpers ───────────────────────────────
+    function getVisibleNotifIds() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      let visible = notifications;
+      if (activeFilter !== 'all') visible = visible.filter(n => n.category === activeFilter);
+      if (search) visible = visible.filter(n =>
+        n.title.toLowerCase().includes(search) || n.text.toLowerCase().includes(search)
+      );
+      return visible.map(n => n.id);
+    }
 
-    const EDIT_TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-    const EDIT_TIME_LABELS = {
-      '09:00': '9:00 AM', '10:00': '10:00 AM', '11:00': '11:00 AM', '12:00': '12:00 PM',
-      '13:00': '1:00 PM', '14:00': '2:00 PM', '15:00': '3:00 PM', '16:00': '4:00 PM', '17:00': '5:00 PM'
-    };
+    function toggleSelectionMode() {
+      notifSelectionMode = !notifSelectionMode;
+      const btn = document.getElementById('btn-select-notif');
+      if (notifSelectionMode) {
+        btn.textContent = 'Cancel';
+        btn.classList.add('active');
+      } else {
+        btn.textContent = 'Select';
+        btn.classList.remove('active');
+        selectedNotifs.clear();
+      }
+      updateBulkBarNotif();
+      renderNotifications();
+    }
 
-    function toggleEditInline(apptId) {
-      const panel = document.getElementById(`edit-inline-${apptId}`);
-      const isHidden = panel.style.display === 'none';
-      panel.style.display = isHidden ? 'block' : 'none';
+    function toggleSelectAllNotifs(checked) {
+      const visibleIds = getVisibleNotifIds();
+      if (checked) visibleIds.forEach(id => selectedNotifs.add(id));
+      else visibleIds.forEach(id => selectedNotifs.delete(id));
+      updateBulkBarNotif();
+      renderNotifications();
+    }
 
-      if (isHidden && !editCalendars[apptId]) {
-        editCalendars[apptId] = BPSCalendar.mount(`#edit-cal-container-${apptId}`, {
-          showTime: false,
-          onChange: async (isoVal) => {
-            // isoVal from BPSCalendar may contain time - extract date part
-            const dateStr = isoVal.split('T')[0];
-            // Fetch availability for selected date
-            try {
-              const res = await fetch(`http://localhost:5000/api/appointments/availability?date=${dateStr}`, {
-                headers: authHeaders,
-              });
-              const json = await res.json();
-              if (json.success) {
-                const avail = json.data;
-                const timeSelect = document.getElementById(`edit-time-${apptId}`);
-                let html = '<option value="">Select time</option>';
-                EDIT_TIME_SLOTS.forEach(slot => {
-                  const isBooked = avail.bookedSlots && avail.bookedSlots.includes(slot);
-                  if (isBooked) {
-                    html += `<option value="${slot}" disabled>${EDIT_TIME_LABELS[slot]} — Booked</option>`;
-                  } else {
-                    html += `<option value="${slot}">${EDIT_TIME_LABELS[slot]}</option>`;
-                  }
-                });
-                timeSelect.innerHTML = html;
+    function toggleNotifSelect(id, checked) {
+      if (checked) selectedNotifs.add(id);
+      else selectedNotifs.delete(id);
+      updateBulkBarNotif();
+    }
 
-                // Show availability
-                const availEl = document.getElementById(`edit-avail-${apptId}`);
-                if (avail.isFull) {
-                  availEl.innerHTML = '<span style="color:#e53e3e;">●</span> <span style="color:#e53e3e;">Fully booked — choose another date</span>';
-                  availEl.style.display = 'flex';
-                  timeSelect.disabled = true;
-                } else {
-                  const color = avail.remaining <= 1 ? '#e53e3e' : avail.remaining <= 3 ? '#d69e2e' : '#38a169';
-                  availEl.innerHTML = `<span style="color:${color};">●</span> <span style="color:${color};">${avail.remaining} of ${avail.maxPerDay} slots available</span>`;
-                  availEl.style.display = 'flex';
-                  timeSelect.disabled = false;
-                }
-
-                // Update hidden input when time changes
-                timeSelect.onchange = () => {
-                  if (timeSelect.value) {
-                    document.getElementById(`edit-dt-${apptId}`).value = `${dateStr}T${timeSelect.value}`;
-                  } else {
-                    document.getElementById(`edit-dt-${apptId}`).value = '';
-                  }
-                };
-              }
-            } catch (err) {
-              console.error('Failed to fetch availability for edit:', err);
-            }
-          },
-        });
+    function updateBulkBarNotif() {
+      const bar = document.getElementById('notif-bulk-bar');
+      const count = selectedNotifs.size;
+      document.getElementById('notif-sel-count').textContent = `${count} selected`;
+      // Bar visible whenever selection mode is on
+      if (notifSelectionMode) bar.classList.add('visible');
+      else bar.classList.remove('visible');
+      // Delete button only when something is selected
+      const delBtn = document.getElementById('btn-delete-sel-notif');
+      if (delBtn) delBtn.style.display = count > 0 ? '' : 'none';
+      // Sync Select All checkbox
+      const selectAllCb = document.getElementById('notif-select-all');
+      if (selectAllCb) {
+        const visibleIds = getVisibleNotifIds();
+        const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedNotifs.has(id));
+        selectAllCb.checked = allSelected;
+        selectAllCb.indeterminate = count > 0 && !allSelected;
       }
     }
 
-    // ── Submit Edited Appointment ──────────────────────────
-    async function submitEditAppointment(apptId) {
-      const input = document.getElementById(`edit-dt-${apptId}`);
-      if (!input || !input.value) {
-        BPSToast.warning('Please select a date and time.', { title: 'Missing Date & Time' });
-        return;
-      }
-      if (new Date(input.value) <= new Date()) {
-        BPSToast.warning('Please select a future date and time.', { title: 'Invalid Date' });
-        return;
-      }
-      try {
-        const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/edit`, {
-          method: 'PUT',
-          headers: authHeaders,
-          body: JSON.stringify({ new_datetime: input.value }),
-        });
-        const json = await res.json();
-        if (json.success) {
-          BPSToast.success('Appointment updated! Staff will review the new schedule.', { title: 'Updated' });
-          editCalendars = {}; // Reset cached calendars
-          await showAppointmentModal();
-          loadNotifications();
-        } else {
-          BPSToast.error(json.message || 'Failed to update appointment.', { title: 'Error' });
-        }
-      } catch (err) {
-        BPSToast.error('Network error. Please try again.', { title: 'Connection Error' });
-      }
+    function confirmBulkDeleteNotif() {
+      if (selectedNotifs.size === 0) return;
+      const n = selectedNotifs.size;
+      document.getElementById('notif-delete-msg').textContent =
+        `${n} notification${n > 1 ? 's' : ''} will be permanently deleted and cannot be recovered.`;
+      document.getElementById('notif-delete-modal').classList.add('active');
+    }
+
+    function closeNotifDeleteModal() {
+      document.getElementById('notif-delete-modal').classList.remove('active');
+    }
+
+    async function executeBulkDeleteNotif() {
+      closeNotifDeleteModal();
+      const ids = [...selectedNotifs];
+      await Promise.all(ids.map(id =>
+        fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: authHeaders }).catch(() => {})
+      ));
+      notifications = notifications.filter(n => !ids.includes(n.id));
+      selectedNotifs.clear();
+      notifSelectionMode = false;
+      const btn = document.getElementById('btn-select-notif');
+      btn.textContent = 'Select';
+      btn.classList.remove('active');
+      updateBulkBarNotif();
+      updateCounts();
+      renderNotifications();
+      BPSToast.success(`${ids.length} notification${ids.length > 1 ? 's' : ''} deleted.`, { title: 'Deleted' });
     }
 
     // ── Filter tabs ───────────────────────────────────────

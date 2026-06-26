@@ -137,7 +137,7 @@
   margin-bottom: 22px;
 }
 
-.field label {
+.field label:not(.radio-option) {
   display: block;
   font-weight: 600;
   font-size: 14px;
@@ -221,21 +221,22 @@
 /* Radio group */
 .radio-group {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   flex-wrap: wrap;
   margin-top: 4px;
+  gap: 30px;
 }
 
 .radio-option {
   display: flex;
-  align-items: center;   /* vertically centre the dot with its label */
-  gap: 12px;             /* clear, even space between the dot and the text */
+  align-items: center;
+  gap: 10px;
   padding: 10px 20px;
   background: var(--white);
   border: 1.5px solid #E6EAF1;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   flex: 1;
   min-width: 120px;
 }
@@ -248,11 +249,17 @@
 .radio-option input[type="radio"] {
   width: 18px;
   height: 18px;
-  margin: 0;             /* remove browser default margins that throw off alignment */
-  flex: 0 0 auto;        /* keep the dot a fixed size, never stretched/shrunk */
+  margin: 0;
+  flex: 0 0 auto;
   accent-color: var(--green-primary);
-  vertical-align: middle;
   cursor: pointer;
+  vertical-align: middle;
+}
+
+.radio-option input[type="radio"]:focus,
+.radio-option input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .radio-option.selected {
@@ -262,7 +269,8 @@
 
 .radio-option span {
   font-size: 14px;
-  line-height: 1.2;      /* align text baseline with the dot */
+  font-weight: 600;
+  line-height: 1;
   color: var(--text-dark);
 }
 
@@ -284,11 +292,11 @@
   background: #f7fdf9;
   border-radius: 14px;
   border: 1px dashed rgba(30,58,138,0.2);
-  animation: fadeInUp 0.4s ease-out;
 }
 
 .conditional-section.show {
   display: block;
+  animation: revealFade 0.2s ease-out;
 }
 
 /* Yes/No toggle */
@@ -1215,6 +1223,39 @@
   accent-color: var(--green-primary);
   cursor: pointer;
 }
+
+/* ── Side-by-side DPA + Philippine Code of Ethics ── */
+.consent-shell {
+  max-width: 1040px;
+  margin: 24px auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.consent-shell .consent-card {
+  max-width: none;
+  margin: 0;                /* the grid gap handles spacing */
+  display: flex;
+  flex-direction: column;
+}
+.consent-shell .consent-agree { margin-top: auto; } /* keep the checkbox pinned to the card bottom */
+.consent-card__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green-dark, #14342a);
+}
+.consent-card__title svg { width: 20px; height: 20px; flex: 0 0 auto; fill: var(--green-primary); }
+.consent-actions--full { grid-column: 1 / -1; }
+@media (max-width: 860px) {
+  .consent-shell { grid-template-columns: 1fr; }
+}
+
 .consent-actions {
   display: flex;
   align-items: center;
@@ -1275,9 +1316,31 @@
 /* ===== STAFF PICKER ===== */
 .staff-field {
   display: none;
-  animation: fadeInUp 0.35s ease-out;
 }
-.staff-field.show { display: block; }
+.staff-field.show { display: block; animation: revealFade 0.2s ease-out; }
+
+/* ===== PROGRESSIVE SCHEDULING REVEAL ===== */
+.step-reveal {
+  display: none;
+}
+.step-reveal.show { display: block; animation: revealFade 0.2s ease-out; }
+
+@keyframes revealFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.schedule-note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-body, #475467);
+  background: rgba(30,58,138,0.05);
+  border: 1px solid #DCE3F5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+.schedule-note strong { color: var(--green-dark, #0A5C31); }
 
 .staff-picker {
   display: flex;
@@ -1360,6 +1423,12 @@
   accent-color: var(--green-primary);
   vertical-align: middle;
   margin-top: 1px;
+}
+
+.radio-option input[type="checkbox"]:focus,
+.radio-option input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 /* Grayed-out option (e.g. Online disabled for neurodevelopmental) */
 .radio-option--disabled {

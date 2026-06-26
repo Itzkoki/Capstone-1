@@ -29,3 +29,8 @@ build/
 *.dump.enc
 *.sql.gz
 backups/
+
+# ── GeoIP database (provisioned on the server, not committed) ──
+# The GeoLite2 .mmdb is large and updated ~twice a week by MaxMind.
+# Install it on the server via geoipupdate — see backend/geo/README.md.
+*.mmdb

@@ -6,8 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node test/ruleEngine.golden.js && node test/themeDetection.test.js",
-    "test:update": "node test/ruleEngine.golden.js --update"
+    "test": "node test/ruleEngine.golden.js && node test/themeDetection.test.js && node test/thresholds.test.js",
+    "test:update": "node test/ruleEngine.golden.js --update",
+    "knowledge:build": "node scripts/buildKnowledgeBase.js",
+    "knowledge:extract": "node scripts/extractKnowledge.js"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

@@ -253,12 +253,29 @@ function _looksLikeRealWord(w) {
 //    Signals are OPTIONAL — if absent, the engine falls back to rotation banks.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Band any NUMERIC explicit signal values to their data-derived label (Item 3),
+// e.g. a clinician-entered { depression: 20 } becomes 'severe' via KB.band using
+// thresholds.json. Non-numeric (already-banded) values pass through unchanged, so
+// the existing string-signal path is untouched.
+function _bandNumericSignals(sig) {
+  const out = {};
+  for (const [k, v] of Object.entries(sig || {})) {
+    if (typeof v === 'number') {
+      const banded = KB.band(k, v);
+      out[k] = (banded != null) ? banded : v;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 function _resolveSignals(additional_data) {
   const raw = (additional_data && typeof additional_data === 'object') ? additional_data : {};
   return {
-    cs: raw.clinical_signals    || {},
+    cs: _bandNumericSignals(raw.clinical_signals   || {}),
     ns: raw.neuro_signals       || {},
-    es: raw.employment_signals  || {},
+    es: _bandNumericSignals(raw.employment_signals || {}),
   };
 }
 
@@ -266,13 +283,16 @@ function _resolveSignals(additional_data) {
 // the IF-THEN fragment rules in _applyNarrativeFragments fire from free text
 // alone — no UI panel required. Only fills slots that are not already set by
 // explicit structured signals from additional_data.
-function _themesToSignals(themes, ttype, existing) {
+function _themesToSignals(themes, ttype, existing, text) {
   const cs = Object.assign({}, existing.cs);
   const ns = Object.assign({}, existing.ns);
   const es = Object.assign({}, existing.es);
 
   if (ttype === 'clinical') {
-    if (!cs.depression         && themes.depression)    cs.depression             = 'moderate';
+    // Severity-preserving bridge for depression (the signal with mild/moderate/
+    // severe fragments). Intensity is read from the clinician's wording near a
+    // depression/mood term; absent a qualifier it defaults to 'moderate' as before.
+    if (!cs.depression         && themes.depression)    cs.depression             = _intensityNear(text, [_THEME_RES.depression, _THEME_RES.mood]);
     if (!cs.anxiety_level      && themes.anxiety)       cs.anxiety_level          = 'moderate';
     if (!cs.self_esteem        && themes.selfEsteem)    cs.self_esteem            = 'low';
     if (!cs.sleep_quality      && themes.sleep)         cs.sleep_quality          = 'low';
@@ -710,6 +730,30 @@ function _detectThemes(text) {
   return out;
 }
 
+// Intensity detection (Item 3) — preserves SEVERITY in the theme→signal bridge so
+// "severe depression" yields cs.depression='severe' (C-EF-01) instead of a flat
+// 'moderate'. Scans for an intensity qualifier near a domain's terms; defaults to
+// 'moderate' when none is found (so existing non-qualified text is unchanged).
+const _INT_LEX = (_THEME_LEX.intensity) || { severe: [], mild: [] };
+const _SEV_RE  = new RegExp('\\b(' + (_INT_LEX.severe || []).join('|') + ')\\b');
+const _MILD_RE = new RegExp('\\b(' + (_INT_LEX.mild   || []).join('|') + ')\\b');
+
+function _intensityNear(text, domainRes) {
+  const t = (text || '').toLowerCase();
+  for (const re of domainRes) {
+    if (!re) continue;
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(t)) !== null) {
+      const win = t.slice(Math.max(0, m.index - 28), m.index + m[0].length + 28);
+      if (_SEV_RE.test(win))  return 'severe';
+      if (_MILD_RE.test(win)) return 'mild';
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+  }
+  return 'moderate';
+}
+
 // Returns observation strings from banks whose themes were detected in clinician input.
 // maxCount caps total entries. Only theme-matched banks are used — no fabrication.
 function _selectThemeObservations(themes, g, maxCount, ttype) {
@@ -947,7 +991,7 @@ const RuleEngine = {
     const hasExplicit = Object.keys(rawSignals.cs).length > 0 ||
                         Object.keys(rawSignals.ns).length > 0 ||
                         Object.keys(rawSignals.es).length > 0;
-    const signals = hasExplicit ? rawSignals : _themesToSignals(themes, ttype, rawSignals);
+    const signals = hasExplicit ? rawSignals : _themesToSignals(themes, ttype, rawSignals, combinedInput);
     const frags   = _applyNarrativeFragments(ttype, signals, name);
     const fragText  = (section) => frags.filter(f => f.section === section).map(f => f.text).join(' ');
     const hasFrags  = (section) => frags.some(f => f.section === section);

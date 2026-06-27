@@ -119,7 +119,18 @@ const TeleconferenceSession = {
       SELECT ts.*,
              COALESCE(${STAFF_NAME('stp')}, up.full_name) AS psychologist_name,
              c.full_name AS client_name,
-             m.title     AS meeting_title
+             m.title     AS meeting_title,
+             -- TRUE only while the HOST is actually in the room: joined and
+             -- heartbeating within the last 45s. Drives the "Live now" vs
+             -- "Scheduled" badge so it reflects the host's real presence.
+             EXISTS (
+               SELECT 1 FROM session_participants hp
+               WHERE hp.session_id   = ts.id
+                 AND hp.user_id      = ts.psychologist_id
+                 AND hp.joined_at IS NOT NULL
+                 AND hp.last_heartbeat IS NOT NULL
+                 AND hp.last_heartbeat > NOW() - INTERVAL '45 seconds'
+             ) AS host_present
       FROM teleconference_sessions ts
       LEFT JOIN staff stp ON stp.staff_id = ts.psychologist_id
       LEFT JOIN users up   ON up.id       = ts.psychologist_id

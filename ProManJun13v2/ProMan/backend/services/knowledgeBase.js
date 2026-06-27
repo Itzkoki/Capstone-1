@@ -83,9 +83,26 @@ const KnowledgeBase = {
     return _recPools[ttype] || null;
   },
 
-  /** Data-derived thresholds (populated in Item 3). */
+  /** Data-derived thresholds (Item 3). */
   thresholds() {
     return _thresholds;
+  },
+
+  /**
+   * Map a NUMERIC signal value to its data-derived band label using
+   * thresholds.json (e.g. band('depression', 20) → 'severe'). Returns null when
+   * the signal has no thresholds or the value isn't numeric, so callers can fall
+   * back to the raw value. Bands are ascending; max:null is the open top band.
+   */
+  band(signal, value) {
+    const cfg = _thresholds[signal];
+    if (!cfg || !Array.isArray(cfg.bands)) return null;
+    const v = Number(value);
+    if (!Number.isFinite(v)) return null;
+    for (const b of cfg.bands) {
+      if (b.max == null || v <= b.max) return b.label;
+    }
+    return cfg.bands[cfg.bands.length - 1].label;
   },
 
   /** Theme-detection lexicon (Item 2): { negators, themes{key:[tokens]}, patterns{key:src} }. */

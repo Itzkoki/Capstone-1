@@ -1,0 +1,146 @@
+{
+  "depression": {
+    "source": "StressLevelDataset.csv",
+    "column": "depression",
+    "note": "higher = more severe",
+    "n": 1100,
+    "range": [
+      0,
+      27
+    ],
+    "bands": [
+      {
+        "max": 8,
+        "label": "mild"
+      },
+      {
+        "max": 16,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "severe"
+      }
+    ]
+  },
+  "anxiety_level": {
+    "source": "StressLevelDataset.csv",
+    "column": "anxiety_level",
+    "note": "higher = more severe",
+    "n": 1100,
+    "range": [
+      0,
+      21
+    ],
+    "bands": [
+      {
+        "max": 8,
+        "label": "low"
+      },
+      {
+        "max": 14,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "severe"
+      }
+    ]
+  },
+  "self_esteem": {
+    "source": "StressLevelDataset.csv",
+    "column": "self_esteem",
+    "note": "higher = better; low tercile triggers C-EF-05",
+    "n": 1100,
+    "range": [
+      0,
+      30
+    ],
+    "bands": [
+      {
+        "max": 14,
+        "label": "low"
+      },
+      {
+        "max": 24,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "high"
+      }
+    ]
+  },
+  "sleep_quality": {
+    "source": "StressLevelDataset.csv",
+    "column": "sleep_quality",
+    "note": "higher = better; low tercile triggers C-EF-04",
+    "n": 1100,
+    "range": [
+      0,
+      5
+    ],
+    "bands": [
+      {
+        "max": 2,
+        "label": "low"
+      },
+      {
+        "max": 4,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "high"
+      }
+    ]
+  },
+  "social_support": {
+    "source": "StressLevelDataset.csv",
+    "column": "social_support",
+    "note": "higher = better; low tercile triggers C-SF-01",
+    "n": 1100,
+    "range": [
+      0,
+      3
+    ],
+    "bands": [
+      {
+        "max": 1,
+        "label": "low"
+      },
+      {
+        "max": 3,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "high"
+      }
+    ]
+  },
+  "stress_level": {
+    "source": "StressLevelDataset.csv",
+    "column": "stress_level",
+    "note": "higher = more stress",
+    "n": 1100,
+    "range": [
+      0,
+      2
+    ],
+    "bands": [
+      {
+        "max": 0,
+        "label": "low"
+      },
+      {
+        "max": 2,
+        "label": "moderate"
+      },
+      {
+        "max": null,
+        "label": "high"
+      }
+    ]
+  }
+}

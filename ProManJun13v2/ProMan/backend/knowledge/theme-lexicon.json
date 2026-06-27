@@ -29,6 +29,10 @@
     "workLife": ["work.life", "overtime", "burnout", "overwork", "balance", "personal time", "recovery", "off.hours"],
     "interpersonal": ["colleague", "coworker", "team", "supervisor", "manager", "workplace.relat", "conflict", "professional"]
   },
+  "intensity": {
+    "severe": ["severe", "severely", "profound", "profoundly", "marked", "markedly", "debilitating", "extreme", "extremely", "intense", "crippling", "pervasive"],
+    "mild": ["mild", "mildly", "slight", "slightly", "minimal", "minimally", "subclinical", "minor", "occasional", "occasionally"]
+  },
   "patterns": {
     "priorHistory": "(history of|prior (treatment|episode|counsel|therapy|assess|evaluat)|previous (counsel|therapy|treatment|episode|assess)|past (mental|psych|treatment|counsel|episode)|recurrent|longstanding)",
     "developDelay": "(developmental.*(delay|concern|history|milestone)|delay.*(develop|milestone|speech|motor|language)|milestone.*(delay|concern|not.*met|behind))",

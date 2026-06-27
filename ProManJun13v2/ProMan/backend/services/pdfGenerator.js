@@ -49,9 +49,11 @@ const PARA_INDENT = 24;      // first-line paragraph indent (preserved)
 const _CAMBRIA = 'C:\\Windows\\Fonts\\cambria.ttf';
 const _CAMBRIA_B = 'C:\\Windows\\Fonts\\cambriab.ttf';
 const _CAMBRIA_I = 'C:\\Windows\\Fonts\\cambriai.ttf';
+const _CAMBRIA_BI = 'C:\\Windows\\Fonts\\cambriaz.ttf';
 const FONT_REGULAR = fs.existsSync(_CAMBRIA)   ? _CAMBRIA   : 'Times-Roman';
 const FONT_BOLD    = fs.existsSync(_CAMBRIA_B) ? _CAMBRIA_B : 'Times-Bold';
 const FONT_ITALIC  = fs.existsSync(_CAMBRIA_I) ? _CAMBRIA_I : 'Times-Italic';
+const FONT_BOLD_ITALIC = fs.existsSync(_CAMBRIA_BI) ? _CAMBRIA_BI : 'Times-BoldItalic';
 
 const PdfGenerator = {
   async generate(report, sections, assessmentData, approvals, options = {}) {
@@ -199,7 +201,7 @@ const PdfGenerator = {
     const dateIssued = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const certAddress    = this._esc(options.certAddress    || '');
     const certPurpose    = this._esc(options.certPurpose    || '');
-    const certImpression = this._esc(options.certImpression || '');
+    const certImpression = this._esc(this._capitalizeSentences(options.certImpression || ''));
     const certValidity   = this._esc(options.certValidity   || '');
     const certLicenseNo  = this._esc(options.certLicenseNo  || '');
     const certPtrNo      = this._esc(options.certPtrNo      || '');
@@ -216,7 +218,7 @@ const PdfGenerator = {
           <p class="cert-intro">
             This is to certify that <strong>${this._esc(report.client_name || '')}</strong>${certAddress ? ', of <strong>' + certAddress + '</strong>' : ''},
             was examined and evaluated at <strong>Barcarse Psychological Services</strong>,
-            Psychological Assessment Section, Sampaloc, Manila, Philippines.
+            Sampaloc, Manila, Philippines.
           </p>
 
           <p class="cert-intro">
@@ -224,7 +226,7 @@ const PdfGenerator = {
             the psychological impression noted is as follows:
           </p>
 
-          <div style="border:1px solid #E4E7EC;border-radius:6px;padding:12px 16px;margin:12px 0;background:#F8FAFC;font-size:11.5px;color:#1B2230;line-height:1.7;">
+          <div style="border:1px solid #E4E7EC;border-radius:6px;padding:12px 16px;margin:12px 0;background:#F8FAFC;font-size:12pt;color:#000000;line-height:1.7;font-weight:700;font-style:italic;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;">
             ${certImpression || '<em style="color:#98A2B3;">(Psychological impression / diagnosis not specified)</em>'}
           </div>
 
@@ -243,7 +245,7 @@ const PdfGenerator = {
               <div class="cert-sig-line"></div>
               <div class="cert-sig-name">${approvedByName || '________________________________'}</div>
               <div class="cert-sig-role">Licensed Psychologist</div>
-              <div style="font-size:9px;color:#475467;margin-top:6px;line-height:1.8;">
+              <div style="font-size:12pt;color:#000000;margin-top:6px;line-height:1.8;">
                 Barcarse Psychological Services – Psychological Assessment Section<br>
                 Psychologist License No.: ${certLicenseNo || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}<br>
                 License Valid Until: ${certLicValid || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}<br>
@@ -270,7 +272,7 @@ const PdfGenerator = {
   /* A4 portrait, 1-inch margins on all sides */
   @page { size: A4 portrait; margin: 1in; }
 
-  body { font-family: 'Cambria', 'Times New Roman', Times, serif; font-size: 12pt; color: #475467; line-height: 1.15; }
+  body { font-family: 'Cambria', Georgia, serif; font-size: 12pt; color: #000000; line-height: 1.15; }
 
   /* CONFIDENTIAL watermark on every page — sized and centred so the full word
      is always visible (never clipped) regardless of page content length. */
@@ -283,7 +285,7 @@ const PdfGenerator = {
      Horizontal padding is 0 so content aligns to the 1-inch @page margin. */
   .letterhead { display: flex; align-items: center; gap: 18px; padding: 0 0 12px; }
   .lh-logo { width: 88px; height: 88px; border-radius: 50%; flex: 0 0 auto; object-fit: cover; }
-  .lh-text { flex: 1; font-family: 'Cambria', Georgia, 'Times New Roman', serif; color: #1B2230; }
+  .lh-text { flex: 1; font-family: 'Cambria', Georgia, serif; color: #1B2230; }
   .lh-org { font-size: 25px; font-weight: 700; line-height: 1.05; }
   .lh-rule { border-bottom: 1.5px solid #1B2230; margin: 5px 0 6px; }
   .lh-line { font-size: 14px; line-height: 1.35; color: #1B2230; }
@@ -301,17 +303,12 @@ const PdfGenerator = {
 
   .content { padding: 16px 0; position: relative; z-index: 1; }
 
-  .client-info { border: 1px solid #E4E7EC; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; background: #F8FAFC; }
-  .client-info h3 { font-size: 11px; color: #1E3A8A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 700; border-bottom: 1px solid #E4E7EC; padding-bottom: 4px; }
-  .client-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; }
-  .client-field { font-size: 10px; }
-  .client-field strong { color: #1B2230; font-weight: 600; }
-
   .section { margin-bottom: 12px; }
   /* Avoid orphaned headings: keep the title with the content that follows it */
   .section h2 { font-size: 13pt; color: #1E3A8A; text-transform: uppercase; text-align: left; letter-spacing: 0.8px; font-weight: 700; padding-bottom: 4px; border-bottom: 2px solid #C0922E; margin-top: 12px; margin-bottom: 8px; page-break-after: avoid; }
-  /* Body text: 12pt, justified, 1.15 line spacing with clean paragraph separation */
-  .section-content { font-size: 12pt; color: #475467; line-height: 1.15; text-align: justify; }
+  /* Body text: 12pt, justified, 1.15 line spacing with clean paragraph separation.
+     All body/narrative text is rendered black for readability. */
+  .section-content { font-size: 12pt; color: #000000; line-height: 1.15; text-align: justify; }
   .section-content p { margin: 0 0 7px; }
   .section-content p:last-child { margin-bottom: 0; }
   /* First-line indent for narrative paragraphs (not lists, tables or signatures) */
@@ -321,34 +318,36 @@ const PdfGenerator = {
 
   .signatures { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 12px; border-top: 2px solid #C0922E; page-break-inside: avoid; }
   .sig-block { width: 45%; }
-  .sig-label { font-size: 9px; color: #98A2B3; margin-bottom: 24px; }
-  .sig-line { border-bottom: 1px solid #1B2230; margin-bottom: 6px; }
-  .sig-name { font-size: 11px; font-weight: 700; color: #1B2230; }
-  .sig-title { font-size: 8px; color: #98A2B3; }
+  /* Signature labels use 12pt Cambria, black */
+  .sig-label { font-size: 12pt; color: #000000; margin-bottom: 24px; }
+  .sig-line { border-bottom: 1px solid #000000; margin-bottom: 6px; }
+  .sig-name { font-size: 12pt; font-weight: 700; color: #000000; }
+  .sig-title { font-size: 10pt; color: #000000; }
 
-  .pdf-footer { text-align: center; font-size: 7px; color: #98A2B3; margin-top: 16px; padding-top: 6px; border-top: 1px solid #E4E7EC; }
+  .pdf-footer { text-align: center; font-size: 7px; color: #000000; margin-top: 16px; padding-top: 6px; border-top: 1px solid #E4E7EC; }
 
   /* Tables span the full content width with visible borders on every cell.
      The header row repeats across page breaks and rows never split. */
   .tools-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 12pt; page-break-inside: auto; }
   .tools-table thead { display: table-header-group; }
   .tools-table tr { page-break-inside: avoid; }
-  .tools-table th { background: #1E3A8A; color: #ffffff; text-align: center; padding: 6px 8px; font-weight: 700; font-size: 12pt; letter-spacing: 0.3px; border: 1px solid #1B2230; }
-  .tools-table td { padding: 5px 8px; border: 1px solid #C9CDD4; color: #475467; vertical-align: top; font-size: 12pt; }
+  .tools-table th { background: #1E3A8A; color: #ffffff; text-align: center; vertical-align: middle; padding: 6px 8px; font-weight: 700; font-size: 12pt; letter-spacing: 0.3px; border: 1px solid #1B2230; }
+  /* Table content: 12pt Cambria, black, centred horizontally and vertically */
+  .tools-table td { padding: 5px 8px; border: 1px solid #C9CDD4; color: #000000; text-align: center; vertical-align: middle; font-size: 12pt; }
   .tools-table tbody tr:nth-child(even) { background: #F8FAFC; }
   .tools-table .tool-name-col { width: 26%; }
-  .tools-table .tool-name-col strong { color: #1B2230; font-weight: 600; }
-  .tools-table .tool-notes-col { color: #475467; }
+  .tools-table .tool-name-col strong { color: #000000; font-weight: 600; }
+  .tools-table .tool-notes-col { color: #000000; }
 
   /* Mental Health Certificate page */
   .certificate-page { page-break-before: always; }
-  .cert-intro { font-size: 10.5px; color: #475467; line-height: 1.5; text-align: justify; margin-bottom: 18px; }
+  .cert-intro { font-size: 12pt; color: #000000; line-height: 1.5; text-align: justify; margin-bottom: 18px; }
   .cert-staff-grid { display: flex; flex-wrap: wrap; gap: 28px 40px; margin-top: 28px; }
   .cert-staff-block { width: 42%; min-width: 220px; }
-  .cert-sig-line { border-bottom: 1px solid #1B2230; height: 28px; margin-bottom: 6px; }
-  .cert-sig-name { font-size: 11px; font-weight: 700; color: #1B2230; }
-  .cert-sig-role { font-size: 8.5px; color: #98A2B3; }
-  .cert-staff-empty { font-size: 10px; color: #98A2B3; font-style: italic; }
+  .cert-sig-line { border-bottom: 1px solid #000000; height: 28px; margin-bottom: 6px; }
+  .cert-sig-name { font-size: 12pt; font-weight: 700; color: #000000; }
+  .cert-sig-role { font-size: 12pt; color: #000000; }
+  .cert-staff-empty { font-size: 10px; color: #000000; font-style: italic; }
 </style>
 </head>
 <body>
@@ -363,16 +362,6 @@ const PdfGenerator = {
   </div>
 
   <div class="content">
-    <div class="client-info">
-      <h3>Client Information</h3>
-      <div class="client-grid">
-        <div class="client-field"><strong>Full Name:</strong> ${this._esc(report.client_name || 'N/A')}</div>
-        <div class="client-field"><strong>Age:</strong> ${report.client_age ? report.client_age + ' years old' : 'N/A'}</div>
-        <div class="client-field"><strong>Gender:</strong> ${this._esc(report.client_gender || 'N/A')}</div>
-        <div class="client-field"><strong>Date of Assessment:</strong> ${assessDate}</div>
-      </div>
-    </div>
-
     ${sectionsHtml}
 
     ${toolsHtml}
@@ -455,28 +444,9 @@ const PdfGenerator = {
         doc.fillColor(COLORS.dark);
         doc.y += 10;
 
-        // ── Client Info Box (compact) ──
-        const cY = doc.y;
-        const col2X = left + contentW * 0.55;   // second column label x
-        doc.rect(left, cY, contentW, 52)
-           .lineWidth(0.5).strokeColor(COLORS.border).fillColor(COLORS.bgLight).fillAndStroke();
-        doc.fontSize(8).fillColor(COLORS.primary).font(FONT_BOLD)
-           .text('CLIENT INFORMATION', left + 10, cY + 5);
-        doc.font(FONT_REGULAR).fontSize(8).fillColor(COLORS.dark);
-        let rowY = cY + 18;
-        doc.font(FONT_BOLD).text('Full Name:', left + 10, rowY);
-        doc.font(FONT_REGULAR).text(report.client_name || 'N/A', left + 72, rowY);
-        doc.font(FONT_BOLD).text('Age:', col2X, rowY);
-        doc.font(FONT_REGULAR).text(report.client_age ? `${report.client_age} years old` : 'N/A', col2X + 32, rowY);
-        rowY += 14;
-        doc.font(FONT_BOLD).text('Gender:', left + 10, rowY);
-        doc.font(FONT_REGULAR).text(report.client_gender || 'N/A', left + 72, rowY);
-        doc.font(FONT_BOLD).text('Date:', col2X, rowY);
-        const dateStr = report.date_of_assessment
-          ? new Date(report.date_of_assessment).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
-          : 'N/A';
-        doc.font(FONT_REGULAR).text(dateStr, col2X + 32, rowY);
-        doc.y = cY + 58;
+        // The client summary box was intentionally removed: the same client
+        // details already appear in "I. IDENTIFYING INFORMATION", so the body
+        // now flows straight from the title block into the numbered sections.
 
         // ── Sections ──
         // Titles are numbered with Roman numerals (I., II., III., …) in document
@@ -526,17 +496,23 @@ const PdfGenerator = {
         // SAME fixed y-offsets so the layout is byte-for-byte identical no
         // matter which names are present — this keeps the signature panel
         // aligned for every viewer and after the file is passed between staff.
-        const SIG_BLOCK_HEIGHT = 64;
+        // Signature labels + names use 12pt Cambria in black; role captions sit
+        // just beneath at 9pt and may wrap to a second line. Fixed y-offsets keep
+        // all three columns byte-for-byte aligned regardless of which names exist.
+        const SIG_BLOCK_HEIGHT = 92;
         if (doc.y + SIG_BLOCK_HEIGHT > bottomLimit) { doc.addPage(); this._pdfPageHeader(doc, report); }
         const sY = doc.y + 6;
         doc.moveTo(left, sY).lineTo(right, sY).strokeColor(COLORS.accent).lineWidth(1).stroke();
-        const sigY = sY + 10;
+        const sigY = sY + 12;
         const _colW = contentW / 3;            // three equal columns within the content width
         const col = [left, left + _colW, left + 2 * _colW]; // x-start of each column
         const colEnd = [col[0] + _colW - 12, col[1] + _colW - 12, right];
         // Names render on a single line (no wrapping) so all three columns keep
         // identical heights and the role captions never overlap a wrapped name.
         const nameOpts = (i) => ({ width: colEnd[i] - col[i], lineBreak: false, ellipsis: true });
+        const roleOpts = (i) => ({ width: colEnd[i] - col[i] });
+        const LABEL_PT = 12, NAME_PT = 12, ROLE_PT = 9;
+        const LINE_Y = 32, NAME_Y = 36, ROLE_Y = 53;
 
         // When a single Psychologist prepared, reviewed AND approved the report
         // (solo flow — all three names identical), combine them into ONE signatory
@@ -545,27 +521,27 @@ const PdfGenerator = {
         const _soloPsych = _pName && _pName === (report.reviewed_by_name || '') && _pName === (report.approved_by_name || '');
         if (_soloPsych) {
           const lineW = contentW;
-          doc.fontSize(8).fillColor(COLORS.muted).font(FONT_REGULAR).text('Prepared, Reviewed & Approved By:', left, sigY);
-          doc.moveTo(left, sigY + 25).lineTo(left + 240, sigY + 25).strokeColor(COLORS.dark).lineWidth(0.5).stroke();
-          doc.fontSize(9).fillColor(COLORS.dark).font(FONT_BOLD).text(_pName, left, sigY + 28, { width: lineW, lineBreak: false, ellipsis: true });
-          doc.fontSize(7).fillColor(COLORS.muted).font(FONT_REGULAR).text('Psychologist', left, sigY + 42, { width: lineW });
+          doc.fontSize(LABEL_PT).fillColor('#000000').font(FONT_REGULAR).text('Prepared, Reviewed & Approved By:', left, sigY);
+          doc.moveTo(left, sigY + LINE_Y).lineTo(left + 240, sigY + LINE_Y).strokeColor('#000000').lineWidth(0.5).stroke();
+          doc.fontSize(NAME_PT).fillColor('#000000').font(FONT_BOLD).text(_pName, left, sigY + NAME_Y, { width: lineW, lineBreak: false, ellipsis: true });
+          doc.fontSize(ROLE_PT).fillColor('#000000').font(FONT_REGULAR).text('Psychologist', left, sigY + ROLE_Y, { width: lineW });
         } else {
-          doc.fontSize(8).fillColor(COLORS.muted).font(FONT_REGULAR).text('Prepared By:', col[0], sigY);
-          doc.moveTo(col[0], sigY + 25).lineTo(colEnd[0], sigY + 25).strokeColor(COLORS.dark).lineWidth(0.5).stroke();
-          doc.fontSize(9).fillColor(COLORS.dark).font(FONT_BOLD).text(report.prepared_by_name || '___________________', col[0], sigY + 28, nameOpts(0));
-          doc.fontSize(7).fillColor(COLORS.muted).font(FONT_REGULAR).text('Supervising Psychometrician', col[0], sigY + 42, nameOpts(0));
+          doc.fontSize(LABEL_PT).fillColor('#000000').font(FONT_REGULAR).text('Prepared By:', col[0], sigY);
+          doc.moveTo(col[0], sigY + LINE_Y).lineTo(colEnd[0], sigY + LINE_Y).strokeColor('#000000').lineWidth(0.5).stroke();
+          doc.fontSize(NAME_PT).fillColor('#000000').font(FONT_BOLD).text(report.prepared_by_name || '___________________', col[0], sigY + NAME_Y, nameOpts(0));
+          doc.fontSize(ROLE_PT).fillColor('#000000').font(FONT_REGULAR).text('Supervising Psychometrician', col[0], sigY + ROLE_Y, roleOpts(0));
 
-          doc.fontSize(8).fillColor(COLORS.muted).font(FONT_REGULAR).text('Reviewed By:', col[1], sigY);
-          doc.moveTo(col[1], sigY + 25).lineTo(colEnd[1], sigY + 25).strokeColor(COLORS.dark).lineWidth(0.5).stroke();
-          doc.fontSize(9).fillColor(COLORS.dark).font(FONT_BOLD).text(report.reviewed_by_name || '___________________', col[1], sigY + 28, nameOpts(1));
-          doc.fontSize(7).fillColor(COLORS.muted).font(FONT_REGULAR).text('Quality Control Psychometrician', col[1], sigY + 42, nameOpts(1));
+          doc.fontSize(LABEL_PT).fillColor('#000000').font(FONT_REGULAR).text('Reviewed By:', col[1], sigY);
+          doc.moveTo(col[1], sigY + LINE_Y).lineTo(colEnd[1], sigY + LINE_Y).strokeColor('#000000').lineWidth(0.5).stroke();
+          doc.fontSize(NAME_PT).fillColor('#000000').font(FONT_BOLD).text(report.reviewed_by_name || '___________________', col[1], sigY + NAME_Y, nameOpts(1));
+          doc.fontSize(ROLE_PT).fillColor('#000000').font(FONT_REGULAR).text('Quality Control Psychometrician', col[1], sigY + ROLE_Y, roleOpts(1));
 
-          doc.fontSize(8).fillColor(COLORS.muted).font(FONT_REGULAR).text('Approved By:', col[2], sigY);
-          doc.moveTo(col[2], sigY + 25).lineTo(colEnd[2], sigY + 25).strokeColor(COLORS.dark).lineWidth(0.5).stroke();
-          doc.fontSize(9).fillColor(COLORS.dark).font(FONT_BOLD).text(report.approved_by_name || '___________________', col[2], sigY + 28, nameOpts(2));
-          doc.fontSize(7).fillColor(COLORS.muted).font(FONT_REGULAR).text('Psychologist', col[2], sigY + 42, nameOpts(2));
+          doc.fontSize(LABEL_PT).fillColor('#000000').font(FONT_REGULAR).text('Approved By:', col[2], sigY);
+          doc.moveTo(col[2], sigY + LINE_Y).lineTo(colEnd[2], sigY + LINE_Y).strokeColor('#000000').lineWidth(0.5).stroke();
+          doc.fontSize(NAME_PT).fillColor('#000000').font(FONT_BOLD).text(report.approved_by_name || '___________________', col[2], sigY + NAME_Y, nameOpts(2));
+          doc.fontSize(ROLE_PT).fillColor('#000000').font(FONT_REGULAR).text('Psychologist', col[2], sigY + ROLE_Y, roleOpts(2));
         }
-        doc.y = sigY + 54;
+        doc.y = sigY + 72;
 
         // ── Mental Health Certificate (separate final page, opt-in only) ──
         if (options.includeCertificate) {
@@ -609,7 +585,7 @@ const PdfGenerator = {
 
           // Footer (inside the 1-inch bottom margin band)
           const bottom = doc.page.height - 30;
-          doc.fontSize(6).fillColor(COLORS.muted).font(FONT_REGULAR);
+          doc.fontSize(6).fillColor('#000000').font(FONT_REGULAR);
           doc.text('CONFIDENTIAL — This report is confidential and intended solely for the use of the individual or entity to which it is addressed.',
             MARGIN, bottom - 8, { width: doc.page.width - 2 * MARGIN, align: 'center', lineBreak: false });
           doc.text(`Page ${i + 1} of ${pages.count}`, MARGIN, bottom, { width: doc.page.width - 2 * MARGIN, align: 'center', lineBreak: false });
@@ -750,12 +726,14 @@ const PdfGenerator = {
       if (zebra) doc.rect(left, rY, contentW, rH).fill(COLORS.bgLight);
       zebra = !zebra;
 
+      // Cell content: black, centred horizontally and vertically within the cell.
       defs.forEach((d) => {
         const isName = d.key === 'name';
-        const txt = isName ? t.name : valFor(t, d.key);
-        doc.font(isName ? FONT_BOLD : FONT_REGULAR).fontSize(fontSize)
-           .fillColor(isName ? COLORS.dark : COLORS.text)
-           .text(txt || '—', d.x + pad, rY + pad, { width: d.width - pad * 2, align: d.align });
+        const txt = (isName ? t.name : valFor(t, d.key)) || '—';
+        doc.font(isName ? FONT_BOLD : FONT_REGULAR).fontSize(fontSize).fillColor('#000000');
+        const cellH = doc.heightOfString(txt, { width: d.width - pad * 2, align: 'center' });
+        const ty = rY + Math.max(pad, (rH - cellH) / 2);
+        doc.text(txt, d.x + pad, ty, { width: d.width - pad * 2, align: 'center' });
       });
       drawCellBorders(rY, rH);
       doc.y = rY + rH;
@@ -783,7 +761,7 @@ const PdfGenerator = {
     const clientName   = report.client_name || '';
     const address      = options.certAddress    || '';
     const purpose      = options.certPurpose    || '(purpose not specified)';
-    const impression   = options.certImpression || '(psychological impression not specified)';
+    const impression   = this._capitalizeSentences(options.certImpression || '') || '(psychological impression not specified)';
     const validity     = options.certValidity   || '(validity not specified)';
     const licenseNo    = options.certLicenseNo  || '';
     const ptrNo        = options.certPtrNo      || '';
@@ -791,34 +769,52 @@ const PdfGenerator = {
     const approvedName = report.approved_by_name || '';
 
     const para = (text, opts = {}) => {
-      doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor(COLORS.text)
+      doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor('#000000')
          .text(text, left, doc.y, { width: contentW, align: 'justify', lineGap: BODY_LINE_GAP, ...opts });
       doc.y += 10;
     };
 
     // "TO WHOM IT MAY CONCERN:"
-    doc.font(FONT_BOLD).fontSize(BODY_FONT_PT).fillColor(COLORS.dark)
+    doc.font(FONT_BOLD).fontSize(BODY_FONT_PT).fillColor('#000000')
        .text('TO WHOM IT MAY CONCERN:', left, doc.y, { width: contentW });
     doc.y += 14;
 
     // Certification body
     const addressPart = address ? `, of ${address},` : '';
-    para(`This is to certify that ${clientName}${addressPart} was examined and evaluated at Barcarse Psychological Services, Psychological Assessment Section, Sampaloc, Manila, Philippines.`);
+    para(`This is to certify that ${clientName}${addressPart} was examined and evaluated at Barcarse Psychological Services, Sampaloc, Manila, Philippines.`);
 
     para(`Based on the results of the psychological evaluation conducted on ${assessDate}, the psychological impression noted is as follows:`);
 
-    // Impression box
+    // ── Psychological Impression / Diagnosis box (dynamic height) ──
+    // The box grows with the statement: its height is the measured wrapped text
+    // height plus uniform padding — no fixed height. Border/padding stay constant
+    // at any height, text wraps and multiple paragraphs are accommodated, and the
+    // following content is pushed below the box so it can never overlap.
+    const IMP_PAD = 10;                   // uniform inner padding (top & bottom)
+    const IMP_MIN_H = 64;                 // minimum height so short text has room to centre
+    const IMP_TEXT_W = contentW - 24;     // 12pt inset on each side (constant)
+    // Measure with the SAME font/size used to render, so the computed height
+    // matches the wrapped text exactly (bold-italic is wider than the regular
+    // body font — measuring with the wrong font under-counted lines and clipped).
+    doc.font(FONT_BOLD_ITALIC).fontSize(BODY_FONT_PT);
+    const impTextH = doc.heightOfString(impression, { width: IMP_TEXT_W, align: 'center' });
+    const impH = Math.max(impTextH + IMP_PAD * 2, IMP_MIN_H);
+    // If the (possibly tall) box would run past the bottom margin, start a fresh
+    // page first so it is never clipped at the page edge.
+    if (doc.y + impH > doc.page.height - MARGIN) { doc.addPage(); doc.y = MARGIN; }
     const impY = doc.y;
-    const impH = doc.heightOfString(impression, { width: contentW - 24 }) + 16;
     doc.rect(left, impY, contentW, impH)
        .lineWidth(0.5).strokeColor(COLORS.border).fillColor(COLORS.bgLight).fillAndStroke();
-    doc.font(FONT_ITALIC).fontSize(BODY_FONT_PT).fillColor(COLORS.dark)
-       .text(impression, left + 12, impY + 8, { width: contentW - 24, align: 'justify' });
+    // Text is centred horizontally (align) and vertically centred within whatever
+    // extra space the box has (the box may be taller than the text via IMP_MIN_H).
+    const impTextY = impY + Math.max(IMP_PAD, (impH - impTextH) / 2);
+    doc.font(FONT_BOLD_ITALIC).fontSize(BODY_FONT_PT).fillColor('#000000')
+       .text(impression, left + 12, impTextY, { width: IMP_TEXT_W, align: 'center' });
     doc.y = impY + impH + 12;
 
     para(`This certificate is issued upon the request of ${clientName} for ${purpose} purposes only, and is valid until ${validity}.`);
 
-    doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor(COLORS.text)
+    doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor('#000000')
        .text(`Date Issued: `, left, doc.y, { continued: true })
        .font(FONT_BOLD).text(dateIssued);
     doc.y += 24;
@@ -831,15 +827,17 @@ const PdfGenerator = {
     doc.moveTo(left, doc.y).lineTo(sigLineEnd, doc.y).strokeColor(COLORS.dark).lineWidth(0.5).stroke();
     doc.y += 4;
 
+    // Signatory credentials use the 12pt body font size for consistency with the
+    // report body (line spacing bumped to fit the larger text; layout preserved).
     if (approvedName) {
-      doc.font(FONT_BOLD).fontSize(10).fillColor(COLORS.dark).text(approvedName, left, doc.y, { width: 260 });
-      doc.y += 13;
+      doc.font(FONT_BOLD).fontSize(BODY_FONT_PT).fillColor('#000000').text(approvedName, left, doc.y, { width: 320 });
+      doc.y += 16;
     }
-    doc.font(FONT_REGULAR).fontSize(9).fillColor(COLORS.text);
-    doc.text('Licensed Psychologist', left, doc.y, { width: 320 }); doc.y += 11;
-    doc.text('Barcarse Psychological Services – Psychological Assessment Section', left, doc.y, { width: 380 }); doc.y += 11;
-    doc.text(`Psychologist License No.: ${licenseNo}`, left, doc.y); doc.y += 11;
-    doc.text(`License Valid Until: ${licValid}`, left, doc.y); doc.y += 11;
+    doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor('#000000');
+    doc.text('Licensed Psychologist', left, doc.y, { width: 380 }); doc.y += 15;
+    doc.text('Barcarse Psychological Services – Psychological Assessment Section', left, doc.y, { width: 420 }); doc.y += 15;
+    doc.text(`Psychologist License No.: ${licenseNo}`, left, doc.y); doc.y += 15;
+    doc.text(`License Valid Until: ${licValid}`, left, doc.y); doc.y += 15;
     doc.text(`PTR No.: ${ptrNo}`, left, doc.y);
   },
 
@@ -862,7 +860,7 @@ const PdfGenerator = {
   // a first-line indent via the `.narrative` modifier; single-newline lines inside
   // a paragraph are preserved as <br> (e.g. the Identifying Information list).
   _paragraphsHtml(content, indent) {
-    const paras = String(content || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    const paras = String(this._capitalizeSentences(content) || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     const cls = `section-content${indent ? ' narrative' : ''}`;
     if (!paras.length) return `<div class="${cls}"><p>(No content)</p></div>`;
     const inner = paras.map(p => `<p>${this._esc(p).replace(/\n/g, '<br>')}</p>`).join('');
@@ -877,8 +875,8 @@ const PdfGenerator = {
     const PARA_GAP = 4;   // vertical gap between paragraphs
     const x = MARGIN;
     const width = doc.page.width - 2 * MARGIN;
-    doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor(COLORS.text);
-    const paras = String(content || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    doc.font(FONT_REGULAR).fontSize(BODY_FONT_PT).fillColor('#000000');
+    const paras = String(this._capitalizeSentences(content) || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     if (!paras.length) {
       doc.text('(No content)', x, doc.y, { width, align: 'justify', lineGap: BODY_LINE_GAP });
       return;
@@ -887,6 +885,38 @@ const PdfGenerator = {
       doc.text(p, x, doc.y, { width, align: 'justify', lineGap: BODY_LINE_GAP, indent: indent ? PARA_INDENT : 0 });
       if (i < paras.length - 1) doc.y += PARA_GAP;
     });
+  },
+
+  // Normalize sentence capitalization for narrative text WITHOUT altering wording.
+  // It only ever UPPERCASES a sentence-initial letter that is lowercase; it never
+  // lowercases anything, so existing proper capitalization (names, places,
+  // organizations, tests, diagnoses, titles) and acronyms / clinical terms
+  // (BPS, ADHD, ASD, WAIS-IV, DSM-5-TR, …) are preserved exactly as written.
+  _capitalizeSentences(content) {
+    if (content === null || content === undefined) return content;
+    let text = String(content);
+
+    // Abbreviations that end with a period but usually do NOT end a sentence —
+    // the following word must not be capitalized after these.
+    const ABBR = new Set(['e.g', 'i.e', 'etc', 'vs', 'cf', 'al', 'viz', 'resp', 'no', 'fig']);
+    const precededByAbbr = (str, periodIdx) => {
+      const before = str.slice(0, periodIdx);
+      const m = before.match(/([A-Za-z][A-Za-z.]*)$/);
+      if (!m) return false;
+      const tok = m[1].replace(/\.+$/, '').toLowerCase();
+      return ABBR.has(tok);
+    };
+
+    // 1) Capitalize the first letter after a sentence terminator (. ! ?),
+    //    allowing an optional closing quote/bracket, then whitespace.
+    text = text.replace(/([.!?]["'”’)\]]?\s+)([a-z])/g, (match, sep, ch, offset) =>
+      precededByAbbr(text, offset) ? match : sep + ch.toUpperCase());
+
+    // 2) Capitalize the first letter at the start of the text and each new line.
+    text = text.replace(/(^|\n)([ \t>"'(\[]*)([a-z])/g, (m, br, lead, ch) =>
+      br + lead + ch.toUpperCase());
+
+    return text;
   },
 
   // Convert a positive integer to a Roman numeral (1 → I, 4 → IV, 9 → IX, …).
@@ -973,10 +1003,13 @@ const PdfGenerator = {
       const rY = doc.y;
       if (zebra) doc.rect(left, rY, contentW, rH).fill(COLORS.bgLight);
       zebra = !zebra;
+      // Cell content: black, centred horizontally and vertically within the cell.
       defs.forEach((d, ci) => {
-        doc.font(ci === 0 ? FONT_BOLD : FONT_REGULAR).fontSize(fontSize)
-           .fillColor(ci === 0 ? COLORS.dark : COLORS.text)
-           .text(row[ci] || '—', d.x + pad, rY + pad, { width: d.width - pad * 2 });
+        const txt = row[ci] || '—';
+        doc.font(ci === 0 ? FONT_BOLD : FONT_REGULAR).fontSize(fontSize).fillColor('#000000');
+        const cellH = doc.heightOfString(txt, { width: d.width - pad * 2, align: 'center' });
+        const ty = rY + Math.max(pad, (rH - cellH) / 2);
+        doc.text(txt, d.x + pad, ty, { width: d.width - pad * 2, align: 'center' });
       });
       drawCellBorders(rY, rH);
       doc.y = rY + rH;

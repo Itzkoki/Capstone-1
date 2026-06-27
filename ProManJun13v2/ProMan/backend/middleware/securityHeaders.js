@@ -74,7 +74,11 @@ function blockSensitiveStatic(req, res, next) {
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
-  "object-src 'none'",
+  // Chrome renders an in-<iframe> PDF through its built-in PDF plugin, which CSP
+  // governs via object-src. `'none'` here makes the report preview show
+  // "This content is blocked". Allow only same-origin + blob objects (the app's
+  // own generated PDFs) — legacy/remote plugins are still blocked.
+  "object-src 'self' blob:",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.docuseal.com https://cdnjs.cloudflare.com https://unpkg.com https://www.google.com https://www.gstatic.com",
@@ -82,7 +86,12 @@ const CSP = [
   "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' http://localhost:5000 ws://localhost:5000 https://cdn.docuseal.com https://api.docuseal.com https://www.google.com https://nominatim.openstreetmap.org",
-  "frame-src 'self' https://cdn.docuseal.com https://docuseal.com https://www.google.com https://www.openstreetmap.org",
+  // `blob:` is required so the app can preview its OWN generated report PDFs:
+  // the frontend fetches /reports/:id/pdf, wraps the bytes in a Blob and loads
+  // the blob: URL into the preview <iframe>. Without it Chromium refuses the
+  // frame ("This content is blocked"). This does NOT relax clickjacking
+  // protection — frame-ancestors/X-Frame-Options still govern who may frame us.
+  "frame-src 'self' blob: https://cdn.docuseal.com https://docuseal.com https://www.google.com https://www.openstreetmap.org",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
 ].join('; ');

@@ -36,9 +36,13 @@ const auditRoutes        = require('./routes/audit');
 const moduleOtpRoutes    = require('./routes/moduleOtp');
 
 const { activityLogger } = require('./middleware/activityLogger');
+const { securityHeaders, blockSensitiveStatic } = require('./middleware/securityHeaders');
 const runMigrations      = require('./migrations');
 
 const app = express();
+
+// Never advertise the framework/version (reduces fingerprinting in DevTools).
+app.disable('x-powered-by');
 
 // ── Proxy compatibility ────────────────────────────────
 // Behind AWS load-balancer / reverse-proxy infrastructure, trust the first
@@ -46,14 +50,39 @@ const app = express();
 // X-Forwarded-For header) rather than the proxy's address.
 app.set('trust proxy', 1);
 
-// ── Middleware ─────────────────────────────────────────
-app.use(cors());
+// ── Security headers (incl. anti-clickjacking) on every response ──
+app.use(securityHeaders);
+
+// ── CORS ───────────────────────────────────────────────
+// The frontend is served from the SAME origin as the API, so same-origin
+// requests need no CORS at all. We still configure an explicit allowlist for
+// any local tooling / alternate dev origins instead of the previous wide-open
+// `cors()` which reflected every origin.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS
+  || 'http://localhost:5000,http://127.0.0.1:5000')
+  .split(',').map((o) => o.trim()).filter(Boolean);
+app.use(cors({
+  origin(origin, cb) {
+    // Allow non-browser / same-origin requests (no Origin header) and the allowlist.
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
+  credentials: true,
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(activityLogger);
 
 // ── Serve frontend static files ───────────────────────
-app.use(express.static(path.join(__dirname, '..')));
+// blockSensitiveStatic refuses requests for backend source, .env, SQL dumps,
+// logs, datasets, etc. BEFORE they reach the static handler — otherwise the
+// project root (which contains /backend) would expose secrets.
+app.use(blockSensitiveStatic);
+app.use(express.static(path.join(__dirname, '..'), {
+  dotfiles: 'deny',
+  index: ['landingpage.html', 'index.html'],
+}));
 
 // ── Serve the FingerprintJS browser bundle from node_modules ──
 // Frontend loads /vendor/fingerprintjs/fp.umd.min.js to compute a device ID.

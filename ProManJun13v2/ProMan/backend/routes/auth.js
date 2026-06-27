@@ -1,11 +1,14 @@
 const express  = require('express');
 const router   = express.Router();
-const { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken } = require('../controllers/authController');
+const { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken, logout } = require('../controllers/authController');
 const { registerRules, loginRules, verifyEmailRules, resendOtpRules, forgotPasswordRules, resetPasswordRules, handleValidation } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 
 // GET /api/auth/verify-token
 router.get('/verify-token', authenticate, verifyToken);
+
+// POST /api/auth/logout — revokes the caller's session server-side.
+router.post('/logout', authenticate, logout);
 
 // POST /api/auth/register
 router.post('/register', registerRules, handleValidation, register);

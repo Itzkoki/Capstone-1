@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node test/ruleEngine.golden.js && node test/themeDetection.test.js",
+    "test:update": "node test/ruleEngine.golden.js --update"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

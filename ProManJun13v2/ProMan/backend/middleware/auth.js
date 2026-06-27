@@ -10,6 +10,45 @@ function sessionTerminated(decoded, invalidAfter) {
   return issuedMs < new Date(invalidAfter).getTime();
 }
 
+// ── Account-status cache (RTT optimization) ──────────────────────────────────
+// Every authenticated request used to make a DB round-trip (Staff/User.findById)
+// purely to re-check is_active + sessions_invalid_after. Staff modules fire many
+// requests per screen, so that round-trip dominated their latency. We cache the
+// minimal status fields per account for a few seconds: deactivation / logout
+// still take effect almost immediately (within the TTL, and instantly for the
+// acting account because logout clears its own entry), while the common case
+// skips the query entirely.
+const STATUS_TTL_MS = 15000;
+const statusCache = new Map(); // key `${type}:${id}` -> { exp, is_active, sessions_invalid_after }
+
+function cacheKey(type, id) {
+  return `${type === 'staff' ? 'staff' : 'user'}:${id}`;
+}
+
+async function getAccountStatus(type, id) {
+  const key = cacheKey(type, id);
+  const hit = statusCache.get(key);
+  if (hit && hit.exp > Date.now()) return hit;
+
+  const record = type === 'staff' ? await Staff.findById(id) : await User.findById(id);
+  const status = {
+    exp: Date.now() + STATUS_TTL_MS,
+    exists: !!record,
+    // Staff use a strict truthy is_active; clients default-allow unless explicitly false.
+    is_active: type === 'staff' ? !!(record && record.is_active)
+                                : !!(record && record.is_active !== false),
+    sessions_invalid_after: record ? record.sessions_invalid_after : null,
+  };
+  statusCache.set(key, status);
+  return status;
+}
+
+// Called by logout / deactivation paths so the change is reflected immediately
+// rather than after the TTL.
+function invalidateAccountCache(type, id) {
+  statusCache.delete(cacheKey(type, id));
+}
+
 /**
  * JWT authentication middleware.
  * Extracts the Bearer token from the Authorization header, verifies it, and
@@ -46,50 +85,28 @@ const authenticate = async (req, res, next) => {
 
   req.user = { id: decoded.id, email: decoded.email, role: decoded.role, type: decoded.type };
 
-  // Live deactivation / session-termination check for staff accounts.
-  if (decoded.type === 'staff') {
-    try {
-      const staff = await Staff.findById(decoded.id);
-      if (!staff || !staff.is_active) {
-        return res.status(401).json({
-          success: false,
-          message: 'Your account has been suspended. Please contact the moderator.',
-          deactivated: true,
-        });
-      }
-      if (sessionTerminated(decoded, staff.sessions_invalid_after)) {
-        return res.status(401).json({
-          success: false,
-          message: 'Your session has ended. Please sign in again.',
-          session_terminated: true,
-        });
-      }
-    } catch (err) {
-      return next(err);
+  // Live suspension / session-termination check (staff AND clients). This is
+  // what makes "Suspend Account", "Require MFA Authentication" and logout take
+  // effect in real time: an existing token is rejected on its next request.
+  // Backed by a short-lived status cache to avoid a DB round-trip per request.
+  try {
+    const status = await getAccountStatus(decoded.type, decoded.id);
+    if (!status.exists || !status.is_active) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account has been suspended. Please contact the moderator.',
+        deactivated: true,
+      });
     }
-  } else {
-    // Live suspension / session-termination check for client accounts. This is
-    // what makes "Suspend Account" and "Require MFA Authentication" take effect
-    // in real time: an existing token is rejected on its very next request.
-    try {
-      const user = await User.findById(decoded.id);
-      if (!user || user.is_active === false) {
-        return res.status(401).json({
-          success: false,
-          message: 'Your account has been suspended. Please contact the moderator.',
-          deactivated: true,
-        });
-      }
-      if (sessionTerminated(decoded, user.sessions_invalid_after)) {
-        return res.status(401).json({
-          success: false,
-          message: 'Your session has ended. Please sign in again.',
-          session_terminated: true,
-        });
-      }
-    } catch (err) {
-      return next(err);
+    if (sessionTerminated(decoded, status.sessions_invalid_after)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your session has ended. Please sign in again.',
+        session_terminated: true,
+      });
     }
+  } catch (err) {
+    return next(err);
   }
 
   next();
@@ -112,4 +129,4 @@ const optionalAuthenticate = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, optionalAuthenticate };
+module.exports = { authenticate, optionalAuthenticate, invalidateAccountCache };

@@ -27,6 +27,7 @@
  */
 const User = require('../models/User');
 const Staff = require('../models/Staff');
+const { invalidateAccountCache } = require('../middleware/auth');
 
 // Resolve the incident's subject account from the correct table.
 async function resolveSubject(incident) {
@@ -51,6 +52,9 @@ async function resolveSubject(incident) {
 async function terminateSessions(subject) {
   if (subject.kind === 'staff') await Staff.invalidateSessions(subject.id);
   else await User.invalidateSessions(subject.id);
+  // Clear the cached account status so the termination is effective on the very
+  // next request rather than after the authenticate cache TTL.
+  try { invalidateAccountCache(subject.kind, subject.id); } catch (_) {}
 }
 
 // Deactivate the account AND end its sessions so the block takes effect at once.
@@ -129,6 +133,7 @@ const HANDLERS = {
   async unsuspend_account(subject) {
     if (subject.kind === 'staff') await Staff.setActive(subject.id, true);
     else await User.setActive(subject.id, true);
+    try { invalidateAccountCache(subject.kind, subject.id); } catch (_) {}
     return `Account ${subject.email || '#' + subject.id} reactivated.`;
   },
 

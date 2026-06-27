@@ -1,0 +1,39 @@
+{
+  "_note": "Theme-detection knowledge (Item 2). 'themes' tokens are matched as \\b(token)\\b (regex fragments — '.' is intentional any-char, e.g. self.esteem). 'patterns' are full regex sources for the IF-THEN bridging themes. Positive matching is identical to the previous inline regexes; tokens added for Taglish only expand coverage. 'negators' suppress a match when one appears within a short window before it (e.g. 'denies anxiety', 'walang kaba').",
+  "negators": [
+    "no", "not", "never", "none", "denies", "denied", "deny", "denying", "without",
+    "absent", "lacks", "lacking", "negative for", "ruled out", "free of",
+    "hindi", "di", "wala", "walang"
+  ],
+  "themes": {
+    "mood": ["mood", "moody", "sad", "tearful", "flat", "subdued", "blunt", "low mood", "crying", "upset", "grief", "despair", "withdrawn", "malungkot", "lungkot"],
+    "anxiety": ["anxi", "worry", "worri", "nervous", "apprehens", "restless", "tense", "tension", "overthink", "panic", "phobia", "dread", "fearful", "kabado", "kaba", "balisa", "nababalisa"],
+    "depression": ["depress", "hopeless", "worthless", "empty", "anhedoni", "numb", "pleasure", "unmotivat", "helpless", "low mood", "despair", "lungkot na malalim"],
+    "attention": ["attent", "focus", "distract", "concentrat", "impuls", "hyperactiv", "inattent", "sustain", "off.task", "daydream", "wander", "redirect", "di makapag.focus"],
+    "sleep": ["sleep", "insomni", "fatigue", "tired", "exhaust", "nighttime", "wakening", "waking", "drowsy", "bedtime", "rest", "puyat", "antok", "hirap matulog"],
+    "appetite": ["appetite", "eating", "food", "weight", "hunger", "meal", "nutrition", "binge", "undereating", "overeating", "gana sa pagkain"],
+    "social": ["social", "peer", "friend", "relation", "interact", "isolat", "lonely", "loneliness", "belong", "connect", "withdrew", "avoidance", "nag.iisa", "kaibigan"],
+    "coping": ["coping", "cope", "avoidance", "suppress", "overwhelm", "manage", "resilience", "stressor"],
+    "selfEsteem": ["self.esteem", "self.worth", "self.concept", "worthless", "inadequate", "inferior", "self.criti", "confidence", "self.doubt", "kawalan ng tiwala"],
+    "emotion": ["emotion", "affect", "dysregulat", "labile", "reactive", "irritable", "frustrat", "anger", "outburst", "temper", "impulsi", "galit", "inis"],
+    "cognitive": ["cognitive", "thinking", "reasoning", "memory", "intellectual", "comprehension", "processing", "problem.solv", "abstract", "concept"],
+    "stress": ["stress", "pressure", "burden", "demand", "strain", "workload", "overwhelm", "pagod", "pressured"],
+    "psychosocial": ["family", "relational", "financial", "economic", "community", "domestic", "stressor", "life event", "caregiver", "parent", "pamilya", "magulang"],
+    "motivation": ["motivat", "initiative", "amotivat", "anhedoni", "interest", "engag", "effort", "driven", "goal", "aspir"],
+    "socialSupport": ["support", "network", "isolat", "alone", "nobody", "friend", "family", "connect", "resource", "help-seeking", "suporta"],
+    "adaptive": ["adaptive", "daily living", "self.care", "independent", "self.help", "routine", "transition", "organiz", "chore", "hygiene"],
+    "communication": ["communication", "language", "speech", "expressive", "receptive", "pragmatic", "vocabulary", "verbal", "articulation", "fluency"],
+    "sensory": ["sensory", "tactile", "auditory", "visual", "texture", "hyper.sensitiv", "hypo.sensitiv", "sensory.seek", "sensory.avoid"],
+    "academic": ["academic", "school", "learning", "study", "grade", "achievement", "class", "exam", "homework", "tutoring", "reading", "writing", "math", "paaralan"],
+    "occupational": ["work", "job", "occupational", "employment", "workplace", "role", "productivity", "career", "professional", "deadline", "task", "trabaho"],
+    "workLife": ["work.life", "overtime", "burnout", "overwork", "balance", "personal time", "recovery", "off.hours"],
+    "interpersonal": ["colleague", "coworker", "team", "supervisor", "manager", "workplace.relat", "conflict", "professional"]
+  },
+  "patterns": {
+    "priorHistory": "(history of|prior (treatment|episode|counsel|therapy|assess|evaluat)|previous (counsel|therapy|treatment|episode|assess)|past (mental|psych|treatment|counsel|episode)|recurrent|longstanding)",
+    "developDelay": "(developmental.*(delay|concern|history|milestone)|delay.*(develop|milestone|speech|motor|language)|milestone.*(delay|concern|not.*met|behind))",
+    "knowledgeWeak": "((limited|below|weak|poor|significantly reduced).*(vocabulary|knowledge|fund of|verbal ability)|(vocabulary|knowledge|fund of info).*(limited|below|weak|poor|below.expect))",
+    "organizationDiff": "(disorganized|poor.*(organiz|time management)|difficulty.*(organiz|prioriti|plan|schedul)|lack.*(organiz|structure|focus.*task)|struggled.*(manag|follow.through))",
+    "attritionRisk": "(resign|quit|leav.*(job|work|position)|turnover|attrition|dissatisf.*(work|job)|consider.*leaving|looking.*(other|new).*(opportunit|job|position)|lack.*engagement.*work)"
+  }
+}

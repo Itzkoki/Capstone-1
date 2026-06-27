@@ -41,6 +41,10 @@
 // 1. INPUT VALIDATION MODULE
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Externalized rule knowledge (Item 1). Banks/fragments migrated into the
+// knowledge/ files are served from here; not-yet-migrated content stays inline.
+const KB = require('./knowledgeBase');
+
 const KEYBOARD_PATTERNS = [
   'qwerty', 'qwertyuiop', 'asdfgh', 'asdfghjkl', 'zxcvbn', 'zxcvbnm',
   'qazwsx', 'edcrfv', 'poiuyt', 'lkjhgf', 'mnbvcx', 'plokmijn',
@@ -320,394 +324,85 @@ function _themesToSignals(themes, ttype, existing) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── MOOD / AFFECT ─────────────────────────────────────────────────────────────
-const MOOD_OBS = [
-  'presented with a generally subdued affect throughout the session, with limited range of emotional expression',
-  'demonstrated observable fluctuations in mood, alternating between periods of engagement and visible withdrawal',
-  'maintained a relatively stable affect during the assessment, though moments of flat or restricted expression were noted',
-  'displayed a constricted range of affect, with limited spontaneous emotional responsiveness during the interaction',
-  'showed signs of emotional dysregulation, including brief periods of tearfulness and difficulty modulating affective response',
-  'exhibited muted affective expression throughout the evaluation, with minimal spontaneous emotional reactivity to session content',
-  'presented with variable affective expression, demonstrating moments of genuine engagement interspersed with periods of affective blunting',
-  'displayed observable signs of mood-related fatigue, including reduced affective vitality and limited motivational investment in social interaction',
-  'demonstrated low-grade affective distress that was visually apparent throughout the session, manifested as reduced facial expressiveness and psychomotor quieting',
-  'showed a reserved and emotionally guarded presentation, with careful regulation of emotional expression across the assessment interaction',
-  // derived from Psychological_Assessment_Dataset.csv mood descriptors
-  'presented with observable low mood consistent with reported dissatisfaction and reduced engagement in daily activities across the assessment period',
-  'demonstrated emotional presentation characterized by reduced expressiveness and limited spontaneous affect that may reflect current psychosocial burden',
-  // derived from Indicators_of_Anxiety_or_Depression CSV frequency-based symptom data
-  'reported experiencing depressed mood on more days than not during the reference period, with associated functional impact on daily engagement',
-  'endorsed frequent episodes of low mood and emotional exhaustion that were corroborated by behavioral observations during the evaluation',
-];
+// Externalized to knowledge/observation-banks.json ("mood"). Served via KB so the
+// content lives in a versioned data file; rotation/use below is unchanged.
+const MOOD_OBS = KB.bank('mood');
 
 // ── ANXIETY ────────────────────────────────────────────────────────────────────
-const ANXIETY_OBS = [
-  'exhibited behavioral indicators consistent with heightened autonomic arousal, including observable restlessness and frequent self-monitoring',
-  'demonstrated signs of elevated social anxiety, showing guardedness and minimal spontaneous disclosure in interpersonal contexts',
-  'displayed somatic tension signs including shallow breathing, muscle guarding, and increased psychomotor agitation during the evaluation',
-  'showed notable anticipatory apprehension when transitioning between tasks, accompanied by increased latency in verbal responses',
-  'exhibited cognitive avoidance behaviors, particularly when topics related to perceived threat or performance demands were introduced',
-  'demonstrated somatic anxiety markers including visible muscle tension and irregular breathing patterns during periods of heightened task demand',
-  'showed behavioral indicators of anticipatory anxiety, including increased fidgeting, self-referential commentary, and repeated reassurance-seeking behavior',
-  'exhibited social evaluative anxiety responses, with notable behavioral constriction when attention was directed toward personal performance or personal history',
-  'displayed generalized tension and hypervigilance throughout the session, with heightened startle responsiveness and difficulty relaxing between task transitions',
-  'demonstrated cognitive patterns consistent with chronic worry, including repeated catastrophizing statements and difficulty maintaining a present-focused orientation',
-  // derived from Psychological_Assessment_Dataset.csv — physical anxiety symptoms field
-  'reported physical symptoms of anxiety including heart palpitations, perspiration, and shortness of breath, consistent with elevated physiological arousal',
-  'endorsed recurring episodes of somatic anxiety expression including chest tightness and trembling, corroborating elevated anxiety burden',
-  // derived from Stress_Dataset.csv — rapid heartbeat and palpitations columns
-  'demonstrated behavioral and self-reported indicators of physiological stress reactivity, including rapid heartbeat and palpitation episodes during periods of heightened demand',
-  'reported frequent experiences of anxious arousal including physical tension, restlessness, and a persistent sense of unease affecting daily functioning',
-];
+// Externalized to knowledge/observation-banks.json ("anxiety").
+const ANXIETY_OBS = KB.bank('anxiety');
 
 // ── SLEEP / SOMATIC ────────────────────────────────────────────────────────────
-const SLEEP_SOMATIC_OBS = [
-  'reported disruptions in sleep-wake patterns that were corroborated by observable fatigue and concentration lapses during the session',
-  'presented with physical indicators of inadequate rest, including reduced psychomotor speed and difficulty sustaining effortful attention',
-  'endorsed somatic complaints consistent with chronic stress load, including reported headaches, appetite irregularities, and generalized fatigue',
-  'demonstrated reduced physical vitality across the session, with observable decline in engagement and task persistence over time',
-  'reported changes in appetite and energy that, alongside behavioral observations, suggest elevated physiological stress responses',
-  'reported significant sleep onset difficulties and nighttime awakenings that were reflected in observable daytime fatigue and impaired sustained attention during the evaluation',
-  'endorsed chronic sleep disruption across multiple modalities — onset, maintenance, and early morning wakening — with associated daytime functional consequences',
-  'described somatic complaints including headaches, gastrointestinal irregularities, and generalized physical tension correlated with heightened psychosocial stress',
-  'presented with observable indicators of chronic fatigue, including reduced psychomotor tempo and difficulty maintaining alertness during cognitively demanding session phases',
-  'reported appetite and weight changes alongside disrupted sleep, suggesting a constellation of somatic indicators consistent with elevated chronic stress activation',
-  // derived from Stress_Dataset.csv — sleep problems, headaches, illness columns
-  'reported recurring headaches and frequent sleep difficulties that appeared temporally related to periods of elevated academic or occupational stress demand',
-  'endorsed somatic symptom cluster including headaches, fatigue, and sleep irregularities consistent with a chronic psychosocial stress burden',
-  // derived from Psychological_Assessment_Dataset.csv — sleep quality field
-  'described irregular sleep characterized by early morning wakening and difficulty achieving restorative rest, contributing to daytime functional compromise',
-];
+const SLEEP_SOMATIC_OBS = KB.bank('sleep_somatic');
 
 // ── MOTIVATION / ANHEDONIA ──────────────────────────────────────────────────────
-const MOTIVATION_OBS = [
-  'showed diminished initiative and reduced spontaneous engagement with presented tasks, requiring frequent external redirection',
-  'demonstrated anhedonic behavioral markers, including flat response to typically rewarding stimuli and low motivational investment in activities',
-  'exhibited variable effort and task persistence, with measurable decline in engagement as cognitive demands increased',
-  'displayed limited goal-directed behavior and reduced self-initiation across both structured and unstructured portions of the assessment',
-  'showed interest inconsistency, with selective engagement in preferred topics and marked avoidance of effortful or demanding tasks',
-  'demonstrated limited intrinsic motivation for self-initiated activities, with performance contingent primarily on external prompting and structured environmental support',
-  'showed selective engagement across the evaluation, demonstrating markedly higher task investment when activities aligned with personal interest areas compared to neutral demands',
-  'exhibited behavioral indicators of motivational depletion, including early task abandonment, frequent requests for breaks, and minimal initiative in open-ended task phases',
-  'reported subjective loss of motivation and purposefulness consistent with behavioral observations of reduced goal-directed activity and diminished future orientation',
-  'demonstrated intact motivation for preferred domains but significant motivational restriction in areas perceived as effortful, evaluative, or socially exposing',
-  // derived from Psychological_Assessment_Dataset.csv — lack of interest and enjoyable activities fields
-  'endorsed frequent loss of interest and pleasure in previously enjoyable activities, with reduced engagement in leisure and recreational pursuits over the recent period',
-  'reported difficulty sustaining motivation for daily tasks, with a notably reduced frequency of engagement in activities that previously provided satisfaction',
-  // derived from StudentPerformanceFactors.csv — motivation_level field
-  'demonstrated low academic or task motivation characterized by minimal effort investment and reduced responsiveness to achievement-oriented demands',
-];
+const MOTIVATION_OBS = KB.bank('motivation');
 
 // ── SOCIAL FUNCTIONING ──────────────────────────────────────────────────────────
-const SOCIAL_OBS = [
-  'demonstrated restricted social reciprocity, with delayed turn-taking and limited spontaneous sharing of experiences during the interaction',
-  'showed pragmatic language patterns consistent with reduced social confidence, including frequent topic disengagement and minimal eye contact',
-  'presented with intact basic communication skills but observable difficulty sustaining reciprocal social exchanges for extended periods',
-  'exhibited social withdrawal tendencies, preferring task-focused interaction over social banter and showing minimal initiation of social contact',
-  'demonstrated heightened self-consciousness in interpersonal contexts, with behavioral avoidance responses when direct social evaluation was implied',
-  'demonstrated a preference for structured, task-oriented social interaction over open-ended social banter, showing greater functional comfort in procedurally predictable exchanges',
-  'exhibited selective social responsiveness, engaging more fluidly with familiar topics and showing markedly reduced reciprocity when navigating interpersonal uncertainty',
-  'showed adequate surface-level social competence alongside observable difficulty sustaining deeper relational engagement over extended periods',
-  'demonstrated social anxiety-adjacent behaviors including prolonged gaze avoidance, careful topic monitoring, and tendency to minimize personal disclosures in the evaluation context',
-  'reported reduced frequency and quality of interpersonal connections, with observable impact on sense of belonging and social confidence in group contexts',
-  // derived from Mental Health Dataset.csv — social_weakness and days_indoors fields
-  'reported significant reduction in social engagement and community participation, with extended periods indoors and away from usual interpersonal networks',
-  'demonstrated social withdrawal consistent with prolonged stress exposure, including limited participation in peer activities and reduced initiation of interpersonal contact',
-  // derived from Stress_Dataset.csv — loneliness and isolation columns
-  'endorsed frequent experiences of loneliness and social isolation that appear to compound existing emotional difficulties and reduce available support resources',
-];
+const SOCIAL_OBS = KB.bank('social');
 
 // ── COPING MECHANISMS ────────────────────────────────────────────────────────────
-const COPING_OBS = [
-  'identified primarily avoidant coping strategies, with limited reported use of problem-focused or emotion-regulation approaches',
-  'demonstrated reliance on disengagement and cognitive suppression as primary stress management strategies during the interview',
-  'reported using social support and physical activity as adaptive coping mechanisms, though access to these resources appeared inconsistent',
-  'showed mixed coping repertoire, combining some adaptive strategies (e.g., structured routines, creative expression) with maladaptive avoidance',
-  'demonstrated limited coping flexibility, applying the same response pattern across varied stressor types regardless of context or effectiveness',
-  'reported using prayer, spiritual engagement, and community-based activities as primary coping resources, consistent with Filipino cultural norms around psychosocial resilience',
-  'demonstrated an emotion-focused coping orientation, with greater reliance on affective expression and social sharing compared to instrumental problem-solving approaches',
-  'showed limited access to evidence-informed coping strategies, relying instead on habitual avoidance and disengagement that provided short-term relief but limited longer-term resolution',
-  'described coping patterns that were contextually inconsistent, applying different strategies across similar stressors without an evaluative framework for selecting effective responses',
-  'reported that social comparison and perceived familial obligation significantly shaped coping behavior, suggesting a collectivist-influenced stress appraisal and management style',
-  // derived from Psychological_Assessment_Dataset.csv — coping strategies field
-  'reported use of physical activity and brief relaxation exercises as primary coping strategies, though consistency of application appeared variable across high-stress periods',
-  'endorsed reliance on avoidance and disengagement as primary stress responses, with limited use of problem-focused or socially-engaged coping approaches',
-  // derived from Mental Health Dataset.csv — coping_struggles and changes_habits fields
-  'reported significant difficulty managing ongoing stressors, with observable changes in daily habits and routines suggesting coping resource depletion',
-];
+const COPING_OBS = KB.bank('coping');
 
 // ── CONCENTRATION / ATTENTION ───────────────────────────────────────────────────
-const CONCENTRATION_OBS = [
-  'exhibited observable difficulty sustaining focused attention across extended task demands, with frequent off-task episodes',
-  'demonstrated inconsistent concentration, with better performance on brief, highly structured tasks compared to open-ended or lengthier activities',
-  'showed signs of attentional splitting, dividing focus between the task and environmental stimuli in a manner that disrupted task completion',
-  'presented with cognitive fatigue effects — initially adequate concentration declined noticeably across the session duration',
-  'reported subjective concentration difficulties that were corroborated by behavioral indicators of reduced working memory engagement',
-  'demonstrated observable attentional lapses during the evaluation, with periodic disorientation to task instructions requiring examiner redirection to maintain task engagement',
-  'showed working memory interference effects, with reduction in performance quality when task instructions required retention of multiple sequential steps',
-  'exhibited divided attention difficulties, demonstrating performance degradation when required to process multiple simultaneous stimulus streams',
-  'reported subjective concentration difficulties reflected in increased response time variability across similar task demands throughout the session',
-  'demonstrated adequate attentional focus during brief, clearly bounded tasks, with marked decline as session duration increased and cognitive demands accumulated',
-  // derived from Stress_Dataset.csv — trouble concentrating on academic tasks column
-  'reported difficulty concentrating on academic or work-related tasks, with stress-related cognitive interference noted as a primary contributor',
-  // derived from Indicators_of_Anxiety_or_Depression CSV — frequency-based symptom reporting
-  'endorsed frequent concentration difficulties during the reference period, consistent with current affective and stress burden impacting cognitive efficiency',
-];
+const CONCENTRATION_OBS = KB.bank('concentration');
 
 // ── COGNITIVE FUNCTIONING ───────────────────────────────────────────────────────
-const COGNITIVE_OBS = [
-  'demonstrated adequate verbal comprehension and reasoning within the context of clinical observation, without formal standardized testing',
-  'showed organized and sequential thought processes during structured questioning, though elaboration was limited',
-  'displayed concrete thinking style with limited spontaneous abstraction, consistent with developmental or educational history factors',
-  'exhibited generally intact receptive language and task comprehension, though processing speed appeared reduced under time pressure',
-  'demonstrated logical and coherent thought organization, with no evidence of thought disorder or significant formal cognitive disruption',
-  'demonstrated fluid reasoning within observationally accessible limits, with adequate capacity for categorical thinking and novel problem-solving under structured conditions',
-  'showed relative strength in verbal expressive skills compared to nonverbal processing, with language-based tasks demonstrating greater complexity and elaboration',
-  'exhibited adequate executive function indicators including basic planning, behavioral inhibition, and self-monitoring, with variable performance across cognitively complex demands',
-  'displayed concrete-to-abstract reasoning transitions that appeared effortful, with reliance on familiar schemas rather than generative problem-solving approaches',
-  'demonstrated generally organized ideation and logical reasoning within the scope of direct clinical observation, with no gross evidence of cognitive fragmentation or formal thought disorder',
-];
+const COGNITIVE_OBS = KB.bank('cognitive');
 
 // ── DEPRESSION ──────────────────────────────────────────────────────────────────
-const DEPRESSION_OBS = [
-  'displayed behavioral markers consistent with depressed mood, including diminished affective range, psychomotor slowing, and reduced expressive spontaneity throughout the session',
-  'exhibited signs of anhedonia, with endorsed loss of pleasure in previously rewarding activities and significant withdrawal from social and recreational engagement',
-  'demonstrated observable low energy and reduced initiative, with subjective reports of persistent feelings of emptiness and diminished sense of personal purpose',
-  'showed affective presentation consistent with low mood, including decreased vocalization, prolonged response latency, and reduced spontaneous eye contact with the examiner',
-  'reported pervasive feelings of worthlessness and self-blame corroborated by behavioral indicators of reduced self-efficacy and limited aspirational thinking during the evaluation',
-  'demonstrated psychomotor characteristics consistent with depressed functioning, including slowed movement tempo, minimal gestural expression, and reduced postural engagement',
-  'reported persistent mood lowering across multiple weeks that appeared independent of situational fluctuations, suggesting potential chronic affective dysregulation',
-  'exhibited cognitive correlates of low mood including difficulty generating positive future-oriented thoughts, ruminative ideation, and reduced cognitive flexibility under neutral task conditions',
-  'showed reduced social motivation and interest in interpersonal connection, with subjective reports of emotional numbness and disconnection from previously meaningful relationships',
-  'demonstrated loss of spontaneous affect across the session, with affective response requiring significant external elicitation and limited carryover between emotionally activating content',
-  // derived from Indicators_of_Anxiety_or_Depression CSV — symptom frequency data
-  'endorsed symptoms consistent with clinically significant depressive burden based on frequency and duration of reported emotional and functional difficulties during the preceding assessment period',
-  'reported persistent depressive symptoms including low mood, fatigue, reduced concentration, and diminished pleasure, consistent with elevated affective burden',
-];
+const DEPRESSION_OBS = KB.bank('depression');
 
 // ── EMOTIONAL REGULATION ─────────────────────────────────────────────────────────
-const EMOTIONAL_REGULATION_OBS = [
-  'demonstrated difficulty modulating emotional responses to mild stressors, suggesting reduced affective tolerance and limited emotional regulatory capacity under evaluative conditions',
-  'showed evidence of emotional lability, with rapid shifts in affective tone that appeared disproportionate to the situational demands encountered during the assessment',
-  'exhibited limited frustration tolerance, with observable behavioral escalation in response to perceived task failure or ambiguous evaluative feedback',
-  'demonstrated generally intact emotional regulation under low-demand conditions, though escalating task complexity was associated with observable affective dysregulation and disengagement',
-  'reported relying primarily on external co-regulation strategies, with limited capacity for independent affective self-regulation in the absence of social support',
-  'showed inconsistent emotional regulation across session phases, maintaining composure during structured tasks while demonstrating increased emotional reactivity during open-ended interview components',
-  'demonstrated emotional overcontrol as a regulatory strategy, presenting with minimal affective expression that appeared effortful rather than reflecting genuine emotional neutrality',
-  'exhibited delayed emotional recovery following minor frustrations, with residual behavioral agitation persisting into subsequent task phases',
-  'reported active use of suppression and emotional avoidance as primary regulatory strategies, which appeared to limit authentic emotional expression during the clinical interview',
-  'demonstrated emotional regulation within normal functional limits in familiar low-demand contexts, with functional breakdown occurring under conditions of novelty, social evaluation, or task failure',
-  // derived from Mental Health Dataset.csv — mood_swings field
-  'demonstrated mood variability during the session, with fluctuations in affective tone that appeared reactive to perceived demands and interpersonal cues',
-];
+const EMOTIONAL_REGULATION_OBS = KB.bank('emotional_regulation');
 
 // ── PSYCHOSOCIAL CONTEXT ──────────────────────────────────────────────────────────
-const PSYCHOSOCIAL_OBS = [
-  'identified significant family-related stressors as primary psychosocial contributors to current functional difficulties, including interpersonal conflict and perceived relational instability',
-  'reported occupational and financial concerns as salient psychosocial stressors, with observable impact on daily functioning, emotional stability, and future planning capacity',
-  'described relational difficulties within the family system that appeared to contribute substantially to the presenting functional concerns and current affective presentation',
-  'identified multiple concurrent psychosocial stressors spanning interpersonal, occupational, and economic domains, suggesting elevated cumulative stress load and reduced adaptive capacity',
-  'reported limited access to social support networks, which appeared to amplify the impact of identified psychosocial stressors on current emotional and functional status',
-  'described psychosocial history marked by significant life transitions and role disruptions that have cumulatively impacted adaptive functioning and stress resilience',
-  'reported that socioeconomic constraints substantially limit access to mental health resources, educational opportunities, and community participation, contributing to cumulative functional burden',
-  'identified school-related stressors including academic pressure, peer relational difficulties, and performance demands as significant contributors to the current presentation',
-  'described a psychosocial environment characterized by limited predictability and elevated interpersonal conflict, with observed impact on sense of safety, trust, and emotional regulation',
-  'reported that cultural and familial expectations regarding achievement, role obligations, and emotional expression contribute significantly to the experienced psychosocial burden',
-  // derived from Philippine NSMHW Report and NSMHW Project Briefer
-  'described psychosocial stressors consistent with population-level trends identified in Philippine mental health surveillance data, including economic burden, family conflict, and limited service access',
-  'reported barriers to mental health help-seeking including stigma, cost, and limited availability of culturally-sensitive services, consistent with documented challenges in the Philippine context',
-  // derived from Mental Health Dataset.csv — family_history, treatment, care_options fields
-  'disclosed a family history of mental health difficulties relevant to current risk and protective factor assessment in the context of the Philippine Mental Health Act (RA 11036)',
-];
+const PSYCHOSOCIAL_OBS = KB.bank('psychosocial');
 
 // ── STRESS INDICATORS ───────────────────────────────────────────────────────────
-const STRESS_OBS = [
-  'demonstrated physiological and behavioral indicators of chronic stress activation, including persistent tension, irritability, and reduced recovery capacity between stressor exposures',
-  'exhibited stress response patterns consistent with prolonged psychosocial burden, including diminished resilience, heightened reactivity, and impaired recovery between demands',
-  'reported cumulative stressor exposure across multiple life domains, with insufficient coping resources to adequately buffer the associated functional impact on daily performance',
-  'showed behavioral signs of stress-related functional compromise, including disruptions in sleep, appetite, concentration, and interpersonal engagement across the evaluation period',
-  'demonstrated inconsistent stress tolerance, maintaining adequate functioning under baseline conditions but showing significant behavioral deterioration under acute stressor exposure',
-  'reported chronic stress exposure related to role obligations and environmental demands, with observable impact on energy level, concentration, and overall sense of wellbeing',
-  'exhibited stress sensitization patterns, with minor stressors eliciting disproportionate behavioral responses consistent with reduced stress buffer capacity',
-  'described work- or school-related stress as the primary ongoing stressor, with reported spillover effects on sleep quality, appetite, and quality of interpersonal relationships',
-  'demonstrated behavioral stress responses including increased somatization, withdrawal, and reduced engagement in previously valued activities during periods of high demand',
-  'reported difficulty returning to baseline functioning following stressor exposure, suggesting impaired allostatic regulation and elevated cumulative stress burden',
-  // derived from StressLevelDataset.csv — composite stress_level field
-  'presented with a behavioral and self-reported profile consistent with elevated stress burden, with identifiable impact across sleep, functioning, and interpersonal engagement',
-  // derived from Stress_Dataset.csv — eustress / distress type column
-  'reported experiencing both performance-enhancing and distressing stress, with the cumulative stress load currently appearing to exceed available coping and support resources',
-];
+const STRESS_OBS = KB.bank('stress');
 
 // ── APPETITE / NUTRITIONAL FUNCTIONING ─────────────────────────────────────────
-const APPETITE_OBS = [
-  'reported notable changes in appetite and eating patterns, with associated fluctuations in energy level and physical vitality corroborated during the clinical interview',
-  'endorsed appetite disturbances consistent with stress-related eating pattern disruption, including either significant reduction or increased consumption beyond typical personal baseline',
-  'described irregular eating patterns and reduced appetite that appeared correlated with mood fluctuations and heightened psychosocial stress exposure',
-  'reported appetite changes accompanied by reduced interest in food preparation and meal planning, reflecting broader motivational and self-care deficits impacting daily living',
-  'demonstrated behavioral indicators of somatic stress response, including appetite dysregulation and gastrointestinal discomfort endorsed as recurring concerns during the clinical interview',
-  'described weight changes and altered eating frequency that appeared temporally correlated with onset of current psychosocial stressors and mood disruption',
-  'reported increased stress-related eating characterized by consumption of comfort foods and irregular meal timing, inconsistent with previous baseline eating patterns',
-  'endorsed significant reduction in appetite and food intake, with reported weight loss and reduced nutritional self-care that may contribute to observed physical fatigue and reduced vitality',
-  'demonstrated patterns of nutritional dysregulation linked to affective fluctuations, with appetite serving as a behaviorally observable indicator of overall psychosocial load',
-  'described eating pattern disruptions that fluctuated with mood and stress levels, suggesting appetite sensitivity as a somatic marker of the current psychological presentation',
-  // derived from Psychological_Assessment_Dataset.csv — appetite_change field
-  'endorsed significant changes in appetite including increased cravings and irregular meal timing correlated with current stress and mood disturbance',
-];
+const APPETITE_OBS = KB.bank('appetite');
 
 // ── SELF-CONCEPT / SELF-ESTEEM ───────────────────────────────────────────────────
-const SELF_CONCEPT_OBS = [
-  'expressed a negative self-concept characterized by heightened self-criticism, perceived personal inadequacy, and limited recognition of individual strengths and accomplishments',
-  'demonstrated reduced self-efficacy, with observable hesitancy in task initiation and repeated verbal minimization of personal capabilities throughout the evaluation',
-  'reported experiencing persistent self-doubt and difficulty attributing success to internal factors, reflecting a potentially unstable and self-critical self-concept',
-  'showed evidence of a developing but fragile sense of personal identity, with observable sensitivity to perceived evaluation and tendency toward social comparison',
-  'demonstrated generally intact self-concept under neutral conditions, though performance contexts evoked notable self-critical verbalizations and avoidance of challenging tasks',
-  'reported a pattern of negative self-attribution wherein failures are internalized and successes are attributed to external or situational factors rather than personal competence',
-  'exhibited verbal self-deprecation across multiple domains of competence, with minimal spontaneous recognition of personal strengths or past accomplishments during the interview',
-  'described identity-related uncertainty and difficulty articulating a stable sense of personal values, goals, or direction, particularly within interpersonal and occupational contexts',
-  'demonstrated behavioral self-monitoring and performance anxiety linked to perfectionistic self-standards and fear of negative evaluation by significant others',
-  'showed evidence of contingent self-worth, with self-esteem closely tied to perceived performance outcomes and interpersonal acceptance, resulting in emotional vulnerability to perceived failure',
-  // derived from StressLevelDataset.csv — self_esteem scale
-  'presented with markedly reduced self-esteem as observed through self-referential statements, task avoidance, and reluctance to articulate personal strengths or achievements',
-];
+const SELF_CONCEPT_OBS = KB.bank('self_concept');
 
 // ── SOCIAL SUPPORT ───────────────────────────────────────────────────────────────
-const SOCIAL_SUPPORT_OBS = [
-  'reported limited availability of reliable social support, with reduced access to meaningful interpersonal connections during periods of heightened psychosocial stress',
-  'described a contracted social network that provides inconsistent support, with limited reciprocal exchange of emotional validation and practical assistance when needed',
-  'identified at least one reliable support figure within the immediate family system, though broader community and peer-level support appeared insufficient for current functional needs',
-  'reported utilizing family connections as the primary source of emotional support, with limited engagement in peer networks or community-based social and recreational activities',
-  'demonstrated awareness of the importance of social support while reporting significant barriers to accessing and maintaining supportive interpersonal relationships',
-  'described reliance on a single primary support person, creating an asymmetric support dynamic that may place excessive burden on that relational resource over time',
-  'reported that cultural norms around stoicism and self-reliance have historically limited willingness to seek and accept social support from available resources',
-  'described social isolation as a current concern, with reduced participation in group activities, peer interactions, and community-level social engagement',
-  'identified peer support and shared recreational activities as potentially protective factors, though current barriers limit consistent access to these resources',
-  'reported that existing social support, while valued, does not consistently meet emotional and practical support needs, resulting in residual feelings of isolation and loneliness',
-  // derived from StressLevelDataset.csv — social_support scale
-  'endorsed low perceived social support across relational domains, with limited availability of persons who can provide consistent emotional validation and practical assistance',
-  // derived from Philippine NSMHW Report — community support systems context
-  'reported limited engagement with community-based mental health resources and support groups, reflecting the broader challenge of under-resourced community mental health infrastructure in the Philippine context',
-];
+const SOCIAL_SUPPORT_OBS = KB.bank('social_support');
 
 // ─── NEURODEVELOPMENTAL-SPECIFIC BANKS ────────────────────────────────────────
 
-const ADAPTIVE_BEHAVIOR_OBS = [
-  'demonstrated age-appropriate self-care and independent living skills as reported by caregiver, with functional competencies generally consistent with developmental expectations across key adaptive domains',
-  'showed emerging adaptive behavior competencies, with identified support needs in organizational planning, time management, and community-based participation domains',
-  'demonstrated variability in adaptive functioning across settings, with stronger performance in familiar structured environments compared to novel or unstructured contexts',
-  'exhibited functional independence in basic self-care domains, though caregiver-reported support needs were identified for complex multi-step tasks and independent community navigation',
-  'caregiver-reported adaptive behavior profile suggested relative strengths in social reciprocity and daily routine adherence, alongside areas of challenge in executive and organizational domains',
-  'demonstrated adequate functional self-care skills within familiar home routines, with greater support needs reported for generalization of adaptive skills to novel community contexts',
-  'showed age-appropriate daily living competencies in foundational domains, with emerging skills in community participation that required continued scaffolding and guided practice',
-  'reported adaptive behavior profile reflects a mixed pattern of strengths and challenges, with caregiver support currently compensating for identified deficits in organizational and sequential task domains',
-  // derived from StudentPerformanceFactors.csv — learning_disabilities and tutoring_sessions fields
-  'caregiver reported history of learning difficulties with prior tutoring support, suggesting adaptive strategies have been developed to accommodate the identified academic profile',
-];
+const ADAPTIVE_BEHAVIOR_OBS = KB.bank('adaptive_behavior');
 
-const COMMUNICATION_OBS = [
-  'demonstrated age-appropriate receptive language comprehension, with expressive language showing some reduction in spontaneous complexity and narrative elaboration',
-  'exhibited functional pragmatic communication skills in structured contexts, though spontaneous conversational initiation and topic maintenance appeared variable across the evaluation',
-  'showed intact comprehension of instructions and direct questions, with expressive language marked by occasional word retrieval pauses and reduced narrative coherence',
-  'demonstrated adequate functional communication for the assessment context, with observable differences in communication style across familiar and unfamiliar conversational topics',
-  'caregiver report indicated a communication profile consistent with developmental variation, with relative strengths in comprehension compared to expressive and pragmatic language domains',
-  'demonstrated literal language comprehension with limited evidence of inferential or figurative language processing, consistent with an observed concrete cognitive style',
-  'showed adequate communication for basic social exchange, with greater difficulty sustaining extended discourse, managing conversational repair, and taking the perspective of the listener',
-  'demonstrated communication profile reflecting strengths in structured, context-supported exchanges alongside challenges in open-ended, pragmatically complex communicative contexts',
-];
+const COMMUNICATION_OBS = KB.bank('communication');
 
-const SENSORY_OBS = [
-  'caregiver reported behavioral responses consistent with sensory processing differences, particularly in auditory and tactile domains, affecting participation in daily and community activities',
-  'demonstrated observable sensory sensitivity to environmental stimuli during the evaluation, including heightened responsiveness to ambient auditory stimuli and physical proximity',
-  'reported patterns of sensory-seeking and sensory-avoidant behavior across domains, consistent with an atypical sensory processing profile affecting comfort and environmental adaptability',
-  'caregiver endorsed sensory processing challenges that impact participation in group settings, transitions between environments, and responses to novel sensory exposures',
-  'demonstrated adaptive sensory management strategies in familiar contexts, though generalization to novel sensory environments appeared limited without external support',
-  'sensory reactivity profile as reported by caregiver suggested hyper-responsiveness to specific sensory domains requiring ongoing environmental accommodation and behavioral support',
-  'showed behavioral regulatory challenges in sensory-demanding environments, with observable discomfort in crowded, noisy, or unpredictable sensory contexts',
-  'caregiver-reported sensory processing differences appear to contribute to behavioral dysregulation patterns observed in transitions, group participation, and novel environmental demands',
-];
+const SENSORY_OBS = KB.bank('sensory');
 
-const ACADEMIC_OBS = [
-  'demonstrated academic functioning profile marked by variable performance across subjects, with greater relative competency in areas aligned with documented learning strengths',
-  'reported academic performance challenges that appeared related to identified attentional and motivational factors rather than limited intellectual capacity',
-  'exhibited reduced academic engagement and learning motivation, with caregiver-reported decline in school performance corroborated by behavioral observations during the evaluation',
-  'showed academic functional profile consistent with learning support needs, with identified areas of relative strength that can be leveraged in individualized educational planning',
-  'demonstrated patterns of academic underperformance that appeared attributable to systemic factors including attendance irregularities, limited study resource access, and elevated stress burden',
-  // derived from StudentPerformanceFactors.csv — hours_studied, attendance, previous_scores, exam_score fields
-  'caregiver and self-report data indicated reduced study hours and attendance irregularities as contributing factors to observed academic performance concerns',
-  'exhibited academic functioning below reported prior attainment levels, with identified peer influence and extracurricular competing demands as potential moderating factors',
-];
+const ACADEMIC_OBS = KB.bank('academic');
 
 // ─── PRE-EMPLOYMENT-SPECIFIC BANKS ────────────────────────────────────────────
 
-const OCCUPATIONAL_OBS = [
-  'demonstrated task-focused behavioral orientation and systematic problem-solving approach during structured work-analogue tasks presented throughout the evaluation',
-  'exhibited behavioral consistency and methodical work style during the assessment, with observable preference for structured environments and clearly defined performance expectations',
-  'showed adequate role-following behavior and compliance with procedural instructions, suggesting functional capacity for structured occupational demands in supervised contexts',
-  'demonstrated professional presentation and appropriate behavioral responsiveness in the evaluative context, consistent with basic occupational role expectations',
-  'exhibited variable task persistence across assessment conditions, maintaining consistent effort on preferred task types but showing reduced engagement with ambiguous or open-ended demands',
-  'showed capacity for sustained work engagement within time-bounded tasks, with organized and sequential approach to task completion across the evaluation context',
-  'demonstrated adequate occupational readiness indicators including punctuality, appropriate attire, and compliance with assessment procedures, suggestive of functional employment orientation',
-  'exhibited structured problem-solving behavior and ability to self-organize within clearly defined task parameters, consistent with readiness for supervised occupational placement',
-  // derived from Employee Attrition datasets — job_satisfaction and job_involvement fields
-  'demonstrated behavioral indicators suggestive of appropriate occupational engagement and role-relevant motivation, with observable investment in the evaluative process',
-  'exhibited functional occupational orientation consistent with adequate job involvement, though areas for growth in autonomous task management and self-directed performance were noted',
-];
+const OCCUPATIONAL_OBS = KB.bank('occupational');
 
-const INTERPERSONAL_OBS = [
-  'demonstrated professional and appropriately courteous interpersonal presentation throughout the evaluation, with responsive communication style toward the examiner',
-  'exhibited generally adequate interpersonal skills in the structured assessment context, though limited spontaneous social initiation suggested reduced proactivity in peer-level interactions',
-  'showed capacity for cooperative and collaborative behavioral orientation in structured dyadic interaction, with performance variability under ambiguous or unstructured interpersonal conditions',
-  'demonstrated awareness of interpersonal boundaries and professional norms in the evaluation context, with appropriate deference and turn-taking in communicative exchanges',
-  'exhibited variable interpersonal warmth across the session, demonstrating greater social comfort in task-oriented exchanges and increased behavioral guardedness in open-ended social contexts',
-  'demonstrated functional interpersonal skills including basic perspective-taking, appropriate affective responsiveness, and adherence to conversational norms in the evaluation context',
-  'showed polite and cooperative interpersonal style throughout the assessment, with evident capacity for role-appropriate interaction within structured professional contexts',
-  'demonstrated interpersonal profile reflecting adequate relational skills for workplace contexts, with noted areas for development in unsolicited social initiation and unstructured peer interaction',
-  // derived from IBM HR Analytics and Employee Attrition datasets — relationship_satisfaction field
-  'exhibited relationship-oriented interpersonal style with moderate social initiative, consistent with capacity for functional collegial engagement within a structured workplace environment',
-  'demonstrated interpersonal flexibility appropriate for team-based environments, though preference for clear role definition and procedural clarity was noted throughout the evaluation',
-];
+const INTERPERSONAL_OBS = KB.bank('interpersonal');
 
-const WORK_LIFE_BALANCE_OBS = [
-  // derived from HR-Employee-Attrition.csv and Employee Attrition CSVs — WorkLifeBalance and OverTime fields
-  'reported difficulties maintaining a sustainable balance between occupational demands and personal recovery time, with associated impact on energy, mood, and interpersonal functioning',
-  'demonstrated awareness of work-life boundary challenges, with self-reported tendency to prioritize occupational demands over personal self-care and social engagement',
-  'endorsed experiencing role overload during peak demand periods, with observable impact on motivation, concentration, and emotional resilience reported during the clinical interview',
-  'described patterns of occupational stress spillover into personal domains, with reduced quality of leisure time and personal relationships noted as current concerns',
-  'reported adequate management of occupational and personal demands under baseline conditions, though resilience under sustained high-demand periods was identified as an area for development',
-];
+const WORK_LIFE_BALANCE_OBS = KB.bank('work_life_balance');
 
 // ─── SAFETY RISK BANKS ───────────────────────────────────────────────────────
 // (X-RK-00, X-RK-LOW from Narrative Fragment Library; content from Suicide_Detection.csv context)
 
-const RISK_ELEVATED_OBS = [
-  'The client currently presents with significant psychological risk factors, including reported thoughts of self-harm. This presentation warrants immediate clinical attention and active safety planning.',
-  'Clinical interview and behavioral observation revealed risk indicators that require urgent assessment and intervention by a licensed clinician. A safety plan should be established without delay.',
-  'Elevated risk indicators were identified during the current evaluation, including statements or behavioral patterns consistent with self-directed harm. Immediate follow-up and safety planning are clinically indicated.',
-];
+const RISK_ELEVATED_OBS = KB.bank('risk_elevated');
 
-const RISK_NONE_OBS = [
-  'No active indicators of risk to self or others were elicited during the present assessment. Routine monitoring is recommended as part of ongoing clinical care.',
-  'Safety screening conducted during the evaluation did not reveal active indicators of suicidal ideation, self-harm, or harm to others. Continued monitoring is encouraged.',
-  'The current assessment did not identify active risk indicators. Protective factors including identified social support and help-seeking behavior were noted.',
-];
+const RISK_NONE_OBS = KB.bank('risk_none');
 
 // ─── NARRATIVE SECTION LEADS ──────────────────────────────────────────────────
 
-const NEURO_FINDINGS_LEAD = [
-  'Taken together, the behavioral and developmental observations gathered during this neurodevelopmental assessment provide a qualitative basis for clinical impression.',
-  'Integration of the developmental history, direct behavioral observations, and clinical interview yields the following overall impression for this neurodevelopmental evaluation.',
-  'The observational findings from this neurodevelopmental assessment, considered alongside background developmental history, are summarized below.',
-];
+const NEURO_FINDINGS_LEAD = KB.bank('neuro_findings_lead');
 
-const CLINICAL_FINDINGS_LEAD = [
-  'Integrating the affective, behavioral, and psychosocial observations from this clinical psychological assessment, the following clinical impression is offered.',
-  'The clinical observations and interview findings for this assessment, when considered within the context of the presenting concerns, support the following impression.',
-  'Based on direct clinical observation and structured interview, the overall clinical impression for this evaluation is as follows.',
-];
+const CLINICAL_FINDINGS_LEAD = KB.bank('clinical_findings_lead');
 
-const PRE_EMP_FINDINGS_LEAD = [
-  'The behavioral and cognitive observations recorded during this pre-employment psychological evaluation are summarized in the following overall impression.',
-  'Integrating observations of cognitive functioning, interpersonal style, and behavioral consistency, the following employment-relevant impression is offered.',
-  'The following overall impression is derived from behavioral observation, clinical interview, and administered assessment procedures relevant to occupational functioning.',
-];
+const PRE_EMP_FINDINGS_LEAD = KB.bank('pre_emp_findings_lead');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. NARRATIVE FRAGMENT RULE ENGINE
@@ -720,7 +415,10 @@ const PRE_EMP_FINDINGS_LEAD = [
 function _applyNarrativeFragments(ttype, signals, name) {
   const { cs, ns, es } = signals;
   const frags = [];
-  const push = (section, text) => frags.push({ section, text });
+  // push records the firing rule's ID alongside the fragment so the engine can
+  // emit an explainability trace (which rules fired → which sentences). The
+  // ruleId is metadata only; it never changes the generated prose.
+  const push = (section, text, ruleId) => frags.push({ section, text, ruleId: ruleId || null });
 
   // ── SAFETY OVERRIDE — evaluated FIRST across ALL assessment types ─────────
   // (Rules: X-RK-00, X-RK-01, X-RC-CRISIS, X-RK-LOW)
@@ -730,154 +428,106 @@ function _applyNarrativeFragments(ttype, signals, name) {
     es.risk_flag === 'ELEVATED';
 
   if (riskElevated) {
-    push('risk', RISK_ELEVATED_OBS[0]);
+    push('risk', KB.fragment('X-RK-00', { name }), 'X-RK-00');
     if (cs.mental_health_history === 'Yes' || ns.mental_health_history === 'Yes') {
-      // X-RK-01
-      push('risk', 'A prior history of psychological difficulty further increases vulnerability during periods of acute stress.');
+      push('risk', KB.fragment('X-RK-01', { name }), 'X-RK-01');
     }
-    // X-RC-CRISIS
-    push('recommendations_safety',
-      'Establish a safety plan addressing emotional triggers, coping strategies, and emergency support contacts. ' +
-      'Connect immediately with crisis resources including the NCMH Crisis Hotline (1553), the DOH iCare Hotline (1800-10-HOPEPH), ' +
-      'or the nearest licensed mental health facility. This is a clinical priority.'
-    );
+    push('recommendations_safety', KB.fragment('X-RC-CRISIS', { name }), 'X-RC-CRISIS');
   } else {
-    // X-RK-LOW
-    push('risk', RISK_NONE_OBS[0]);
+    push('risk', KB.fragment('X-RK-LOW', { name }), 'X-RK-LOW');
   }
 
   // ── CLINICAL ASSESSMENT RULES ─────────────────────────────────────────────
   if (ttype === 'clinical') {
 
-    // C-EF-01: depression = severe
+    // C-EF-01: depression = severe   (text → knowledge/fragment-library.json)
     if (cs.depression === 'severe') {
-      push('emotional_functioning',
-        `${name} exhibits severe emotional distress characterized by persistent low mood, emotional exhaustion, and a pervasive loss of interest in usual activities.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-01', { name }), 'C-EF-01');
     }
     // C-EF-02: depression = moderate
     else if (cs.depression === 'moderate') {
-      push('emotional_functioning',
-        `${name} presents with marked depressive features, including frequent low mood, reduced motivation, and diminished enjoyment of daily activities.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-02', { name }), 'C-EF-02');
     }
-    // mild depression — non-library supplemental
+    // C-EF-MILD: mild depression — non-library supplemental
     else if (cs.depression === 'mild') {
-      push('emotional_functioning',
-        `${name} reports some degree of low mood and reduced pleasure in daily activities, with functional impact that is mild but observable in the clinical context.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-MILD', { name }), 'C-EF-MILD');
     }
 
     // C-EF-03: anxiety ≥ moderate
     if (cs.anxiety_level === 'moderate' || cs.anxiety_level === 'severe') {
-      push('emotional_functioning',
-        `${name} reported notable anxiety, accompanied by overthinking, restlessness, and difficulty calming once distressed.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-03', { name }), 'C-EF-03');
     }
 
     // C-EF-04: sleep_quality = low
     if (cs.sleep_quality === 'low') {
-      push('emotional_functioning',
-        `${name} described irregular sleep and difficulty maintaining restful sleep, which appears to compound existing emotional exhaustion.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-04', { name }), 'C-EF-04');
     }
 
     // C-EF-05: self_esteem = low
     if (cs.self_esteem === 'low') {
-      push('emotional_functioning',
-        `There are indications of low self-esteem and self-critical thinking, with ${name} frequently describing personal capabilities in negative terms.`
-      );
+      push('emotional_functioning', KB.fragment('C-EF-05', { name }), 'C-EF-05');
     }
 
     // C-EF-06: history = Yes AND depression ≥ moderate
     if (cs.mental_health_history === 'Yes' &&
         (cs.depression === 'moderate' || cs.depression === 'severe')) {
-      push('emotional_functioning',
-        'These difficulties appear longstanding rather than situational, consistent with a recurrent rather than first-onset presentation.'
-      );
+      push('emotional_functioning', KB.fragment('C-EF-06', { name }), 'C-EF-06');
     }
 
     // C-SF-01: social_support = low
     if (cs.social_support === 'low') {
-      push('social_functioning',
-        `${name} experiences significant difficulties in social and interpersonal functioning, particularly in forming and maintaining stable, supportive relationships.`
-      );
+      push('social_functioning', KB.fragment('C-SF-01', { name }), 'C-SF-01');
     }
     // C-SF-02: social_support = moderate
     else if (cs.social_support === 'moderate') {
-      push('social_functioning',
-        `${name} maintains some meaningful connections but at times feels emotionally unsupported or misunderstood by those around them.`
-      );
+      push('social_functioning', KB.fragment('C-SF-02', { name }), 'C-SF-02');
     }
 
     // C-SF-03: bullying = high OR peer_pressure = high
     if (cs.bullying === 'high' || cs.peer_pressure === 'high') {
-      push('social_functioning',
-        'Experiences of peer conflict and social pressure appear to have contributed to feelings of insecurity and guardedness in interpersonal interactions.'
-      );
+      push('social_functioning', KB.fragment('C-SF-03', { name }), 'C-SF-03');
     }
 
     // C-DM-01: coping = avoidant
     if (cs.coping === 'avoidant') {
-      push('defense_mechanisms',
-        `${name} primarily relies on avoidance and emotional withdrawal when faced with distress, distancing rather than directly confronting difficulties.`
-      );
+      push('defense_mechanisms', KB.fragment('C-DM-01', { name }), 'C-DM-01');
     }
     // C-DM-02: coping = suppression-then-release
     else if (cs.coping === 'suppression') {
-      push('defense_mechanisms',
-        'There are indications of emotional overcontrol followed by impulsive release, in which suppressed feelings surface abruptly during periods of overwhelm.'
-      );
+      push('defense_mechanisms', KB.fragment('C-DM-02', { name }), 'C-DM-02');
     }
 
     // C-DM-03: insight present AND change_readiness low
     if (cs.insight === 'present' && cs.change_readiness === 'low') {
-      push('defense_mechanisms',
-        `Although ${name} demonstrates self-awareness and insight, there may be difficulty translating this insight into consistent behavioral change during emotionally intense situations.`
-      );
+      push('defense_mechanisms', KB.fragment('C-DM-03', { name }), 'C-DM-03');
     }
 
     // C-CI-01: depression = severe AND history = Yes
     if (cs.depression === 'severe' && cs.mental_health_history === 'Yes') {
-      push('clinical_impression',
-        `${name} presents with symptoms consistent with a recurrent depressive presentation, marked by chronic low mood, guilt, and emotional exhaustion.`
-      );
+      push('clinical_impression', KB.fragment('C-CI-01', { name }), 'C-CI-01');
     }
 
     // C-CI-02: instability + fear_of_abandonment + impulsivity
     if (cs.emotional_instability === 'present' &&
         (cs.fear_of_abandonment === 'present' || cs.impulsivity === 'present')) {
-      push('clinical_impression',
-        'The presentation is also consistent with significant emotional dysregulation and interpersonal sensitivity, particularly around situations involving rejection or conflict.'
-      );
+      push('clinical_impression', KB.fragment('C-CI-02', { name }), 'C-CI-02');
     }
 
     // C-CI-FOOTER: always
-    push('clinical_impression',
-      'Further evaluation by a licensed clinician is warranted to confirm impressions and rule out co-occurring conditions.'
-    );
+    push('clinical_impression', KB.fragment('C-CI-FOOTER', { name }), 'C-CI-FOOTER');
 
     // C-RC-01: always
-    push('recommendations_fragment',
-      'Engage in regular psychotherapy with a licensed psychologist, with emphasis on emotion regulation and distress tolerance.'
-    );
+    push('recommendations_fragment', KB.fragment('C-RC-01', { name }), 'C-RC-01');
     // C-RC-03: sleep_quality = low
     if (cs.sleep_quality === 'low') {
-      push('recommendations_fragment',
-        'Adopt sleep-hygiene strategies and a consistent routine to support emotional stability.'
-      );
+      push('recommendations_fragment', KB.fragment('C-RC-03', { name }), 'C-RC-03');
     }
     // C-RC-04: social_support = low
     if (cs.social_support === 'low') {
-      push('recommendations_fragment',
-        'Strengthen supportive relationships and consider structured peer or family support where appropriate.'
-      );
+      push('recommendations_fragment', KB.fragment('C-RC-04', { name }), 'C-RC-04');
     }
-    // Philippine RA 11036 alignment
-    push('recommendations_fragment',
-      'Referral to a licensed Filipino mental health professional is encouraged, in alignment with the Philippine Mental Health Act (RA 11036). ' +
-      'Community-based mental health programs through the local government unit (LGU) may also be explored as accessible support resources.'
-    );
+    // C-RC-RA11036: Philippine RA 11036 alignment
+    push('recommendations_fragment', KB.fragment('C-RC-RA11036', { name }), 'C-RC-RA11036');
   }
 
   // ── NEURODEVELOPMENTAL ASSESSMENT RULES ───────────────────────────────────
@@ -885,87 +535,59 @@ function _applyNarrativeFragments(ttype, signals, name) {
 
     // N-ED-01: early_milestones = delayed
     if (ns.early_milestones === 'delayed') {
-      push('early_development',
-        'Early developmental history reflects delays across communication and self-help skills, with prior involvement in developmental support services.'
-      );
+      push('early_development', KB.fragment('N-ED-01', { name }), 'N-ED-01');
     }
     // N-ED-02: prior_assessment = Yes
     if (ns.prior_assessment === 'Yes') {
-      push('early_development',
-        `${name} has a history of earlier developmental assessment and intervention, providing useful continuity for the present evaluation.`
-      );
+      push('early_development', KB.fragment('N-ED-02', { name }), 'N-ED-02');
     }
 
     // N-TR-01: overall_cognition = below-age
     if (ns.overall_cognition === 'below-age') {
-      push('test_results_fragment',
-        'Overall cognitive functioning appears to fall below age-level expectations, with corresponding difficulty across reasoning and knowledge-based tasks.'
-      );
+      push('test_results_fragment', KB.fragment('N-TR-01', { name }), 'N-TR-01');
     }
     // N-TR-02: visual_spatial = relative_strength
     if (ns.visual_spatial === 'relative_strength') {
-      push('test_results_fragment',
-        'Visual-spatial processing emerged as a relative strength, indicating a comparatively better ability to work with visual information.'
-      );
+      push('test_results_fragment', KB.fragment('N-TR-02', { name }), 'N-TR-02');
     }
     // N-TR-03: working_memory = weak
     if (ns.working_memory === 'weak') {
-      push('test_results_fragment',
-        'Working memory presents as an area of significant difficulty, affecting tasks that require holding and manipulating information over short periods.'
-      );
+      push('test_results_fragment', KB.fragment('N-TR-03', { name }), 'N-TR-03');
     }
     // N-TR-04: knowledge = weak
     if (ns.knowledge === 'weak') {
-      push('test_results_fragment',
-        'Accumulated knowledge and vocabulary appear notably below expectations relative to same-age peers.'
-      );
+      push('test_results_fragment', KB.fragment('N-TR-04', { name }), 'N-TR-04');
     }
 
     // N-AF-01: global_adaptive = low
     if (ns.global_adaptive === 'low') {
-      push('adaptive_functioning',
-        `Adaptive functioning appears low overall, with ${name} requiring support across communication, self-direction, and daily living skills.`
-      );
+      push('adaptive_functioning', KB.fragment('N-AF-01', { name }), 'N-AF-01');
     }
     // N-AF-02: communication = limited
     if (ns.communication === 'limited') {
-      push('adaptive_functioning',
-        'Communication skills are limited and represent a priority area for continued intervention.'
-      );
+      push('adaptive_functioning', KB.fragment('N-AF-02', { name }), 'N-AF-02');
     }
 
     // N-SI-01: composite below-age + adaptive low
     if (ns.overall_cognition === 'below-age' && ns.global_adaptive === 'low') {
-      push('summary_impression',
-        `Present findings are consistent with a neurodevelopmental profile marked by below-age cognitive and adaptive functioning, with relative strengths that can be leveraged in intervention.`
-      );
+      push('summary_impression', KB.fragment('N-SI-01', { name }), 'N-SI-01');
     }
     // N-SI-FOOTER: always
-    push('summary_impression',
-      'Continued multidisciplinary support and periodic re-assessment are warranted to track developmental progress.'
-    );
+    push('summary_impression', KB.fragment('N-SI-FOOTER', { name }), 'N-SI-FOOTER');
 
     // N-RC-01: always
-    push('recommendations_fragment',
-      `Continue individualized educational support tailored to ${name}'s developmental level and learning needs.`
-    );
+    push('recommendations_fragment', KB.fragment('N-RC-01', { name }), 'N-RC-01');
     // N-RC-02: communication = limited
     if (ns.communication === 'limited') {
-      push('recommendations_fragment',
-        'Resume or continue speech and language support to strengthen communication skills.'
-      );
+      push('recommendations_fragment', KB.fragment('N-RC-02', { name }), 'N-RC-02');
     }
     // N-RC-03: adaptive low
     if (ns.global_adaptive === 'low') {
-      push('recommendations_fragment',
-        'Incorporate structured adaptive-skills training focused on daily living and self-direction.'
-      );
+      push('recommendations_fragment', KB.fragment('N-RC-03', { name }), 'N-RC-03');
     }
     // N-RC-04: parental_involvement = low
     if (ns.parental_involvement === 'low') {
-      push('recommendations_fragment',
-        'Strengthen caregiver involvement and home-based reinforcement of target skills.'
-      );
+      push('recommendations_fragment', KB.fragment('N-RC-04', { name }), 'N-RC-04');
     }
   }
 
@@ -974,67 +596,42 @@ function _applyNarrativeFragments(ttype, signals, name) {
 
     // E-OR-01: reasoning = adequate
     if (es.reasoning === 'adequate') {
-      push('overall_results_fragment',
-        `${name} demonstrates good verbal and basic reasoning skills suited to routine, structured tasks.`
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-01', { name }), 'E-OR-01');
     }
     // E-OR-02: organization = low
     if (es.organization === 'low') {
-      push('overall_results_fragment',
-        `While able to plan tasks at a basic level, lower self-directed organization and follow-through may make it difficult for ${name} to manage multiple competing demands.`
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-02', { name }), 'E-OR-02');
     }
     // E-OR-03: WorkLifeBalance = poor OR OverTime = Yes
     if (es.WorkLifeBalance === 'poor' || es.OverTime === 'Yes') {
-      push('overall_results_fragment',
-        'Balancing overlapping responsibilities can at times be overwhelming, representing an area for growth and enrichment.'
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-03', { name }), 'E-OR-03');
     }
     // E-OR-04: emotional_stability = low
     if (es.emotional_stability === 'low') {
-      push('overall_results_fragment',
-        `When personal concerns overlap with rising workplace demands, ${name} may be prone to anxiety and reduced focus that can temporarily affect confidence and composure.`
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-04', { name }), 'E-OR-04');
     }
     // E-OR-05: EnvironmentSatisfaction = high
     if (es.EnvironmentSatisfaction === 'high') {
-      push('overall_results_fragment',
-        `Performance and professional stability are closely tied to ${name} operating within a structured, predictable routine under supportive leadership.`
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-05', { name }), 'E-OR-05');
     }
 
     // E-IC-FIT / E-IC-CONSIDER / E-IC-NOTREC
     const fit = es.fit_level || 'fit_with_considerations';
     if (fit === 'fit') {
-      push('impression_conclusion_fragment',
-        `${name} possesses adequate capabilities for the role and can maintain consistent performance within a predictable work environment under supportive supervision.`
-      );
-      push('fit_recommendation',
-        `There is no significant psychopathology noted at the time of examination; ${name} appears fit for employment.`
-      );
+      push('impression_conclusion_fragment', KB.fragment('E-IC-FIT', { name }), 'E-IC-FIT');
+      push('fit_recommendation', KB.fragment('E-RC-FIT', { name }), 'E-RC-FIT');
     } else if (fit === 'not_recommended') {
-      push('impression_conclusion_fragment',
-        `Present findings indicate significant concerns that should be addressed before a determination of employment suitability for ${name} can be confidently made.`
-      );
-      push('fit_recommendation',
-        `Based on present findings, ${name} is not recommended for the role at this time pending further evaluation and support.`
-      );
+      push('impression_conclusion_fragment', KB.fragment('E-IC-NOTREC', { name }), 'E-IC-NOTREC');
+      push('fit_recommendation', KB.fragment('E-RC-NOTREC', { name }), 'E-RC-NOTREC');
     } else {
       // fit_with_considerations — default
-      push('impression_conclusion_fragment',
-        `${name} demonstrates workable capabilities for routine tasks but may require structure and clear expectations to sustain focus and composure under heavier workloads.`
-      );
-      push('fit_recommendation',
-        `${name} appears fit for employment, with the consideration that a structured and supportive work setting will best sustain performance.`
-      );
+      push('impression_conclusion_fragment', KB.fragment('E-IC-CONSIDER', { name }), 'E-IC-CONSIDER');
+      push('fit_recommendation', KB.fragment('E-RC-CONSIDER', { name }), 'E-RC-CONSIDER');
     }
 
-    // Attrition risk flag
+    // E-OR-ATTRITION: Attrition risk flag
     if (es.attrition_risk === 'ELEVATED') {
-      push('overall_results_fragment',
-        'Occupational engagement indicators suggest the presence of factors associated with elevated attrition risk, including limited perceived recognition and reduced environmental satisfaction. ' +
-        'These factors warrant consideration in role assignment and onboarding planning.'
-      );
+      push('overall_results_fragment', KB.fragment('E-OR-ATTRITION', { name }), 'E-OR-ATTRITION');
     }
   }
 
@@ -1049,69 +646,11 @@ function _applyNarrativeFragments(ttype, signals, name) {
 //    and RA 11036 alignment.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NEURO_REC_POOL = [
-  'Coordinate findings with the educational team, caregivers, and relevant specialists to develop a consistent and responsive support plan.',
-  'Consider individualized educational or developmental support strategies tailored to the observed profile of strengths and challenges.',
-  'Pursue functional assessment across home and school environments to provide a more comprehensive developmental picture.',
-  'Reassessment is recommended within 12–18 months, or sooner if significant developmental changes or regression are observed.',
-  'Psychoeducation for caregivers regarding the observed behavioral patterns is strongly encouraged to promote consistent environmental management.',
-  'Consider referral to related services (e.g., speech-language therapy, occupational therapy) based on observed functional domains of concern.',
-  'Regular monitoring by a developmental pediatrician or allied health professional is recommended to track progress over time.',
-  'Establish structured home routines with predictable schedules and clear behavioral expectations to support adaptive functioning and reduce transition-related dysregulation.',
-  'Encourage participation in social skills development programs or peer-mediated learning environments to support pragmatic and relational competency.',
-  'Provide sensory-supportive accommodations in home and school environments as appropriate to the identified sensory processing profile.',
-  'Collaborate with school personnel to develop and implement individualized educational accommodations or modifications that address the identified functional profile.',
-  'Caregiver training on evidence-based behavioral management strategies and developmental scaffolding techniques is recommended to promote consistent support across settings.',
-  'Consider referral for psychological support services to address emotional and behavioral regulation challenges that may be associated with the observed developmental profile.',
-  'Maintain open communication among the family system, educational team, and treating clinicians to ensure responsive adjustment of support strategies as developmental needs evolve.',
-  // derived from StudentPerformanceFactors.csv — parental_involvement and tutoring_sessions data
-  'Encourage strengthened parental or caregiver involvement in academic support and home-based learning reinforcement, given the documented association between parental engagement and academic outcomes.',
-  // Philippine NSMHW context
-  'Explore access to community-based tutoring and educational support resources, particularly for families with limited access to private supplemental instruction.',
-];
+const NEURO_REC_POOL = KB.recPool('neuro');
 
-const CLINICAL_REC_POOL = [
-  'Individual psychotherapy is recommended to address the observed emotional and behavioral concerns within a structured therapeutic relationship.',
-  'Psychoeducation regarding the observed stress indicators and coping patterns is recommended as a first-line supportive intervention.',
-  'A structured routine incorporating regular sleep, physical activity, and social engagement may support emotional regulation and overall functioning.',
-  'Consider a psychiatric consultation if observed affective and somatic patterns persist or intensify beyond the current level of functioning.',
-  'Monitor symptom trajectory over the next 3–6 months and reassess if functional impairment in daily activities increases.',
-  'Encourage development of a diversified coping repertoire, including adaptive strategies such as mindfulness, social support, and structured problem-solving.',
-  'Family or systems-level support may benefit the client, particularly where relational stressors are contributing to the presenting concerns.',
-  'Referral to a licensed Filipino mental health professional familiar with culturally informed therapeutic approaches is encouraged, in alignment with the Philippine Mental Health Act (RA 11036).',
-  'Sleep hygiene intervention is recommended, including structured bedtime routines, reduction of stimulant exposure prior to sleep, and regularization of the sleep-wake schedule.',
-  'Social support mobilization — including reconnection with family, peer, and community networks — is recommended as an adjunct to individual therapeutic intervention.',
-  'Appetite and nutritional self-care should be monitored and addressed within the therapeutic frame, given the observed association between eating disruptions and psychosocial stress.',
-  'Engagement in meaningful purposeful activity — including vocational, recreational, or community-based participation — is encouraged to support motivational engagement and sense of personal agency.',
-  'Crisis safety planning should be discussed in the therapeutic context if the clinical picture includes any risk indicators, in accordance with BPS and PAP clinical safety standards.',
-  'Regular review of therapeutic progress is recommended at 3-month intervals, with reassessment of functional domains including mood, sleep, appetite, concentration, and interpersonal engagement.',
-  // Philippine NSMHW Report and RA 11036 alignment
-  'Connection with available community mental health resources is encouraged, including LGU-based mental health programs aligned with the Philippine Mental Health Act (RA 11036).',
-  'Referral to the National Center for Mental Health (NCMH) or affiliated regional mental health services is recommended if access to private therapeutic services is limited.',
-  'Psychoeducation regarding mental health stigma and the importance of help-seeking is recommended for the client and immediate family, consistent with NSMHW public awareness objectives.',
-  // derived from Indicators_of_Anxiety_or_Depression CSV — anhedonia/withdrawal pattern
-  'Behavioral activation strategies targeting gradual re-engagement with previously valued activities are recommended to address identified anhedonia and withdrawal patterns.',
-];
+const CLINICAL_REC_POOL = KB.recPool('clinical');
 
-const PRE_EMP_REC_POOL = [
-  'Findings should be interpreted within the full context of the applicant\'s background, work history, and the specific demands of the target role.',
-  'Continued behavioral observation during a structured onboarding or probationary period is advised to corroborate assessment impressions.',
-  'If placed, provide structured orientation and clear performance expectations to support initial role adjustment.',
-  'Assign a designated peer or mentor during the initial employment phase to support social integration and role clarity.',
-  'Periodic check-ins with a supervisor or HR representative are recommended during the first six months of employment.',
-  'Consider role-specific fit when assigning initial responsibilities, prioritizing tasks aligned with observed cognitive and behavioral strengths.',
-  'Re-evaluation may be conducted if significant role demands change or if occupational performance concerns arise post-placement.',
-  'Findings from this psychological evaluation should supplement — and not replace — other evidence-based selection criteria in the final placement decision.',
-  'An initial trial placement in a supervised, structured role environment is recommended prior to assignment to high-autonomy or high-complexity responsibilities.',
-  'Employee wellness resources, including access to Employee Assistance Programs (EAP) or occupational health support, are encouraged to maintain the applicant\'s psychological wellbeing post-placement.',
-  'Strengths identified during this evaluation should be leveraged in initial role assignment to support early confidence-building and positive performance experience.',
-  'Communication style preferences and interpersonal behavioral patterns observed during evaluation should inform the onboarding supervisor\'s approach to initial role coaching and feedback delivery.',
-  'If occupational adjustment difficulties are observed post-placement, early referral to occupational health or employee counseling resources is recommended rather than extended performance management.',
-  'Team integration activities and structured social onboarding are recommended to support the applicant\'s interpersonal adjustment to the assigned work group.',
-  // derived from Employee Attrition datasets — attrition risk factors (WorkLifeBalance, recognition, environment)
-  'Attention to work-life balance, perceived fairness of recognition, and career development opportunities is recommended as part of the onboarding experience to reduce early attrition risk.',
-  'Consider the applicant\'s job satisfaction and environmental fit indicators when determining role assignment, given the documented relationship between environment satisfaction and occupational retention.',
-];
+const PRE_EMP_REC_POOL = KB.recPool('pre_employment');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. THEME DETECTION & THEME-AWARE NARRATIVE SELECTION
@@ -1122,39 +661,53 @@ const PRE_EMP_REC_POOL = [
 //    in output, only used to select appropriate professional phrasing.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Theme-detection knowledge + precompiled matchers (Item 2). Tokens/patterns are
+// sourced from knowledge/theme-lexicon.json; the simple-theme regexes are built
+// identically to the previous inline ones, so POSITIVE matching is unchanged
+// (Taglish tokens only add coverage). A match is SUPPRESSED when a negator
+// appears in the short window before it (e.g. "denies anxiety", "walang kaba").
+const _THEME_LEX = KB.themeLexicon();
+const _THEME_RES = {};
+for (const [k, toks] of Object.entries(_THEME_LEX.themes || {})) {
+  _THEME_RES[k] = new RegExp('\\b(' + toks.join('|') + ')\\b', 'g');
+}
+const _PATTERN_RES = {};
+for (const [k, src] of Object.entries(_THEME_LEX.patterns || {})) {
+  _PATTERN_RES[k] = new RegExp(src, 'g');
+}
+const _NEGATOR_RE = new RegExp('\\b(' + (_THEME_LEX.negators || []).join('|') + ')\\b');
+
+// Is a match at index `idx` negated by a negator before it IN THE SAME CLAUSE?
+// Negation must not cross a sentence/clause break — in "No prior treatment. Some
+// social withdrawal", the "No" negates the prior-treatment clause, NOT "social".
+// So we restrict to the text after the last sentence terminator, then scan the
+// last ~4 tokens of that clause for a negator.
+function _isNegated(t, idx) {
+  let pre = t.slice(Math.max(0, idx - 80), idx);
+  const parts = pre.split(/[.;!?\n]/);     // keep only the current clause
+  pre = parts[parts.length - 1];
+  const tokens = pre.split(/[^a-z']+/).filter(Boolean);
+  const windowStr = ' ' + tokens.slice(-4).join(' ') + ' ';
+  return _NEGATOR_RE.test(windowStr);
+}
+
+// A theme is present if it has at least one NON-negated match in the text.
+function _themeMatches(re, t) {
+  re.lastIndex = 0;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    if (!_isNegated(t, m.index)) return true;
+    if (m.index === re.lastIndex) re.lastIndex++; // zero-width guard
+  }
+  return false;
+}
+
 function _detectThemes(text) {
   const t = (text || '').toLowerCase();
-  const has = (re) => re.test(t);
-  return {
-    mood:            has(/\b(mood|moody|sad|tearful|flat|subdued|blunt|low mood|crying|upset|grief|despair|withdrawn)\b/),
-    anxiety:         has(/\b(anxi|worry|worri|nervous|apprehens|restless|tense|tension|overthink|panic|phobia|dread|fearful)\b/),
-    depression:      has(/\b(depress|hopeless|worthless|empty|anhedoni|numb|pleasure|unmotivat|helpless|low mood|despair)\b/),
-    attention:       has(/\b(attent|focus|distract|concentrat|impuls|hyperactiv|inattent|sustain|off.task|daydream|wander|redirect)\b/),
-    sleep:           has(/\b(sleep|insomni|fatigue|tired|exhaust|nighttime|wakening|waking|drowsy|bedtime|rest)\b/),
-    appetite:        has(/\b(appetite|eating|food|weight|hunger|meal|nutrition|binge|undereating|overeating)\b/),
-    social:          has(/\b(social|peer|friend|relation|interact|isolat|lonely|loneliness|belong|connect|withdrew|avoidance)\b/),
-    coping:          has(/\b(coping|cope|avoidance|suppress|overwhelm|manage|resilience|stressor)\b/),
-    selfEsteem:      has(/\b(self.esteem|self.worth|self.concept|worthless|inadequate|inferior|self.criti|confidence|self.doubt)\b/),
-    emotion:         has(/\b(emotion|affect|dysregulat|labile|reactive|irritable|frustrat|anger|outburst|temper|impulsi)\b/),
-    cognitive:       has(/\b(cognitive|thinking|reasoning|memory|intellectual|comprehension|processing|problem.solv|abstract|concept)\b/),
-    stress:          has(/\b(stress|pressure|burden|demand|strain|workload|overwhelm)\b/),
-    psychosocial:    has(/\b(family|relational|financial|economic|community|domestic|stressor|life event|caregiver|parent)\b/),
-    motivation:      has(/\b(motivat|initiative|amotivat|anhedoni|interest|engag|effort|driven|goal|aspir)\b/),
-    socialSupport:   has(/\b(support|network|isolat|alone|nobody|friend|family|connect|resource|help-seeking)\b/),
-    adaptive:        has(/\b(adaptive|daily living|self.care|independent|self.help|routine|transition|organiz|chore|hygiene)\b/),
-    communication:   has(/\b(communication|language|speech|expressive|receptive|pragmatic|vocabulary|verbal|articulation|fluency)\b/),
-    sensory:         has(/\b(sensory|tactile|auditory|visual|texture|hyper.sensitiv|hypo.sensitiv|sensory.seek|sensory.avoid)\b/),
-    academic:        has(/\b(academic|school|learning|study|grade|achievement|class|exam|homework|tutoring|reading|writing|math)\b/),
-    occupational:    has(/\b(work|job|occupational|employment|workplace|role|productivity|career|professional|deadline|task)\b/),
-    workLife:        has(/\b(work.life|overtime|burnout|overwork|balance|personal time|recovery|off.hours)\b/),
-    interpersonal:   has(/\b(colleague|coworker|team|supervisor|manager|workplace.relat|conflict|professional)\b/),
-    // Targeted patterns for IF-THEN rule bridging
-    priorHistory:    has(/(history of|prior (treatment|episode|counsel|therapy|assess|evaluat)|previous (counsel|therapy|treatment|episode|assess)|past (mental|psych|treatment|counsel|episode)|recurrent|longstanding)/),
-    developDelay:    has(/(developmental.*(delay|concern|history|milestone)|delay.*(develop|milestone|speech|motor|language)|milestone.*(delay|concern|not.*met|behind))/),
-    knowledgeWeak:   has(/((limited|below|weak|poor|significantly reduced).*(vocabulary|knowledge|fund of|verbal ability)|(vocabulary|knowledge|fund of info).*(limited|below|weak|poor|below.expect))/),
-    organizationDiff:has(/(disorganized|poor.*(organiz|time management)|difficulty.*(organiz|prioriti|plan|schedul)|lack.*(organiz|structure|focus.*task)|struggled.*(manag|follow.through))/),
-    attritionRisk:   has(/(resign|quit|leav.*(job|work|position)|turnover|attrition|dissatisf.*(work|job)|consider.*leaving|looking.*(other|new).*(opportunit|job|position)|lack.*engagement.*work)/),
-  };
+  const out = {};
+  for (const k of Object.keys(_THEME_RES))   out[k] = _themeMatches(_THEME_RES[k], t);
+  for (const k of Object.keys(_PATTERN_RES)) out[k] = _themeMatches(_PATTERN_RES[k], t);
+  return out;
 }
 
 // Returns observation strings from banks whose themes were detected in clinician input.
@@ -1782,7 +1335,89 @@ const RuleEngine = {
       });
     }
 
+    // ── Explainability trace (Item 4) ────────────────────────────────────────
+    // Metadata describing WHY this output was produced: which themes were
+    // detected, the resolved signals, and which IF-THEN rules fired. Attached as
+    // a NON-enumerable property so `output` still serializes as a pure array of
+    // sections (callers that ignore it, and JSON.stringify, are unaffected).
+    const onlyTrue = (obj) => Object.keys(obj || {}).filter((k) => obj[k]);
+    const nonEmpty = (obj) => (obj && Object.keys(obj).length ? obj : undefined);
+    const trace = {
+      template_type: ttype,
+      genIndex: g,
+      themesDetected: onlyTrue(themes),
+      signals: {
+        clinical: nonEmpty(signals.cs),
+        neuro: nonEmpty(signals.ns),
+        employment: nonEmpty(signals.es),
+      },
+      firedRules: [...new Set(frags.map((f) => f.ruleId).filter(Boolean))],
+      fragmentCount: frags.length,
+      sections: output.map((s) => s.key),
+    };
+    try { Object.defineProperty(output, 'trace', { value: trace, enumerable: false }); } catch (_) {}
+
     return output;
+  },
+};
+
+// ── Extraction hook (Item 1) ─────────────────────────────────────────────────
+// Exposes the module-scoped knowledge so scripts/extractKnowledge.js can dump it
+// to the knowledge/ JSON files verbatim. buildFragmentLibrary runs the fragment
+// rules with a '{name}' placeholder so each fragment's stored TEXT is the exact
+// template (the `${name}` interpolation becomes the literal "{name}"). Harmless
+// at runtime; used only by the extractor and tests.
+RuleEngine._internals = {
+  banks: {
+    mood: MOOD_OBS, anxiety: ANXIETY_OBS, sleep_somatic: SLEEP_SOMATIC_OBS,
+    motivation: MOTIVATION_OBS, social: SOCIAL_OBS, coping: COPING_OBS,
+    concentration: CONCENTRATION_OBS, cognitive: COGNITIVE_OBS, depression: DEPRESSION_OBS,
+    emotional_regulation: EMOTIONAL_REGULATION_OBS, psychosocial: PSYCHOSOCIAL_OBS,
+    stress: STRESS_OBS, appetite: APPETITE_OBS, self_concept: SELF_CONCEPT_OBS,
+    social_support: SOCIAL_SUPPORT_OBS, adaptive_behavior: ADAPTIVE_BEHAVIOR_OBS,
+    communication: COMMUNICATION_OBS, sensory: SENSORY_OBS, academic: ACADEMIC_OBS,
+    occupational: OCCUPATIONAL_OBS, interpersonal: INTERPERSONAL_OBS,
+    work_life_balance: WORK_LIFE_BALANCE_OBS, risk_elevated: RISK_ELEVATED_OBS,
+    risk_none: RISK_NONE_OBS, neuro_findings_lead: NEURO_FINDINGS_LEAD,
+    clinical_findings_lead: CLINICAL_FINDINGS_LEAD, pre_emp_findings_lead: PRE_EMP_FINDINGS_LEAD,
+  },
+  pools: { clinical: CLINICAL_REC_POOL, neuro: NEURO_REC_POOL, pre_employment: PRE_EMP_REC_POOL },
+  detectThemes: (text) => _detectThemes(text),
+  buildFragmentLibrary() {
+    const lib = {};
+    for (const ttype of ['clinical', 'neurodevelopmental', 'pre_employment']) {
+      // Fire every rule by supplying signals that satisfy all branches.
+      const all = {
+        cs: { depression: 'severe', anxiety_level: 'severe', sleep_quality: 'low', self_esteem: 'low',
+          mental_health_history: 'Yes', social_support: 'low', bullying: 'high', coping: 'avoidant',
+          insight: 'present', change_readiness: 'low', emotional_instability: 'present',
+          fear_of_abandonment: 'present', risk_flag: 'ELEVATED' },
+        ns: { early_milestones: 'delayed', prior_assessment: 'Yes', overall_cognition: 'below-age',
+          visual_spatial: 'relative_strength', working_memory: 'weak', knowledge: 'weak',
+          global_adaptive: 'low', communication: 'limited', parental_involvement: 'low',
+          mental_health_history: 'Yes', risk_flag: 'ELEVATED' },
+        es: { reasoning: 'adequate', organization: 'low', WorkLifeBalance: 'poor', OverTime: 'Yes',
+          emotional_stability: 'low', EnvironmentSatisfaction: 'high', attrition_risk: 'ELEVATED' },
+      };
+      for (const fit of ['fit', 'not_recommended', 'fit_with_considerations']) {
+        const sig = { cs: all.cs, ns: all.ns, es: { ...all.es, fit_level: fit } };
+        // Also exercise the mild/moderate/suppression alternatives.
+        for (const variant of [{}, { cs: { ...all.cs, depression: 'moderate', coping: 'suppression', social_support: 'moderate' } },
+                               { cs: { ...all.cs, depression: 'mild' } }]) {
+          const s = { cs: variant.cs || sig.cs, ns: sig.ns, es: sig.es };
+          for (const f of _applyNarrativeFragments(ttype, s, '{name}')) {
+            if (f.ruleId && !lib[f.ruleId]) lib[f.ruleId] = { section: f.section, text: f.text };
+          }
+        }
+      }
+      // No-risk pass — captures X-RK-LOW (no elevated risk), which the
+      // all-ELEVATED passes above never reach.
+      const stripRisk = (o) => { const c = { ...o }; delete c.risk_flag; return c; };
+      for (const f of _applyNarrativeFragments(ttype, { cs: stripRisk(all.cs), ns: stripRisk(all.ns), es: stripRisk(all.es) }, '{name}')) {
+        if (f.ruleId && !lib[f.ruleId]) lib[f.ruleId] = { section: f.section, text: f.text };
+      }
+    }
+    return lib;
   },
 };
 

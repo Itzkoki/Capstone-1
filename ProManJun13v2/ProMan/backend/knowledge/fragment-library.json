@@ -1,0 +1,252 @@
+{
+  "X-RK-00": {
+    "section": "risk",
+    "text": "The client currently presents with significant psychological risk factors, including reported thoughts of self-harm. This presentation warrants immediate clinical attention and active safety planning.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "X-RK-01": {
+    "section": "risk",
+    "text": "A prior history of psychological difficulty further increases vulnerability during periods of acute stress.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "X-RC-CRISIS": {
+    "section": "recommendations_safety",
+    "text": "Establish a safety plan addressing emotional triggers, coping strategies, and emergency support contacts. Connect immediately with crisis resources including the NCMH Crisis Hotline (1553), the DOH iCare Hotline (1800-10-HOPEPH), or the nearest licensed mental health facility. This is a clinical priority.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-01": {
+    "section": "emotional_functioning",
+    "text": "{name} exhibits severe emotional distress characterized by persistent low mood, emotional exhaustion, and a pervasive loss of interest in usual activities.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-03": {
+    "section": "emotional_functioning",
+    "text": "{name} reported notable anxiety, accompanied by overthinking, restlessness, and difficulty calming once distressed.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-04": {
+    "section": "emotional_functioning",
+    "text": "{name} described irregular sleep and difficulty maintaining restful sleep, which appears to compound existing emotional exhaustion.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-05": {
+    "section": "emotional_functioning",
+    "text": "There are indications of low self-esteem and self-critical thinking, with {name} frequently describing personal capabilities in negative terms.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-06": {
+    "section": "emotional_functioning",
+    "text": "These difficulties appear longstanding rather than situational, consistent with a recurrent rather than first-onset presentation.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-SF-01": {
+    "section": "social_functioning",
+    "text": "{name} experiences significant difficulties in social and interpersonal functioning, particularly in forming and maintaining stable, supportive relationships.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-SF-03": {
+    "section": "social_functioning",
+    "text": "Experiences of peer conflict and social pressure appear to have contributed to feelings of insecurity and guardedness in interpersonal interactions.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-DM-01": {
+    "section": "defense_mechanisms",
+    "text": "{name} primarily relies on avoidance and emotional withdrawal when faced with distress, distancing rather than directly confronting difficulties.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-DM-03": {
+    "section": "defense_mechanisms",
+    "text": "Although {name} demonstrates self-awareness and insight, there may be difficulty translating this insight into consistent behavioral change during emotionally intense situations.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-CI-01": {
+    "section": "clinical_impression",
+    "text": "{name} presents with symptoms consistent with a recurrent depressive presentation, marked by chronic low mood, guilt, and emotional exhaustion.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-CI-02": {
+    "section": "clinical_impression",
+    "text": "The presentation is also consistent with significant emotional dysregulation and interpersonal sensitivity, particularly around situations involving rejection or conflict.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-CI-FOOTER": {
+    "section": "clinical_impression",
+    "text": "Further evaluation by a licensed clinician is warranted to confirm impressions and rule out co-occurring conditions.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-RC-01": {
+    "section": "recommendations_fragment",
+    "text": "Engage in regular psychotherapy with a licensed psychologist, with emphasis on emotion regulation and distress tolerance.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-RC-03": {
+    "section": "recommendations_fragment",
+    "text": "Adopt sleep-hygiene strategies and a consistent routine to support emotional stability.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-RC-04": {
+    "section": "recommendations_fragment",
+    "text": "Strengthen supportive relationships and consider structured peer or family support where appropriate.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-RC-RA11036": {
+    "section": "recommendations_fragment",
+    "text": "Referral to a licensed Filipino mental health professional is encouraged, in alignment with the Philippine Mental Health Act (RA 11036). Community-based mental health programs through the local government unit (LGU) may also be explored as accessible support resources.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-02": {
+    "section": "emotional_functioning",
+    "text": "{name} presents with marked depressive features, including frequent low mood, reduced motivation, and diminished enjoyment of daily activities.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-SF-02": {
+    "section": "social_functioning",
+    "text": "{name} maintains some meaningful connections but at times feels emotionally unsupported or misunderstood by those around them.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-DM-02": {
+    "section": "defense_mechanisms",
+    "text": "There are indications of emotional overcontrol followed by impulsive release, in which suppressed feelings surface abruptly during periods of overwhelm.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "C-EF-MILD": {
+    "section": "emotional_functioning",
+    "text": "{name} reports some degree of low mood and reduced pleasure in daily activities, with functional impact that is mild but observable in the clinical context.",
+    "source": "supplemental"
+  },
+  "X-RK-LOW": {
+    "section": "risk",
+    "text": "No active indicators of risk to self or others were elicited during the present assessment. Routine monitoring is recommended as part of ongoing clinical care.",
+    "source": "Suicide_Detection.csv context"
+  },
+  "N-ED-01": {
+    "section": "early_development",
+    "text": "Early developmental history reflects delays across communication and self-help skills, with prior involvement in developmental support services.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-ED-02": {
+    "section": "early_development",
+    "text": "{name} has a history of earlier developmental assessment and intervention, providing useful continuity for the present evaluation.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-TR-01": {
+    "section": "test_results_fragment",
+    "text": "Overall cognitive functioning appears to fall below age-level expectations, with corresponding difficulty across reasoning and knowledge-based tasks.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-TR-02": {
+    "section": "test_results_fragment",
+    "text": "Visual-spatial processing emerged as a relative strength, indicating a comparatively better ability to work with visual information.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-TR-03": {
+    "section": "test_results_fragment",
+    "text": "Working memory presents as an area of significant difficulty, affecting tasks that require holding and manipulating information over short periods.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-TR-04": {
+    "section": "test_results_fragment",
+    "text": "Accumulated knowledge and vocabulary appear notably below expectations relative to same-age peers.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-AF-01": {
+    "section": "adaptive_functioning",
+    "text": "Adaptive functioning appears low overall, with {name} requiring support across communication, self-direction, and daily living skills.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-AF-02": {
+    "section": "adaptive_functioning",
+    "text": "Communication skills are limited and represent a priority area for continued intervention.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-SI-01": {
+    "section": "summary_impression",
+    "text": "Present findings are consistent with a neurodevelopmental profile marked by below-age cognitive and adaptive functioning, with relative strengths that can be leveraged in intervention.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-SI-FOOTER": {
+    "section": "summary_impression",
+    "text": "Continued multidisciplinary support and periodic re-assessment are warranted to track developmental progress.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-RC-01": {
+    "section": "recommendations_fragment",
+    "text": "Continue individualized educational support tailored to {name}'s developmental level and learning needs.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-RC-02": {
+    "section": "recommendations_fragment",
+    "text": "Resume or continue speech and language support to strengthen communication skills.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-RC-03": {
+    "section": "recommendations_fragment",
+    "text": "Incorporate structured adaptive-skills training focused on daily living and self-direction.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "N-RC-04": {
+    "section": "recommendations_fragment",
+    "text": "Strengthen caregiver involvement and home-based reinforcement of target skills.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-01": {
+    "section": "overall_results_fragment",
+    "text": "{name} demonstrates good verbal and basic reasoning skills suited to routine, structured tasks.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-02": {
+    "section": "overall_results_fragment",
+    "text": "While able to plan tasks at a basic level, lower self-directed organization and follow-through may make it difficult for {name} to manage multiple competing demands.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-03": {
+    "section": "overall_results_fragment",
+    "text": "Balancing overlapping responsibilities can at times be overwhelming, representing an area for growth and enrichment.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-04": {
+    "section": "overall_results_fragment",
+    "text": "When personal concerns overlap with rising workplace demands, {name} may be prone to anxiety and reduced focus that can temporarily affect confidence and composure.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-05": {
+    "section": "overall_results_fragment",
+    "text": "Performance and professional stability are closely tied to {name} operating within a structured, predictable routine under supportive leadership.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-IC-FIT": {
+    "section": "impression_conclusion_fragment",
+    "text": "{name} possesses adequate capabilities for the role and can maintain consistent performance within a predictable work environment under supportive supervision.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-RC-FIT": {
+    "section": "fit_recommendation",
+    "text": "There is no significant psychopathology noted at the time of examination; {name} appears fit for employment.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-OR-ATTRITION": {
+    "section": "overall_results_fragment",
+    "text": "Occupational engagement indicators suggest the presence of factors associated with elevated attrition risk, including limited perceived recognition and reduced environmental satisfaction. These factors warrant consideration in role assignment and onboarding planning.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-IC-NOTREC": {
+    "section": "impression_conclusion_fragment",
+    "text": "Present findings indicate significant concerns that should be addressed before a determination of employment suitability for {name} can be confidently made.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-RC-NOTREC": {
+    "section": "fit_recommendation",
+    "text": "Based on present findings, {name} is not recommended for the role at this time pending further evaluation and support.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-IC-CONSIDER": {
+    "section": "impression_conclusion_fragment",
+    "text": "{name} demonstrates workable capabilities for routine tasks but may require structure and clear expectations to sustain focus and composure under heavier workloads.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  },
+  "E-RC-CONSIDER": {
+    "section": "fit_recommendation",
+    "text": "{name} appears fit for employment, with the consideration that a structured and supportive work setting will best sustain performance.",
+    "source": "NARRATIVE_FRAGMENTS_ALL_CATEGORIES.md"
+  }
+}

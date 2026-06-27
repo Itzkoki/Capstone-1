@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const Staff = require('../models/Staff');
 const { COUNSELING_ROLES, ASSESSMENT_ROLES } = require('../models/Staff');
 const ActivityLog = require('../models/ActivityLog');
+const { invalidateAccountCache } = require('../middleware/auth');
 
 // Keep hashing strength consistent with the rest of the app.
 const SALT_ROUNDS = 12;
@@ -171,6 +172,9 @@ const setStaffStatus = async (req, res, next) => {
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Staff member not found.' });
     }
+    // Reflect the status change on the staff member's very next request
+    // (the authenticate middleware caches account status for a few seconds).
+    try { invalidateAccountCache('staff', targetId); } catch (_) {}
 
     await safeLog(
       req.user.id, is_active ? 'ACTIVATE_STAFF' : 'DEACTIVATE_STAFF', 'staff', targetId,

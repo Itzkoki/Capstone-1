@@ -14,6 +14,24 @@ const MODULES = {
   payment_verification: 'Payment Verification',
 };
 
+// Per-module role allowlist. The OTP gate is a SECOND factor for module access —
+// it must never be reached by a role that isn't authorized for the module in the
+// first place. We check this BEFORE sending/verifying any code so an
+// unauthorized user gets an immediate 403 instead of an OTP prompt.
+// Mirrors the route-level RBAC (case mgmt = any staff; payment verification =
+// supervising psychometrician + CD; staff management = CD only).
+const MODULE_ROLES = {
+  case_management:      ['psychometrician', 'supervising_psychometrician', 'qc_psychometrician', 'psychologist', 'clinical_director'],
+  payment_verification: ['supervising_psychometrician', 'clinical_director'],
+  staff_management:     ['clinical_director'],
+};
+
+// Returns true when `role` may access `module`. Unknown modules → false.
+function roleAllowedForModule(role, module) {
+  const allowed = MODULE_ROLES[module];
+  return Array.isArray(allowed) && allowed.includes(role);
+}
+
 // These modules are reached by both legacy users-CDs (users.id) and clinical
 // staff (staff.staff_id), so resolve the recipient from whichever table owns id.
 async function resolveRecipient(id) {
@@ -37,6 +55,11 @@ const sendOtp = async (req, res, next) => {
     }
     if (!MODULES[module]) {
       return res.status(400).json({ success: false, message: 'Unknown module.' });
+    }
+    // Authorize the role for THIS module before issuing any code (no OTP for
+    // users who aren't allowed into the module at all).
+    if (!roleAllowedForModule(role, module)) {
+      return res.status(403).json({ success: false, message: 'Access denied. Insufficient permissions for this module.' });
     }
 
     const recipient = await resolveRecipient(userId);
@@ -89,6 +112,9 @@ const verifyOtp = async (req, res, next) => {
     }
     if (!MODULES[module]) {
       return res.status(400).json({ success: false, message: 'Unknown module.' });
+    }
+    if (!roleAllowedForModule(role, module)) {
+      return res.status(403).json({ success: false, message: 'Access denied. Insufficient permissions for this module.' });
     }
     if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
       return res.status(400).json({ success: false, message: 'Please enter a valid 6-digit code.' });

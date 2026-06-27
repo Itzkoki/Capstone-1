@@ -380,6 +380,9 @@ exports.generateNarratives = async (req, res) => {
 
     // Generate the three sections (Test Results, Findings, Recommendations).
     const generated = RuleEngine.generate(assessmentData, report, genIndex);
+    // Explainability trace (Item 4): which themes/signals/rules drove this run.
+    // Attached non-enumerably to `generated`, so it never affects the section list.
+    const trace = generated.trace || null;
 
     // Replace (not append) generated narratives so regeneration always overwrites.
     await PsychologicalReport.clearNarratives(report.id);
@@ -401,7 +404,9 @@ exports.generateNarratives = async (req, res) => {
     const savedNarratives = await PsychologicalReport.getNarratives(report.id);
     const updatedSections = await PsychologicalReport.getSections(report.id);
 
-    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: `Generated narrative (run #${genIndex})`, req });
+    const firedSummary = (trace && trace.firedRules && trace.firedRules.length)
+      ? ` — rules: ${trace.firedRules.join(', ')}` : '';
+    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'edited', details: `Generated narrative (run #${genIndex})${firedSummary}`, req });
 
     res.json({
       success: true,
@@ -409,6 +414,7 @@ exports.generateNarratives = async (req, res) => {
       narratives: savedNarratives,
       sections: updatedSections,
       generationIndex: genIndex,
+      trace,                     // explainability: themes, signals, fired rule IDs
     });
   } catch (err) {
     console.error('Generate narratives error:', err);

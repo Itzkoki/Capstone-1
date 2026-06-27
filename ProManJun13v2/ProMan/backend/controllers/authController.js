@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs'); // pure-JS bcrypt — no native binary (avoi
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Staff = require('../models/Staff');
+const { invalidateAccountCache } = require('../middleware/auth');
 const Verification = require('../models/Verification');
 const PasswordReset = require('../models/PasswordReset');
 const LoginAttempt = require('../models/LoginAttempt');
@@ -620,7 +622,9 @@ const resetPassword = async (req, res, next) => {
 };
 
 // ── GET /api/auth/verify-token ───────────────────────
-
+// Acts as the trusted "/me": returns the identity derived from the *verified*
+// JWT (never from client storage). The frontend uses this — not sessionStorage —
+// for all authorization/UI decisions.
 const verifyToken = (req, res) => {
   // req.user is set by the authenticate middleware
   return res.status(200).json({
@@ -632,5 +636,30 @@ const verifyToken = (req, res) => {
   });
 };
 
-module.exports = { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken };
+// ── POST /api/auth/logout ────────────────────────────
+// Real, server-side logout: invalidates every token issued before "now" for the
+// authenticated account (sets sessions_invalid_after = NOW()). Combined with the
+// authenticate middleware's session-termination check, the just-used token — and
+// any other outstanding token for this account — becomes unusable immediately.
+// Works for both client and staff tokens (branches on token type).
+const logout = async (req, res, next) => {
+  try {
+    const { id, type } = req.user || {};
+    if (id != null) {
+      if (type === 'staff') {
+        await Staff.invalidateSessions(id);
+      } else {
+        await User.invalidateSessions(id);
+      }
+      // Drop the cached account status so the revocation is effective instantly
+      // rather than after the cache TTL.
+      try { invalidateAccountCache(type, id); } catch (_) {}
+    }
+    return res.status(200).json({ success: true, message: 'Logged out.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken, logout };
 

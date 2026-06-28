@@ -219,8 +219,8 @@
         <div class="field-row" style="overflow: visible; position: relative; z-index: 10;">
           <div class="field">
             <label for="age">Age <span class="req">*</span></label>
-            <input type="number" id="age" placeholder="Auto-calculated from date of birth" min="5" max="120" required readonly>
-            <div class="field__error-msg" id="err-age">Age must be at least 5.</div>
+            <input type="number" id="age" placeholder="Auto-calculated from date of birth" min="2" max="120" required readonly>
+            <div class="field__error-msg" id="err-age">Age must be at least 2.</div>
           </div>
           <div class="field field--dob">
             <label>Date of Birth <span class="req">*</span></label>
@@ -245,7 +245,7 @@
                 <button type="button" class="dob-cal__btn dob-cal__btn--confirm" id="dob-cal-confirm">Confirm</button>
               </div>
             </div>
-            <div class="field__error-msg" id="err-dob">Date of birth is required. Client must be at least 5 years old.</div>
+            <div class="field__error-msg" id="err-dob">Date of birth is required. Client must be at least 2 years old.</div>
           </div>
         </div>
 
@@ -975,8 +975,8 @@
 
         showError('familyName', !familyName); if (!familyName) valid = false;
         showError('givenName', !givenName); if (!givenName) valid = false;
-        showError('age', !age || age < 5); if (!age || age < 5) valid = false;
-        // DOB: required AND must be at least 5 years old
+        showError('age', !age || age < 2); if (!age || age < 2) valid = false;
+        // DOB: required AND must be at least 2 years old
         let dobInvalid = false;
         if (!dob) {
           dobInvalid = true;
@@ -986,7 +986,7 @@
           let dobAge = today.getFullYear() - dobDate.getFullYear();
           const mDiff = today.getMonth() - dobDate.getMonth();
           if (mDiff < 0 || (mDiff === 0 && today.getDate() < dobDate.getDate())) dobAge--;
-          if (dobAge < 5) dobInvalid = true;
+          if (dobAge < 2) dobInvalid = true;
         }
         showError('dob', dobInvalid); if (dobInvalid) valid = false;
         showError('gender', !gender); if (!gender) valid = false;
@@ -1240,10 +1240,10 @@
         if (m < 0 || (m === 0 && today.getDate() < selectedDate.getDate())) age--;
         if (age > 0) document.getElementById('age').value = age;
 
-        // Validate minimum age of 5
-        if (age < 5) {
+        // Validate minimum age of 2
+        if (age < 2) {
           showError('dob', true);
-          BPSToast.warning('The client must be at least 5 years old to submit the intake form.', { title: 'Age Requirement' });
+          BPSToast.warning('The client must be at least 2 years old to submit the intake form.', { title: 'Age Requirement' });
         } else {
           showError('dob', false);
         }

@@ -217,6 +217,14 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  cursor: pointer;
+}
+
+/* Clicking the message expands it to show the full notification content. */
+.notif-card__text.expanded {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
 }
 
 .notif-card__actions {

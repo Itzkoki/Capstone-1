@@ -785,6 +785,13 @@
         const initials = d.is_anonymous ? '?' : authorName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
         const score = Math.max(0, d.vote_score || 0);
         const uv = voteState[`thread_${d.id}`];
+        // Role badge for staff authors (Clinical Director, Psychologist, etc.)
+        const roleLabel = d.author_role && d.author_role !== 'client' && !d.is_anonymous
+          ? d.author_role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          : null;
+        const roleBadgeHtml = roleLabel
+          ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:linear-gradient(135deg,#1E3A8A,#15306E);color:#fff;margin-left:4px;vertical-align:middle;"><svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:#fff;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>${escHtml(roleLabel)}</span>`
+          : '';
         return `
         <div class="disc-card ${d.is_pinned ? 'pinned' : ''}" data-id="${d.id}">
           <div class="bpc-disc">
@@ -792,7 +799,7 @@
             <div class="bpc-disc__main">
               <div class="bpc-disc__title">${d.is_pinned ? '<svg viewBox="0 0 24 24" width="13" height="13" style="fill:var(--bpc-navy);vertical-align:-1px;margin-right:3px;"><path d="M14 4v5c0 1.12.37 2.16 1 3H9c.65-.86 1-1.9 1-3V4h4zm3-2H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3V4h1c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>' : ''}${escHtml(d.title)}</div>
               <div class="bpc-disc__excerpt">${escHtml((d.content || '').substring(0, 150))}${(d.content?.length || 0) > 150 ? '…' : ''}</div>
-              <div class="bpc-disc__meta"><b>${d.is_anonymous ? 'Anonymous' : escHtml(authorName)}</b>${d.is_anonymous ? ' <span class="bpc-anon">ANON</span>' : ''} · ${timeAgo(d.created_at)}${d.category ? ` · in <b>${escHtml(d.category)}</b>` : ''}</div>
+              <div class="bpc-disc__meta"><b>${d.is_anonymous ? 'Anonymous' : escHtml(authorName)}</b>${roleBadgeHtml}${d.is_anonymous ? ' <span class="bpc-anon">ANON</span>' : ''} · ${timeAgo(d.created_at)}${d.category ? ` · in <b>${escHtml(d.category)}</b>` : ''}</div>
               <div class="bpc-disc__actions">
                 <button class="bpc-iconbtn" id="${pfx}toggle-replies-btn-${d.id}" onclick="event.stopPropagation(); toggleReplies('${pfx}',${d.id})" title="View replies">
                   <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>${d.reply_count || 0}

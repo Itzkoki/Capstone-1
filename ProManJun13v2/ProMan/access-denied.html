@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Access Denied · Barcarse Psychological Services</title>
+  <style>
+    :root { --navy:#1f2d5a; --navy-d:#162145; --muted:#5b6376; --bg:#eef1f8; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg), #fff); color: var(--navy-d); padding: 24px;
+    }
+    .card {
+      background: #fff; max-width: 460px; width: 100%; border-radius: 16px; padding: 40px 34px;
+      box-shadow: 0 18px 50px rgba(22,33,69,.14); text-align: center;
+    }
+    .badge {
+      width: 76px; height: 76px; margin: 0 auto 20px; border-radius: 50%;
+      background: #fdecec; display: flex; align-items: center; justify-content: center;
+    }
+    .badge svg { width: 40px; height: 40px; fill: #d64545; }
+    h1 { font-size: 1.5rem; margin: 0 0 10px; }
+    p { color: var(--muted); line-height: 1.55; margin: 0 0 8px; }
+    .mod { font-weight: 600; color: var(--navy); }
+    .actions { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    a.btn {
+      text-decoration: none; padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: .95rem;
+      display: inline-block; transition: transform .08s ease, box-shadow .2s ease;
+    }
+    a.btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--navy); color: #fff; box-shadow: 0 8px 20px rgba(31,45,90,.25); }
+    .btn-ghost { background: #f1f3f9; color: var(--navy); }
+  </style>
+</head>
+<body>
+  <main class="card" role="alert">
+    <div class="badge" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
+    </div>
+    <h1>Access Denied</h1>
+    <p>You don't have permission to view <span class="mod" id="denied-module">this page</span>.</p>
+    <p>This area is restricted to specific clinical roles. If you believe this is a mistake, contact the Clinical Director.</p>
+    <div class="actions">
+      <a class="btn btn-primary" id="home-link" href="admin-dashboard.html">Go to Dashboard</a>
+      <a class="btn btn-ghost" href="landingpage.html">Home</a>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      // Show which module was denied (set by role-guard.js before redirecting).
+      var PRETTY = {
+        'staff-management.html': 'Staff Management',
+        'website-management.html': 'Website Management',
+        'payments-admin.html': 'Payment Verification',
+        'psych-reports.html': 'the Report Module',
+        'case-dashboard.html': 'Case Management',
+        'admin-dashboard.html': 'the Admin Dashboard'
+      };
+      var denied = '';
+      try { denied = sessionStorage.getItem('bps_access_denied') || ''; } catch (e) {}
+      if (denied && PRETTY[denied]) {
+        document.getElementById('denied-module').textContent = PRETTY[denied];
+      }
+
+      // Point the primary button at the right home for the signed-in user.
+      var user = {};
+      try { user = JSON.parse(sessionStorage.getItem('bps_user') || '{}') || {}; } catch (e) {}
+      var loggedIn = false;
+      try { loggedIn = sessionStorage.getItem('bps_logged_in') === 'true'; } catch (e) {}
+      var link = document.getElementById('home-link');
+      if (!loggedIn) {
+        link.textContent = 'Sign In';
+        link.href = (user.role && user.role !== 'client') ? 'staff-login.html' : 'login.html';
+      } else if (user.role && user.role !== 'client') {
+        link.href = 'admin-dashboard.html';
+      } else {
+        link.textContent = 'Home';
+        link.href = 'landingpage.html';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -58,7 +58,6 @@
         <a href="#" class="active" data-section="profile-info">Profile Information</a>
         <a href="#" data-section="my-requests" id="sidebar-my-requests">My Requests</a>
         <a href="#" data-section="reports" id="sidebar-reports">Generated Reports</a>
-        <a href="#" data-section="my-cases">My Cases</a>
         <a href="#" data-section="transactions">Transaction History</a>
         <a href="#" data-section="audit-trail" id="sidebar-audit-trail" style="display:none;">Audit Trail</a>
         <a href="#" data-section="audit-logs" id="sidebar-audit-logs" style="display:none;">Audit Logs</a>
@@ -266,13 +265,6 @@
             </table>
           </div>
         </div>
-      </section>
-
-      <!-- ─ SECTION: My Cases ─ -->
-      <section id="section-my-cases" class="profile-section">
-        <h2 class="section__title">My Cases</h2>
-        <p style="color:#718096;font-size:13.5px;margin-bottom:16px;">Track the progress of your clinical case from intake to report release.</p>
-        <div id="my-cases-list" style="display:grid;gap:14px;">Loading…</div>
       </section>
 
       <!-- ■■■ SECTION: Audit Trail (Clinical Director only) ■■■ -->
@@ -1957,44 +1949,6 @@
       }
     });
 
-    // ── My Cases ──
-    (async function loadMyCases() {
-      const container = document.getElementById('my-cases-list');
-      if (!container) return;
-      try {
-        const res = await fetch(API + '/cases', { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        if (!data.success || !data.data.length) {
-          container.innerHTML = '<p style="color:#a0aec0;font-style:italic">No cases found.</p>';
-          return;
-        }
-        container.innerHTML = data.data.map(c => {
-          const sc = (s => {
-            if (!s) return '';
-            const l = s.toLowerCase();
-            if (l.includes('rejected')) return 'background:#fecaca;color:#991b1b';
-            if (l.includes('closed')) return 'background:#e2e8f0;color:#475569';
-            if (l.includes('released')) return 'background:#e9d5ff;color:#6b21a8';
-            if (l.includes('approved') || l.includes('ready')) return 'background:#a7f3d0;color:#047857';
-            if (l.includes('completed')) return 'background:#d1fae5;color:#065f46';
-            if (l.includes('progress') || l.includes('scheduled')) return 'background:#dbeafe;color:#1e40af';
-            if (l.includes('drafting')) return 'background:#e0e7ff;color:#3730a3';
-            return 'background:#fef3c7;color:#92400e';
-          })(c.status);
-          return '<div style="background:#fff;border:1px solid #e6eaf1;border-radius:14px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.04)">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-              '<strong style="color:#667eea;font-size:15px">' + c.case_id + '</strong>' +
-              '<span style="font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:20px;' + sc + '">' + c.status + '</span>' +
-            '</div>' +
-            '<div style="font-size:13px;color:#475569">' +
-              'Staff: ' + (c.psychologist_name || 'Unassigned') + ' &middot; Intake: ' + new Date(c.intake_date).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) +
-            '</div>' +
-          '</div>';
-        }).join('');
-      } catch (e) {
-        container.innerHTML = '<p style="color:#e53e3e">Failed to load cases.</p>';
-      }
-    })();
   </script>
   <script src="navbar.js"></script>
 </body>

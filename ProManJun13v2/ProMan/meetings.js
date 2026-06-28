@@ -1748,10 +1748,11 @@ let clientApptsCache = [];
 let clientDashPollTimer = null;
 let lastLiveSignature = '';
 
-// A compact fingerprint of what drives the Join button: each room's id + status.
+// A compact fingerprint of what drives the Join button + Live/Scheduled badge:
+// each room's id + status + whether the host is currently present.
 function liveSignature(sessions) {
   return sessions
-    .map(s => `${s.id}:${s.session_status}`)
+    .map(s => `${s.id}:${s.session_status}:${s.host_present ? 1 : 0}`)
     .sort()
     .join('|');
 }
@@ -1931,7 +1932,9 @@ function renderUpcomingCard(next, live) {
     <section class="cd-card cd-upcoming cd-upcoming--live">
       <div class="cd-upcoming__head">
         <span class="cd-upcoming__eyebrow"><i data-lucide="calendar-check"></i> Meeting Today</span>
-        <span class="cd-upcoming__livebadge"><span class="cd-livedot"></span> Live now</span>
+        ${live.host_present
+          ? `<span class="cd-upcoming__livebadge"><span class="cd-livedot"></span> Live now</span>`
+          : `<span class="cd-badge cd-badge--scheduled">Scheduled</span>`}
       </div>
       <div class="cd-upcoming__row">
         <div class="cd-upcoming__meta">
@@ -2199,26 +2202,27 @@ function staffUpcomingCard(next) {
         <button class="cd-btn cd-btn--primary" onclick="openScheduleModal()"><i data-lucide="calendar-plus"></i> Schedule a Meeting</button>
       </section>`;
   }
-  const isActive = next.session_status === 'active';
+  const hostPresent = !!next.host_present;   // "Live now" only while the host is in the room
+  const started = !!next.started_at;
   const when = new Date(next.started_at || next.created_at);
   return `
     <section class="cd-card cd-upcoming cd-upcoming--live">
       <div class="cd-upcoming__head">
         <span class="cd-upcoming__eyebrow"><i data-lucide="calendar-check"></i> Upcoming Meeting</span>
-        <span class="${isActive ? 'cd-upcoming__livebadge' : 'cd-badge cd-badge--scheduled'}">${isActive ? '<span class="cd-livedot"></span> Live now' : 'Scheduled'}</span>
+        <span class="${hostPresent ? 'cd-upcoming__livebadge' : 'cd-badge cd-badge--scheduled'}">${hostPresent ? '<span class="cd-livedot"></span> Live now' : 'Scheduled'}</span>
       </div>
       <div class="cd-upcoming__row">
         <div class="cd-upcoming__meta">
           <h2 class="cd-upcoming__title">${escHtml(next.meeting_title || 'Consultation Session')}</h2>
           <p class="cd-upcoming__with"><i data-lucide="user-round"></i> with ${escHtml(next.client_name || 'Client not assigned')}</p>
           <div class="cd-upcoming__facts">
-            <span><i data-lucide="${isActive ? 'play-circle' : 'calendar'}"></i> ${escHtml(isActive ? 'Started' : 'Created')} ${escHtml(when.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span>
+            <span><i data-lucide="${started ? 'play-circle' : 'calendar'}"></i> ${escHtml(started ? 'Started' : 'Created')} ${escHtml(when.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span>
             <span><i data-lucide="hash"></i> ${escHtml(next.meeting_code || '—')}</span>
           </div>
         </div>
         <div class="cd-upcoming__cta">
           <button class="cd-btn cd-btn--join" onclick="openSession(${next.id})"><i data-lucide="video"></i> Join Meeting</button>
-          ${isActive ? `<button class="cd-btn cd-btn--ghost" onclick="endSessionDirect(${next.id})"><i data-lucide="phone-off"></i> End for All</button>` : ''}
+          ${next.session_status === 'active' ? `<button class="cd-btn cd-btn--ghost" onclick="endSessionDirect(${next.id})"><i data-lucide="phone-off"></i> End for All</button>` : ''}
         </div>
       </div>
       ${SECURE_NOTE}

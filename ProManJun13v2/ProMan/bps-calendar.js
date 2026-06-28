@@ -62,6 +62,17 @@
     const apiBase = opts.apiBase || '';
     const token = opts.token || '';
 
+    // Specific date+time combinations to remove from the time picker — e.g. an
+    // appointment's current/proposed schedule during a reschedule, so the client
+    // cannot re-select the same slot. Each entry is normalised to local
+    // 'YYYY-MM-DDTHH:MM' for comparison against the selected date + slot.
+    const normalizeDT = (val) => {
+      const d = new Date(val);
+      if (isNaN(d)) return '';
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    };
+    const excludedSlots = new Set((opts.excludedSlots || []).map(normalizeDT).filter(Boolean));
+
     // Initial month to display. Defaults to minDate, but callers can open the
     // calendar on a different month (e.g. today, when minDate is far in the past).
     const startView = opts.startDate ? new Date(opts.startDate) : (maxDate || minDate);
@@ -94,8 +105,7 @@
         <div class="cal-time-row">
           <label for="${uid}-time">Time:</label>
           <select id="${uid}-time">
-            <option value="">Select time</option>
-            ${TIME_SLOTS.map(t => `<option value="${t.v}">${t.l}</option>`).join('')}
+            <option value="">Select a date first</option>
           </select>
         </div>` : ''}
         <div class="cal-availability" id="${uid}-avail"></div>
@@ -145,19 +155,26 @@
     function updateTimeSlots(bookedSlotsList) {
       if (!timeSelect) return;
       const currentVal = timeSelect.value;
+      const selDateStr = selectedDate
+        ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
+        : '';
+      const isExcludedSlot = (slot) => selDateStr && excludedSlots.has(`${selDateStr}T${slot}`);
       timeSelect.innerHTML = '<option value="">Select time</option>';
       TIME_SLOTS.forEach(t => {
         const isBooked = bookedSlotsList.includes(t.v);
         const isPast = isPastSlot(t.v);
+        const isExcluded = isExcludedSlot(t.v);
         const opt = document.createElement('option');
         opt.value = t.v;
-        opt.textContent = isPast ? `${t.l} — Unavailable` : (isBooked ? `${t.l} — Booked` : t.l);
-        opt.disabled = isBooked || isPast;
-        if (isBooked || isPast) opt.style.color = '#a0aec0';
+        opt.textContent = isExcluded ? `${t.l} — Current schedule`
+          : isPast ? `${t.l} — Unavailable`
+          : isBooked ? `${t.l} — Booked` : t.l;
+        opt.disabled = isBooked || isPast || isExcluded;
+        if (isBooked || isPast || isExcluded) opt.style.color = '#a0aec0';
         timeSelect.appendChild(opt);
       });
-      // Restore previous selection only if it is still available (not booked, not past).
-      if (currentVal && !bookedSlotsList.includes(currentVal) && !isPastSlot(currentVal)) {
+      // Restore previous selection only if it is still available (not booked, past, or excluded).
+      if (currentVal && !bookedSlotsList.includes(currentVal) && !isPastSlot(currentVal) && !isExcludedSlot(currentVal)) {
         timeSelect.value = currentVal;
       } else {
         timeSelect.value = '';

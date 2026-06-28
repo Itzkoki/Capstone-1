@@ -21,7 +21,12 @@
   var loggedIn = false, user = {};
   try { loggedIn = sessionStorage.getItem('bps_logged_in') === 'true'; } catch (e) {}
   try { user = JSON.parse(sessionStorage.getItem('bps_user') || '{}') || {}; } catch (e) {}
-  var role = user && user.role ? user.role : null;
+  // Derive the role for the FIRST PAINT from the JWT, not from bps_user.role.
+  // The token is signed by the server, so a client can't forge a staff role into
+  // it — editing bps_user.role in devtools therefore has no effect on the menu.
+  // (bps_user.role is only a display cache; reconcileRole() below snaps it back
+  // to the server's truth on every load so a tampered value never persists.)
+  var role = decodeJwtRole() || (user && user.role ? user.role : null);
   var isStaff = loggedIn && role && role !== 'client';
   var isClinicAdmin = role === 'clinical_director';
 
@@ -317,7 +322,74 @@
   // mark-as-read / delete without waiting for the next poll.
   window.BPSNotifBadge = { set: setNotifBadge, refresh: refreshNotifBadge };
 
-  function init() { render(); wire(); refreshNotifBadge(); }
+  // ---------- server-authoritative role reconciliation ----------
+  // The initial menu above is built from the sessionStorage role for a fast
+  // first paint, but sessionStorage is client-controlled: a client can flip
+  // bps_user.role to a staff role and would otherwise see the full staff menu
+  // (Case Management, Reports, Staff Management, …). That is a frontend
+  // privilege-escalation *display* bug. Here we ask the server for the role it
+  // derives from the verified JWT and, if it disagrees, rebuild the navbar from
+  // the trusted value — so a tampered role can never reveal the staff menu, and
+  // an expired/revoked token collapses back to the public menu.
+  var VERIFY_API = 'http://localhost:5000/api/auth/verify-token';
+
+  // Read the role straight out of the JWT payload. The token is server-signed,
+  // so this value can't be forged by editing sessionStorage — a client can't
+  // mint a staff role into it without the server's secret. (We don't verify the
+  // signature here; that's the backend's job. We only use it for display, and
+  // reconcileRole() confirms it against the server anyway.)
+  function decodeJwtRole() {
+    var tok = getToken();
+    if (!tok) return null;
+    try {
+      var payload = tok.split('.')[1];
+      if (!payload) return null;
+      payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      var json = JSON.parse(decodeURIComponent(escape(atob(payload))));
+      return json && json.role ? json.role : null;
+    } catch (e) { return null; }
+  }
+
+  function fetchTrustedRole(cb) {
+    var tok = getToken();
+    if (!tok) { cb(null); return; }                 // no token => not staff
+    fetch(VERIFY_API, { headers: { 'Authorization': 'Bearer ' + tok } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { cb(j && j.data && j.data.user ? j.data.user.role : null); })
+      .catch(function () { cb(undefined); });         // network error => unknown
+  }
+
+  function reconcileRole() {
+    fetchTrustedRole(function (trustedRole) {
+      if (trustedRole === undefined) return;          // unknown — keep current render
+
+      // ALWAYS overwrite the stored display role with the server's truth, even
+      // when the menu doesn't change. This is what makes a devtools edit to
+      // bps_user.role NOT persist: on the next load it's snapped back to the
+      // real role. Authorization never trusts this value regardless.
+      try {
+        var u = JSON.parse(sessionStorage.getItem('bps_user') || '{}') || {};
+        var want = trustedRole || 'client';
+        if (u.role !== want) {
+          u.role = want;
+          sessionStorage.setItem('bps_user', JSON.stringify(u));
+        }
+      } catch (e) {}
+
+      var trustedIsStaff = !!(trustedRole && trustedRole !== 'client');
+      var changed = trustedIsStaff !== isStaff ||
+                    (trustedIsStaff && trustedRole !== role);
+      if (!changed) return;
+
+      role = trustedRole;
+      isStaff = trustedIsStaff;
+      isClinicAdmin = role === 'clinical_director';
+      menu = isStaff ? staffMenu() : publicMenu();
+      render();
+    });
+  }
+
+  function init() { render(); wire(); refreshNotifBadge(); reconcileRole(); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

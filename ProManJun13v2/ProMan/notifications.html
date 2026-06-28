@@ -498,6 +498,13 @@
     }
 
     // ── Render notification cards ─────────────────────────
+    // Expand/collapse a notification's message so the full content is shown on
+    // click instead of the 2-line clamped preview.
+    function toggleNotifText(e, el) {
+      e.stopPropagation();
+      el.classList.toggle('expanded');
+    }
+
     function renderNotifications() {
       const list = document.getElementById('notif-list');
       const search = document.getElementById('search-input').value.toLowerCase();
@@ -562,7 +569,7 @@
                   ${n.unread ? '<span class="notif-unread-dot" title="Unread"></span>' : ''}
                 </div>
                 <div class="notif-card__title">${n.title}</div>
-                <div class="notif-card__text">${n.text}</div>
+                <div class="notif-card__text" onclick="toggleNotifText(event, this)" title="Click to view the full message">${n.text}</div>
                 <div class="notif-card__time">${n.time}</div>
               </div>
               ${!notifSelectionMode ? `<div class="notif-card__actions">
@@ -825,6 +832,17 @@
           return;
         }
 
+        // Record each appointment's current/proposed schedule so the reschedule
+        // picker can exclude those exact slots from the selectable options.
+        apptScheduleInfo = {};
+        list.forEach(a => {
+          apptScheduleInfo[a.id] = {
+            proposed: a.proposed_datetime || null,
+            preferred: a.preferred_datetime || null,
+            approved: a.approved_datetime || null,
+          };
+        });
+
         body.innerHTML = list.map(a => {
           const statusColors = {
             pending_review: '#975a16', approved: '#0B6E3B', reschedule_proposed: '#8A6A18',
@@ -893,7 +911,7 @@
                 <p style="font-size:14px;color:#0A5C31;font-weight:700;"><svg viewBox="0 0 24 24" width="16" height="16" style="fill:#0A5C31;vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Schedule Confirmed</p>
                 <p style="font-size:15px;color:#1a202c;font-weight:700;margin-top:4px;">${fmtDate(a.approved_datetime || a.proposed_datetime || a.preferred_datetime)}</p>
               </div>
-              ${buildPaymentSection(a, paymentsByAppt[a.id])}`;
+              ${currentUser.role === 'supervising_psychometrician' ? '' : buildPaymentSection(a, paymentsByAppt[a.id])}`;
           } else if (a.status === 'declined') {
             statusInfo = `
               <div style="margin-top:10px;padding:12px 16px;background:#fff5f5;border-radius:10px;border:1px solid #fed7d7;">
@@ -1432,6 +1450,9 @@
     }
 
     let notifCalendars = {};
+    // Per-appointment schedule info (current/proposed) used to exclude those
+    // exact slots from the reschedule picker. Populated in showAppointmentModal.
+    let apptScheduleInfo = {};
 
     function toggleRescheduleInline(apptId) {
       const panel = document.getElementById(`reschedule-inline-${apptId}`);
@@ -1439,8 +1460,14 @@
       panel.style.display = isHidden ? 'block' : 'none';
 
       if (isHidden && !notifCalendars[apptId]) {
+        // Exclude the appointment's current and newly proposed schedule so the
+        // client cannot re-pick them — the proposed one is offered separately as
+        // an accept/decline option above.
+        const info = apptScheduleInfo[apptId] || {};
+        const excludedSlots = [info.proposed, info.preferred, info.approved].filter(Boolean);
         notifCalendars[apptId] = BPSCalendar.mount(`#notif-cal-container-${apptId}`, {
           showTime: true,
+          excludedSlots,
           onChange: (isoVal) => {
             document.getElementById(`new-dt-${apptId}`).value = isoVal;
           },

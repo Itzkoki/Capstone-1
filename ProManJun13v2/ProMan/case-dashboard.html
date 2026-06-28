@@ -1043,10 +1043,17 @@
         return html + '<p style="color:#94a3b8;font-size:13px">No intake form has been submitted for this case yet.</p>';
       }
 
-      // Surface the preferred schedule date first, highlighted.
-      const pref = form.preferred_schedule || form.preferred_datetime;
+      // Surface the schedule, highlighted. Prefer the appointment's latest
+      // proposed/approved time so reschedules are reflected here instead of the
+      // client's original intake preference.
+      const appt0 = Array.isArray(c.appointments) ? c.appointments[0] : null;
+      const latestSchedule = appt0 && (appt0.approved_datetime || appt0.proposed_datetime || appt0.preferred_datetime);
+      const prefLabel = latestSchedule ? 'Scheduled' : 'Preferred Schedule';
+      const pref = latestSchedule
+        ? fmtDateTime(latestSchedule)
+        : (form.preferred_schedule || form.preferred_datetime);
       if (pref) {
-        html += `<div class="form-pref-highlight"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H5V8h14v13z"/></svg><span><strong>Preferred Schedule:</strong> ${esc(String(pref))}</span></div>`;
+        html += `<div class="form-pref-highlight"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H5V8h14v13z"/></svg><span><strong>${prefLabel}:</strong> ${esc(String(pref))}</span></div>`;
       }
 
       html += '<div class="detail-grid">';
@@ -1116,24 +1123,6 @@
         c.assessments.forEach(a => {
           const astatus = a.completed_at ? 'Completed' : (a.started_at ? 'In Progress' : 'Pending');
           html += `<li>${esc(a.psychologist_name || '—')} — ${astatus}<span class="note-meta"> Started ${fmtDateTime(a.started_at)}</span></li>`;
-        });
-        html += '</ul>';
-      }
-
-      if (c.reports && c.reports.length > 0) {
-        html += '<div class="section-title">Reports (' + c.reports.length + ')</div><ul class="notes-list">';
-        c.reports.forEach(r => {
-          const rcode = r.report_code ? `<span style="font-size:10px;color:#667eea;font-weight:700;background:#eef1fa;padding:2px 6px;border-radius:6px;margin-right:6px">${esc(r.report_code)}</span>` : '';
-          const locked = r.is_locked ? ' ' + ICON.lock : '';
-          // Reflect the signature-workflow stage (when set) instead of the raw status.
-          const stageLabel = reportStageLabel(r.signature_stage);
-          const statusText = stageLabel
-            ? `<span style="color:#b45309;font-weight:700">${stageLabel}</span>`
-            : esc(r.status);
-          html += `<li>${rcode}${statusText}${locked} (v${r.current_version || 1})
-            <span class="note-meta"> ${fmtDateTime(r.created_at)}</span>
-            <button onclick="openInPsyGen(${r.id})" style="margin-left:10px;padding:2px 10px;border:1.5px solid #667eea;border-radius:6px;background:#fff;color:#667eea;font-weight:700;font-size:11px;cursor:pointer">Open in PsyGen</button>
-          </li>`;
         });
         html += '</ul>';
       }
@@ -1363,10 +1352,24 @@
 
       const fmt = d => d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
+      // Capture the appointment's current schedule so it can be excluded from the
+      // "Propose New Time" options (prevents re-proposing the same date/time).
+      proposeCurrentDate = '';
+      proposeCurrentTime = '';
+      const currentSchedule = appt.proposed_datetime || appt.preferred_datetime;
+      if (currentSchedule) {
+        const csd = new Date(currentSchedule);
+        if (!isNaN(csd)) {
+          proposeCurrentDate = `${csd.getFullYear()}-${String(csd.getMonth()+1).padStart(2,'0')}-${String(csd.getDate()).padStart(2,'0')}`;
+          proposeCurrentTime = `${String(csd.getHours()).padStart(2,'0')}:${String(csd.getMinutes()).padStart(2,'0')}`;
+        }
+      }
+
       const isCounselingCase = c.service_type === 'counseling';
       const aif = c.assessment_intake_forms && c.assessment_intake_forms[0];
-      const pid = appt.pending_intake_data;
-      const rawReferral = (aif && aif.reason_for_referral) || (pid && (pid.assessmentType || pid.assessment_type)) || '';
+      let pid = appt.pending_intake_data;
+      if (typeof pid === 'string') { try { pid = JSON.parse(pid); } catch (_) { pid = null; } }
+      const rawReferral = (aif && aif.reason_for_referral) || (pid && (pid.assessmentType || pid.assessment_type || pid.reasonForReferral)) || '';
 
       const typeMap = {
         'neurodevelopmental assessment': 'neurodevelopmental',
@@ -1376,19 +1379,12 @@
       };
       const normalizedType = typeMap[rawReferral.toLowerCase()] || rawReferral.toLowerCase();
 
-      // Counseling cases have no assessment type — skip the field entirely
+      // The assessment type is taken from the client's intake selection — it is
+      // NOT chosen here. Carry it silently via a hidden input so the approve call
+      // still records it, without showing an Assessment Type field to the staff.
       let assessmentTypeField = '';
       if (!isCounselingCase) {
-        assessmentTypeField = rawReferral
-          ? `<input type="hidden" id="appt-confirm-type" value="${esc(normalizedType)}">
-             <div style="background:#EEF1FA;border:1.5px solid #c7d2f5;border-radius:20px;padding:8px 18px;font-size:13.5px;font-weight:600;color:#15306E;display:inline-block;">${esc(rawReferral)}</div>
-             <div style="font-size:11.5px;color:#718096;margin:4px 0 8px;">Client's selection — cannot be changed</div>`
-          : `<select id="appt-confirm-type" class="input-modal-field">
-               <option value="">— Select Assessment Type —</option>
-               <option value="neurodevelopmental">Neurodevelopmental</option>
-               <option value="clinical">Clinical</option>
-             </select>`;
-        assessmentTypeField = `<label style="font-size:12px;font-weight:600;color:#475569">Assessment Type <span style="color:#e53e3e">*</span></label>${assessmentTypeField}`;
+        assessmentTypeField = `<input type="hidden" id="appt-confirm-type" value="${esc(normalizedType)}">`;
       }
 
       const form = document.createElement('div');
@@ -1432,6 +1428,10 @@
     };
     let proposeCalendar = null;
     let proposeDateStr = '';
+    // The appointment's current schedule, excluded from the propose options so
+    // staff cannot re-propose the exact same date/time that is already assigned.
+    let proposeCurrentDate = '';
+    let proposeCurrentTime = '';
 
     function toggleProposeForm() {
       const f = document.getElementById('propose-form');
@@ -1466,7 +1466,11 @@
                 PROPOSE_TIME_SLOTS.forEach(slot => {
                   const booked = avail.bookedSlots && avail.bookedSlots.includes(slot);
                   const past = isPastSlot(slot);
-                  html += past
+                  // Exclude the appointment's currently assigned schedule slot.
+                  const isCurrent = proposeDateStr === proposeCurrentDate && slot === proposeCurrentTime;
+                  html += isCurrent
+                    ? `<option value="${slot}" disabled>${PROPOSE_TIME_LABELS[slot]} — Current schedule</option>`
+                    : past
                     ? `<option value="${slot}" disabled>${PROPOSE_TIME_LABELS[slot]} — Unavailable</option>`
                     : booked
                     ? `<option value="${slot}" disabled>${PROPOSE_TIME_LABELS[slot]} — Booked</option>`
@@ -1489,9 +1493,10 @@
 
     async function confirmApptFromCase(apptId, caseId) {
       const isCounselingCase = currentCaseData && currentCaseData.service_type === 'counseling';
+      // Assessment type is derived from the client's intake (hidden field) — the
+      // Supervising Psychometrician no longer selects it at schedule confirmation.
       const assessmentTypeEl = document.getElementById('appt-confirm-type');
       const assessmentType = assessmentTypeEl ? assessmentTypeEl.value : '';
-      if (!isCounselingCase && !assessmentType) { showToast('Please select an assessment type.', 'error'); return; }
 
       const bar = document.getElementById('action-bar');
       const btns = bar ? bar.querySelectorAll('button') : [];

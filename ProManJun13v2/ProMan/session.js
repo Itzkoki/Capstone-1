@@ -85,8 +85,31 @@
     return (user.role && user.role !== 'client') ? STAFF_LOGIN_PAGE : LOGIN_PAGE;
   }
 
-  function logout() {
-    const dest = loginPageForUser();
+  async function logout() {
+    // Deliberate logout returns everyone to the public landing page (not the
+    // login screen). Forced logouts (expired/revoked session) still go to the
+    // role-appropriate login page via validateTokenAsync.
+    const dest = CLIENT_HOME;
+    const token = getToken();
+    // Revoke the session SERVER-side so the JWT can no longer be used, even if a
+    // copy was captured. We AWAIT the revocation (bounded) before navigating —
+    // a fire-and-forget request issued right before window.location.replace can
+    // be dropped by the browser, which would leave the token valid until its
+    // natural 8h expiry. keepalive stays as a fallback if the page unloads
+    // first; the timeout guarantees we never trap the user on the page if the
+    // network hangs.
+    if (token) {
+      try {
+        await Promise.race([
+          fetch(`${API_BASE}/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            keepalive: true,
+          }).catch(function () {}),
+          new Promise(function (resolve) { setTimeout(resolve, 2000); }),
+        ]);
+      } catch (_) {}
+    }
     clearSession();
     // Broadcast logout to other tabs via localStorage event
     localStorage.setItem('bps_logout', Date.now().toString());
@@ -113,6 +136,27 @@
     return true;
   }
 
+  // ── Async: fetch the TRUSTED identity from the server ──────────
+  // The returned user (id, email, role, type) is derived from the *verified* JWT
+  // on the backend — never from client storage. This is the only role value that
+  // should drive authorization/UI decisions. Returns the user object on success,
+  // or null when the session is invalid/expired (caller decides what to do).
+  async function fetchTrustedUser() {
+    const token = getToken();
+    if (!token) return null;
+    try {
+      const res = await fetch(`${API_BASE}/verify-token`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      return (json && json.data && json.data.user) ? json.data.user : null;
+    } catch {
+      return null; // network error — caller treats as "unknown", not "denied"
+    }
+  }
+
   // ── Async: validate token with the server ──────────
   // Returns true if the session is still valid, false if it was force-logged-out.
   async function validateTokenAsync() {
@@ -126,14 +170,27 @@
       });
 
       if (!res.ok) {
-        // Token is invalid/expired, or the staff account was deactivated server
-        // side — force logout to the appropriate login page.
+        // Token is invalid/expired, or the account was deactivated/logged-out
+        // server side — force logout to the appropriate login page.
         const dest = loginPageForUser();
         clearSession();
         localStorage.setItem('bps_logout', Date.now().toString());
         window.location.replace(dest);
         return false;
       }
+      // Keep the cached display copy of the role in sync with the trusted value
+      // so a tampered sessionStorage role is corrected on the next validation.
+      try {
+        const json = await res.json();
+        const trusted = json && json.data && json.data.user;
+        if (trusted && trusted.role) {
+          const cached = getUser();
+          if (cached.role !== trusted.role) {
+            cached.role = trusted.role;
+            sessionStorage.setItem('bps_user', JSON.stringify(cached));
+          }
+        }
+      } catch (_) {}
       return true;
     } catch {
       // Network error — keep the session alive (offline tolerance).
@@ -157,7 +214,8 @@
   window.addEventListener('storage', (event) => {
     if (event.key === 'bps_logout' && event.newValue) {
       clearSession();
-      window.location.replace(LOGIN_PAGE);
+      // Mirror the deliberate-logout destination in every other open tab.
+      window.location.replace(CLIENT_HOME);
     }
   });
 
@@ -169,5 +227,6 @@
     logout,
     getHomePage,
     clearSession,
+    fetchTrustedUser,
   };
 })();

@@ -39,6 +39,7 @@
     arrowUp:     svg('<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>'),
     play:        svg('<path d="m6 3 14 9-14 9z"/>'),
     undo:        svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-2"/>'),
+    archive:     svg('<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>'),
   };
 
   // Inject sizing/alignment once. Icons scale to the text (1em) inline, and to a

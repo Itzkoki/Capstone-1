@@ -51,6 +51,9 @@ async function openReport(id) {
       btns += `<button class="btn btn-primary btn-sm" onclick="downloadPdf(${r.id})">${ICON.download} PDF</button> `;
 
     // ── Signature & Release workflow buttons (post-approval) ──────────
+    // The "Save Signed PDF" action is the required signing step; submission is
+    // blocked (at click-time, see the submit* handlers) until it has been saved
+    // for the current stage. The "Sign" button is intentionally gone.
     if (sigStage === 'supervising' && isSup) {
       btns += `<button class="btn btn-primary btn-sm" onclick="pickSignedPdf(${r.id},'supervising')">${ICON.check} Save Signed PDF</button> `;
       btns += `<button class="btn btn-success btn-sm" onclick="submitToQc(${r.id})">${ICON.arrowUp} Submit to Quality Control Psychometrician</button> `;
@@ -60,7 +63,6 @@ async function openReport(id) {
       btns += `<button class="btn btn-success btn-sm" onclick="markSigned(${r.id})">${ICON.arrowUp} Submit to Psychologist</button> `;
     }
     if (sigStage === 'psychologist' && (isPsy || isOwner)) {
-      btns += `<button class="btn btn-ghost-primary btn-sm" onclick="signReport(${r.id})">${ICON.pencil} Sign</button> `;
       btns += `<button class="btn btn-primary btn-sm" onclick="pickSignedPdf(${r.id},'psychologist')">${ICON.check} Save Signed PDF</button> `;
       btns += `<button class="btn btn-success btn-sm" onclick="submitToDirector(${r.id})">${ICON.arrowUp} Submit to Clinical Director</button> `;
     }
@@ -127,14 +129,27 @@ async function openReport(id) {
     if (r.status==='finalized' && isCD)
       btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">${ICON.pencil} Edit</button> `;
 
-    // CD: lock/unlock
-    if (isCD)
+    // CD: lock/unlock — no longer offered once the report is Ready For Release
+    // or Released (those stages are managed via release/archive, not locking).
+    const isReleaseStage = sigStage === 'ready_for_release' || sigStage === 'released';
+    if (isCD && !isReleaseStage)
       btns += r.is_locked
         ? `<button class="btn btn-ghost btn-sm" onclick="workflowLock(${r.id},false)">${ICON.unlock} Unlock</button> `
         : `<button class="btn btn-ghost btn-sm" onclick="workflowLock(${r.id},true)">${ICON.lock} Lock</button> `;
 
-    if (canDeleteReport(r))
-      btns += `<button class="btn btn-danger btn-sm" onclick="deleteReport(${r.id})">${ICON.trash} Delete</button> `;
+    // Ready-For-Release / Released reports are archived (not deleted) so they are
+    // preserved rather than permanently removed. On earlier stages the Clinical
+    // Director keeps the Delete/Trash flow, while the pipeline staff roles
+    // (Supervising / QC / Psychologist) archive instead of deleting.
+    if (isReleaseStage) {
+      if (isCD)
+        btns += `<button class="btn btn-warning btn-sm" onclick="archiveReport(${r.id})">${ICON.archive} Archive</button> `;
+    } else if (isCD) {
+      if (canDeleteReport(r))
+        btns += `<button class="btn btn-danger btn-sm" onclick="deleteReport(${r.id})">${ICON.trash} Delete</button> `;
+    } else if (canArchiveReport(r)) {
+      btns += `<button class="btn btn-warning btn-sm" onclick="archiveReport(${r.id})">${ICON.archive} Archive</button> `;
+    }
     document.getElementById('detailActions').innerHTML = btns;
 
     // During the signature workflow the Supervising / QC reviewers only see the
@@ -206,7 +221,17 @@ function pickSignedPdf(id, stage) {
   input.click();
 }
 
+// True only once a signed PDF has been saved for the report's current stage.
+// Submission to the next stage is blocked until then (the backend enforces this
+// too) — the buttons stay enabled, but clicking before signing shows a prompt.
+function requireSignedPdf() {
+  if (currentReport && currentReport.has_stage_signed_pdf) return true;
+  toast('Please save the signed PDF first by clicking "Save Signed PDF".', 'error');
+  return false;
+}
+
 function submitToQc(id) {
+  if (!requireSignedPdf()) return;
   prConfirm('Submit to Quality Control', 'Submit this signed report to the Quality Control Psychometrician? Your signature will be locked.', async () => {
     showLoading();
     try {
@@ -219,6 +244,7 @@ function submitToQc(id) {
 }
 
 function markSigned(id) {
+  if (!requireSignedPdf()) return;
   prConfirm('Submit to Psychologist', 'Submit this signed report to the Psychologist for their signature? Your signature will be locked.', async () => {
     showLoading();
     try {
@@ -252,6 +278,7 @@ function signReport(id) {
 }
 
 function submitToDirector(id) {
+  if (!requireSignedPdf()) return;
   prConfirm('Submit to Clinical Director', 'Submit this signed report to the Clinical Director? The report will become Ready For Release and your signature will be locked.', async () => {
     showLoading();
     try {
@@ -377,6 +404,36 @@ function canDeleteReport(r) {
   const lockedFromDelete = !!(r && (r.status === 'Approved' || r.signature_stage));
   if (lockedFromDelete) return false;
   return !!(r && r.psychologist_id === USER.id);
+}
+
+// Archive (instead of delete) a Ready-For-Release / Released report. Archived
+// reports are preserved and can be restored from the Archive view.
+function archiveReport(id) {
+  prConfirm('Archive Report', 'Archive this report? It will be moved to the Archive and can be restored later.', async () => {
+    showLoading();
+    try {
+      await api('/reports/' + id + '/archive', { method: 'POST' });
+      toast('Report archived.');
+      currentReport = null;
+      showView('dashboard');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+    hideLoading();
+  });
+}
+
+// Which pipeline staff (non-CD) may archive a report from the detail view. They
+// archive instead of deleting; the action is reversible from the Archive view.
+// Supervising Psychometrician / Psychologist may archive their own reports; the
+// Quality Control Psychometrician may archive reports in their review queue.
+function canArchiveReport(r) {
+  if (!USER || !r) return false;
+  const role = USER.role;
+  if (role === 'qc_psychometrician') return true;
+  if (role === 'supervising_psychometrician' || role === 'psychologist')
+    return String(r.psychologist_id) === String(USER.id);
+  return false;
 }
 
 function deleteReport(id) {

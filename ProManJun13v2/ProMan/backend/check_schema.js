@@ -1,7 +1,7 @@
 require('dotenv').config();
 const db = require('./config/db');
 (async () => {
-  const tables = ['report_versions', 'report_approvals', 'report_audit_logs', 'report_permissions',
+  const tables = ['report_versions', 'report_approvals', 'report_audit_logs',
                   'assessment_data', 'generated_narratives'];
   for (const t of tables) {
     const r = await db.query(`SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position`, [t]);

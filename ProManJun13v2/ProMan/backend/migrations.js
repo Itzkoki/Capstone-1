@@ -1109,20 +1109,9 @@ async function runMigrations() {
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_report_approvals_report ON report_approvals (report_id)`);
 
-    // 27. Report permissions
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS report_permissions (
-        id              SERIAL PRIMARY KEY,
-        report_id       INTEGER NOT NULL REFERENCES psychological_reports(id) ON DELETE CASCADE,
-        user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        permission      VARCHAR(20) NOT NULL CHECK (permission IN ('view','edit','approve','export')),
-        granted_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        created_at      TIMESTAMP DEFAULT NOW(),
-        UNIQUE(report_id, user_id, permission)
-      )
-    `);
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_report_perms_report ON report_permissions (report_id)`);
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_report_perms_user ON report_permissions (user_id)`);
+    // 27. (removed) report_permissions — per-report ACL that was never wired up
+    // into any model/controller; report access is governed by RBAC roles instead.
+    await db.query(`DROP TABLE IF EXISTS report_permissions`).catch(() => {});
 
     // ── Landing-Page Website Management (Clinical Director CMS) ──
 
@@ -1221,17 +1210,15 @@ async function runMigrations() {
     // (X-Device-FP header) to strengthen the Audit Logs "Device Information".
     await db.query(`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(64)`);
 
-    // ── 32. Staff verification profile ──────────────────────────────
-    // When a clinical director assigns a staff role to a user, that user must
-    // complete a short verification (gender, specialization, position) the next
-    // time they log in. Only staff who have completed it become eligible to be
-    // chosen by clients in appointment scheduling (the intake form's counselor
-    // picker). These columns hold that profile; staff_profile_completed is the
-    // gate. All are nullable / default-false so existing rows are unaffected.
+    // ── 32. Staff verification profile (legacy) ─────────────────────
+    // These staff-only columns predate the dedicated `staff` table (step 33) and
+    // do not apply to clients (the `users` table is client-only now). They are
+    // unused in application code, so they are dropped from `users`. `gender` is
+    // kept as it is a generic profile field.
     await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS specialization VARCHAR(160)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(160)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_profile_completed BOOLEAN DEFAULT FALSE`);
+    await db.query(`ALTER TABLE users DROP COLUMN IF EXISTS specialization`);
+    await db.query(`ALTER TABLE users DROP COLUMN IF EXISTS position`);
+    await db.query(`ALTER TABLE users DROP COLUMN IF EXISTS staff_profile_completed`);
 
     // ── 33. Dedicated staff table ────────────────────────────────────
     // Staff records are being separated from the shared `users` table (which
@@ -1341,8 +1328,6 @@ async function runMigrations() {
       ['psychological_reports', 'psychological_reports_psychologist_id_fkey'],
       ['report_approvals', 'report_approvals_reviewer_id_fkey'],
       ['report_audit_logs', 'report_audit_logs_user_id_fkey'],
-      ['report_permissions', 'report_permissions_granted_by_fkey'],
-      ['report_permissions', 'report_permissions_user_id_fkey'],
       ['report_templates', 'report_templates_created_by_fkey'],
       ['report_versions', 'report_versions_editor_id_fkey'],
       ['client_requests', 'client_requests_assigned_staff_id_fkey'],
@@ -1780,9 +1765,12 @@ async function runMigrations() {
         AND pr.case_id IS NOT NULL
     `);
 
-    // ── 47. Add report_code to the case detail query surface ─────────────
-    // Ensure notifications table has the report_code column for deep-links.
-    await db.query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS report_code VARCHAR(25)`);
+    // ── 47. Drop dead notification deep-link columns ─────────────────────
+    // related_id, related_type and report_code were never written or read —
+    // notification deep-linking is handled entirely by the `link` column.
+    await db.query(`ALTER TABLE notifications DROP COLUMN IF EXISTS related_id`);
+    await db.query(`ALTER TABLE notifications DROP COLUMN IF EXISTS related_type`);
+    await db.query(`ALTER TABLE notifications DROP COLUMN IF EXISTS report_code`);
 
     console.log('✅ ID-centralization columns ready (user_code, staff_code, report_code, workflow fields).');
 
@@ -2613,11 +2601,10 @@ async function ensureFeatureColumns() {
     await db.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS created_at      TIMESTAMP DEFAULT NOW()`);
     await db.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMP DEFAULT NOW()`);
 
-    // Staff verification + appointment eligibility (gender/specialization/position).
+    // `gender` is a generic profile field. The staff-only specialization/position/
+    // staff_profile_completed columns are legacy and intentionally NOT recreated
+    // on `users` (clients don't use them; staff live in the `staff` table).
     await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender                  VARCHAR(20)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS specialization          VARCHAR(160)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position                VARCHAR(160)`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_profile_completed BOOLEAN DEFAULT FALSE`);
   } catch (err) {
     console.error('❌ Failed ensuring feature columns:', err.message);
   }

@@ -61,12 +61,9 @@ async function run() {
   await db.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMP DEFAULT NOW()`);
   console.log('  ✓ team_members photo columns ensured');
 
-  // ── Staff verification / appointment eligibility ──────
+  // ── Generic profile field (staff-only columns are no longer on users) ──
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender                  VARCHAR(20)`);
-  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS specialization          VARCHAR(160)`);
-  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position                VARCHAR(160)`);
-  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_profile_completed BOOLEAN DEFAULT FALSE`);
-  console.log('  ✓ users verification columns ensured');
+  console.log('  ✓ users gender column ensured');
 
   console.log('✅ Done. You can start the server normally now.');
 }

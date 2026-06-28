@@ -53,10 +53,18 @@ const getCaseById = async (req, res, next) => {
     // Fetch related records
     const [intakes, assessmentIntakes, appointments, payments, assessments, notes] = await Promise.all([
       db.query(
-        `SELECT * FROM intake_forms
-         WHERE case_id = $1
-            OR id IN (SELECT intake_form_id FROM appointments WHERE case_id = $1 AND intake_form_id IS NOT NULL)
-         ORDER BY created_at DESC`,
+        // Resolve the reviewer (reviewed_by) to a display name — staff live in the
+        // `staff` table, with a fallback to `users` — so the UI can show who
+        // reviewed the intake and when, instead of a bare "Pending" status.
+        `SELECT i.*,
+                COALESCE(
+                  (SELECT NULLIF(TRIM(CONCAT(s.first_name, ' ', s.last_name)), '') FROM staff s WHERE s.staff_id = i.reviewed_by),
+                  (SELECT u.full_name FROM users u WHERE u.id = i.reviewed_by)
+                ) AS reviewed_by_name
+         FROM intake_forms i
+         WHERE i.case_id = $1
+            OR i.id IN (SELECT intake_form_id FROM appointments WHERE case_id = $1 AND intake_form_id IS NOT NULL)
+         ORDER BY i.created_at DESC`,
         [caseData.case_id]
       ),
       db.query(

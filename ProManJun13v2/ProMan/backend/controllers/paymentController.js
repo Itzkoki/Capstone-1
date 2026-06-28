@@ -651,7 +651,7 @@ const verifyPayment = async (req, res, next) => {
           try {
             await notificationService.notifyRole('clinical_director', 'ticket', 'Legacy Report — Ready to Release',
               `Payment for legacy request ${cr.ticket_number} is verified. Open Legacy Verifications and release the report to the client.`,
-              `psych-reports.html?legacy=${cr.id}`);
+              'psych-reports.html#legacyVerifications');
           } catch (_) { /* non-fatal */ }
           return res.status(200).json({ success: true, message: 'Legacy payment verified.', data: updated });
         }
@@ -698,6 +698,13 @@ const verifyPayment = async (req, res, next) => {
           await notificationService.notifyUser(updated.client_id, 'ticket', 'Payment Verified',
             `Your payment for your report request (ref ${updated.reference_number}) has been verified. Your receipt is now available.`,
             'profile.html?section=requests');
+        } catch (_) { /* non-fatal */ }
+        // Alert the Clinical Director that the report-copy request is paid and now
+        // awaiting their action (Send) in the Report Requests module.
+        try {
+          await notificationService.notifyRole('clinical_director', 'ticket', 'Report Request — Ready to Send',
+            `Payment for report request ${cr ? cr.ticket_number : updated.reference_number} has been verified. Open Report Requests and send the report copies to the client.`,
+            'psych-reports.html#reportRequests');
         } catch (_) { /* non-fatal */ }
         return res.status(200).json({ success: true, message: 'Report-request payment verified.', data: updated });
       }

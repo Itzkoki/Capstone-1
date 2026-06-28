@@ -130,6 +130,45 @@ function titleCase(key) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Map the raw action verbs stored in the log tables to business-friendly labels
+// so the audit trail reads in the same language as the staff UI buttons
+// (e.g. report_audit_logs stores "reviewed"/"qc_revision_requested", not "Approve").
+const ACTION_LABELS = {
+  // Report-generation workflow (report_audit_logs.action)
+  created: 'Report Created',
+  viewed: 'Viewed',
+  edited: 'Edited',
+  submitted: 'Submitted for Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  finalized: 'Finalized',
+  downloaded: 'Viewed PDF',
+  version_restored: 'Version Restored',
+  prepared: 'Marked as Prepared',
+  reviewed: 'QC Approved',
+  revision_requested: 'Revision Requested (Psychologist)',
+  qc_revision_requested: 'Resubmission Requested (QC)',
+  resubmitted: 'Resubmitted',
+  locked: 'Locked',
+  unlocked: 'Unlocked',
+  signed_pdf_saved: 'Signed PDF Saved',
+  submitted_to_qc: 'Submitted to QC',
+  submitted_to_psychologist: 'Submitted to Psychologist',
+  submitted_to_director: 'Submitted to Director',
+  released: 'Released',
+  archived: 'Archived',
+  unarchived: 'Unarchived',
+  restored: 'Restored',
+  deleted: 'Deleted',
+};
+// Known codes get their friendly label; anything else falls back to Title Case
+// (handles already-readable strings like "Failed Login Attempt" unchanged).
+function humanizeAction(action) {
+  if (!action) return '—';
+  const key = String(action).trim().toLowerCase();
+  return ACTION_LABELS[key] || titleCase(action);
+}
+
 // Technical fields that mean nothing to clinical staff — never shown.
 const NOISE_KEYS = new Set([
   'path', 'method', 'statuscode', 'status_code', 'token', 'captcha_clearance',
@@ -280,7 +319,7 @@ async function getAuditLogs(req, res, next) {
         timestamp: r.ts,
         user: fmtUser(r),
         role: r.role || r.user_role || '—',
-        action: r.raw_action,
+        action: humanizeAction(r.raw_action),
         status: r.status,
         ip_address: geoInfo.ip || r.ip || '—',
         location: geoInfo.location || '',
@@ -333,7 +372,7 @@ async function getAuditTrail(req, res, next) {
     const data = rows.map(r => ({
       timestamp: r.ts,
       module: r.module,
-      action: r.action,
+      action: humanizeAction(r.action),
       record_id: r.record_id || '—',
       user: fmtUser(r),
       previous_value: humanizeValue(r.old_value),

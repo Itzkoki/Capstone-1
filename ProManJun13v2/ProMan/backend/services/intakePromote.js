@@ -66,6 +66,30 @@ async function promoteIntakeForAppointment(appointmentId) {
   // Link the new intake form to the case so it surfaces in Case Management.
   if (appt.case_id) {
     await db.query(`UPDATE intake_forms SET case_id = $1 WHERE id = $2`, [appt.case_id, intakeId]);
+
+    // Stamp the intake review on the freshly-created row. The intake is only
+    // written here (after payment is verified), but it was already approved
+    // earlier when the case moved Pending Intake Review → Awaiting Initial
+    // Payment. That approval row never existed yet, so the new row would default
+    // to "Pending" with no reviewer. Recover who approved it (and when) from the
+    // case audit log and mark the intake Approved accordingly.
+    try {
+      const approval = await db.query(
+        `SELECT COALESCE(changed_by_staff_id, changed_by_user_id) AS reviewer, changed_at
+           FROM audit_log
+          WHERE table_name = 'cases' AND record_id = $1
+            AND new_value->>'status' = 'Awaiting Initial Payment'
+          ORDER BY changed_at DESC LIMIT 1`,
+        [appt.case_id]
+      );
+      const a = approval.rows[0];
+      if (a) {
+        await db.query(
+          `UPDATE intake_forms SET review_status = 'Approved', reviewed_by = $1, reviewed_at = $2 WHERE id = $3`,
+          [a.reviewer, a.changed_at, intakeId]
+        );
+      }
+    } catch (_) { /* non-fatal — leave the default review_status if the lookup fails */ }
   }
 
   // Link the appointment to the now-official intake form and clear the buffer.

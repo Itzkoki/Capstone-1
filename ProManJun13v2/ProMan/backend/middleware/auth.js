@@ -113,7 +113,13 @@ const authenticate = async (req, res, next) => {
   // Device binding: a token whose `fp` claim doesn't match the HttpOnly
   // fingerprint cookie was replayed from somewhere other than the browser it was
   // issued to (captured token, log/Burp exfil). Reject it.
-  if (!fingerprintOk(req, decoded)) {
+  //
+  // Enforced only in production. In local development the app is often opened
+  // from a different origin than the API (file://, 127.0.0.1, a Live-Server
+  // port), so the SameSite=Strict cookie isn't delivered and every freshly
+  // bound login would be force-logged-out on its next request. The secure
+  // cookie flag is already gated on production for the same reason.
+  if (process.env.NODE_ENV === 'production' && !fingerprintOk(req, decoded)) {
     return res.status(401).json({
       success: false,
       message: 'Your session is not valid on this device. Please sign in again.',
@@ -155,7 +161,8 @@ const optionalAuthenticate = async (req, res, next) => {
 
   // Device binding (same as authenticate): a token replayed without its matching
   // fingerprint cookie is downgraded to anonymous rather than rejected here.
-  if (!fingerprintOk(req, decoded)) return next();
+  // Enforced only in production (see authenticate for the dev rationale).
+  if (process.env.NODE_ENV === 'production' && !fingerprintOk(req, decoded)) return next();
 
   req.user = { id: decoded.id, email: decoded.email, role: decoded.role, type: decoded.type };
   next();

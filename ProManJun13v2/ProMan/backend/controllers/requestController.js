@@ -184,7 +184,7 @@ const createRequest = async (req, res, next) => {
         await notificationService.notifyRole(
           'clinical_director', 'ticket', 'Legacy Report Request — Verification Required',
           `${clientName} submitted a ${isConcern ? 'concern' : 'copy request'} about an older/physical report (ticket ${ticket}). Verify their identity and locate/digitize the report.`,
-          `psych-reports.html?legacy=${row.id}`
+          'psych-reports.html#legacyVerifications'
         );
         await reqAudit(row.id, req.user.id, 'LEGACY_SUBMITTED', 'Legacy report request submitted — awaiting identity & records verification.');
       } else {
@@ -732,12 +732,14 @@ const sendReport = async (req, res, next) => {
       }
     }
 
-    // Mark the request as sent. Ensure report_released_at is set (the "no new
-    // file" path — e.g. a pre-seeded legacy copy — otherwise the client can't
-    // download the version).
+    // Mark the request as sent and resolved. Ensure report_released_at is set
+    // (the "no new file" path — e.g. a pre-seeded legacy copy — otherwise the
+    // client can't download the version) and that status becomes 'resolved' so
+    // the client's My Requests no longer shows "Under Review" after release.
     await db.query(
       `UPDATE client_requests SET sent_at = NOW(), sent_by = $1,
-              report_released_at = COALESCE(report_released_at, NOW()), updated_at = NOW()
+              report_released_at = COALESCE(report_released_at, NOW()),
+              status = 'resolved', updated_at = NOW()
        WHERE id = $2`, [req.user.id, req.params.id]);
     const row = await fetchRequest(req.params.id);
     // Clear the "Legacy Report" flag on the linked report once the copy is released.

@@ -131,7 +131,7 @@ const createThread = async (req, res, next) => {
       try {
         await notificationService.notifyStaff(
           'community',
-          '⚠️ Crisis Content Detected',
+          'Crisis Content Detected',
           `${authorName} posted content that may indicate a crisis (${crisisCheck.matchedLabels.join(', ')}). Thread: "${title}". Please review immediately.`,
           'moderation.html'
         );
@@ -262,7 +262,7 @@ const createReply = async (req, res, next) => {
       try {
         const author = await User.findById(req.user.id);
         await notificationService.notifyStaff(
-          'community', '⚠️ Crisis Content in Reply',
+          'community', 'Crisis Content in Reply',
           `${author?.full_name || 'A user'} posted a reply with crisis indicators (${crisisCheck.matchedLabels.join(', ')}) in thread "${thread.title}".`,
           'moderation.html'
         );

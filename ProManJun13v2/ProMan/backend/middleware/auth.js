@@ -115,17 +115,33 @@ const authenticate = async (req, res, next) => {
 // Optional authentication — attaches req.user if a valid token is present,
 // but does NOT reject requests that have no token (used for audit endpoints
 // that should work whether the caller is logged in or not).
+//
+// SECURITY: a signature-valid token is NOT enough to be treated as an identity.
+// We apply the SAME revocation/suspension checks as authenticate() — a
+// logged-out (sessions_invalid_after) or suspended (is_active=false) account's
+// token is downgraded to anonymous rather than being attributed to that user.
+// On any failure we fall through as anonymous; we never reject here.
 const optionalAuthenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
 
   const token = authHeader.split(' ')[1];
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id, email: decoded.email, role: decoded.role, type: decoded.type };
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (_) {
-    // Invalid token — treat as unauthenticated, do not reject
+    return next(); // invalid/expired token — treat as anonymous, do not reject
   }
+
+  try {
+    const status = await getAccountStatus(decoded.type, decoded.id);
+    if (!status.exists || !status.is_active) return next();            // suspended/deleted
+    if (sessionTerminated(decoded, status.sessions_invalid_after)) return next(); // logged out
+  } catch (_) {
+    return next(); // status unknown — never attribute identity on uncertainty
+  }
+
+  req.user = { id: decoded.id, email: decoded.email, role: decoded.role, type: decoded.type };
   next();
 };
 

@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const Staff = require('../models/Staff');
 const { invalidateAccountCache } = require('../middleware/auth');
+const { makeFingerprint, setFingerprintCookie, clearFingerprintCookie } = require('../utils/tokenBinding');
 const Verification = require('../models/Verification');
 const PasswordReset = require('../models/PasswordReset');
 const LoginAttempt = require('../models/LoginAttempt');
@@ -313,8 +314,13 @@ const verifyLoginOtp = async (req, res, next) => {
     // Single-use: consume the code, then issue the session token.
     await Verification.deleteByUserId(user.id);
 
+    // Bind the token to an HttpOnly fingerprint cookie so a captured copy can't
+    // be replayed from elsewhere. Only the hash goes in the JWT.
+    const fp = makeFingerprint();
+    setFingerprintCookie(req, res, fp.raw);
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, fp: fp.hash },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
@@ -671,6 +677,9 @@ const logout = async (req, res, next) => {
       // rather than after the cache TTL.
       try { invalidateAccountCache(type, id); } catch (_) {}
     }
+    // Drop the device-binding cookie too (works for both client and staff,
+    // since both log out through this endpoint).
+    try { clearFingerprintCookie(res); } catch (_) {}
     return res.status(200).json({ success: true, message: 'Logged out.' });
   } catch (error) {
     next(error);

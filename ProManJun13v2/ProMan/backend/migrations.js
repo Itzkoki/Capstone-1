@@ -2481,21 +2481,30 @@ async function ensureRequestTables() {
     // report_mime, report_version, report_released_at). The report_file column is
     // kept (now always NULL) to avoid a destructive drop; it is deprecated and no
     // longer written. Idempotent: re-running moves nothing once cleared.
-    await db.query(`
-      INSERT INTO client_request_report_versions
-        (request_id, version_number, file, filename, mime, change_note, created_at)
-      SELECT cr.id, 1, cr.report_file,
-             COALESCE(cr.report_filename, 'report.pdf'),
-             COALESCE(cr.report_mime, 'application/pdf'),
-             'Migrated from client_requests.report_file',
-             COALESCE(cr.report_released_at, NOW())
-      FROM client_requests cr
-      WHERE cr.report_file IS NOT NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM client_request_report_versions v WHERE v.request_id = cr.id
-        )
-    `).catch((e) => console.error('report_file → versions migration:', e.message));
-    await db.query(`UPDATE client_requests SET report_file = NULL WHERE report_file IS NOT NULL`).catch(() => {});
+    // Guard on the column still existing: on databases where report_file has
+    // already been dropped this backfill is complete and would otherwise log
+    // "column cr.report_file does not exist" on every startup.
+    const hasReportFile = await db.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'client_requests' AND column_name = 'report_file'
+    `);
+    if (hasReportFile.rows.length) {
+      await db.query(`
+        INSERT INTO client_request_report_versions
+          (request_id, version_number, file, filename, mime, change_note, created_at)
+        SELECT cr.id, 1, cr.report_file,
+               COALESCE(cr.report_filename, 'report.pdf'),
+               COALESCE(cr.report_mime, 'application/pdf'),
+               'Migrated from client_requests.report_file',
+               COALESCE(cr.report_released_at, NOW())
+        FROM client_requests cr
+        WHERE cr.report_file IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM client_request_report_versions v WHERE v.request_id = cr.id
+          )
+      `).catch((e) => console.error('report_file → versions migration:', e.message));
+      await db.query(`UPDATE client_requests SET report_file = NULL WHERE report_file IS NOT NULL`).catch(() => {});
+    }
 
     // ── Link payments → report requests (centralized payment design) ──
     // Report-request payments now live in the centralized `payments` table (and

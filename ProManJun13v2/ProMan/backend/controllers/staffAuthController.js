@@ -5,6 +5,7 @@ const Staff = require('../models/Staff');
 const StaffVerification = require('../models/StaffVerification');
 const LoginAttempt = require('../models/LoginAttempt');
 const { sendVerificationEmail } = require('../services/emailService');
+const { makeFingerprint, setFingerprintCookie } = require('../utils/tokenBinding');
 
 // Keep the existing hashing strength — do NOT weaken.
 const SALT_ROUNDS = 12;
@@ -27,10 +28,11 @@ const fullName = (staff) =>
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 
-// Issue the final JWT + user payload after both factors pass.
-const issueSession = (staff) => {
+// Issue the final JWT + user payload after both factors pass. `fpHash` binds the
+// token to the HttpOnly fingerprint cookie set by the caller (replay defense).
+const issueSession = (staff, fpHash) => {
   const token = jwt.sign(
-    { id: staff.staff_id, username: staff.username, role: staff.role, type: 'staff' },
+    { id: staff.staff_id, username: staff.username, role: staff.role, type: 'staff', fp: fpHash },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
   );
@@ -184,10 +186,14 @@ const verifyOtp = async (req, res, next) => {
     await StaffVerification.deleteByStaffId(staff.staff_id);
     const verified = await Staff.markVerified(staff.staff_id);
 
+    // Bind the staff token to an HttpOnly fingerprint cookie (replay defense).
+    const fp = makeFingerprint();
+    setFingerprintCookie(req, res, fp.raw);
+
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: issueSession(verified || staff),
+      data: issueSession(verified || staff, fp.hash),
     });
   } catch (error) {
     next(error);

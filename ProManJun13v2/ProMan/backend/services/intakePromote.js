@@ -44,10 +44,10 @@ async function promoteIntakeForAppointment(appointmentId) {
       preferred_schedule, language_preference, session_modality, counselor_gender_pref,
       is_minor, guardian_name, guardian_contact, guardian_relation, minor_other_reason,
       emergency_name, emergency_address, emergency_contact, emergency_email, emergency_relation,
-      data_privacy_consent
+      data_privacy_consent, code_of_ethics_consent
     ) VALUES (
       $1,$2,$3,$4,$5,$6,$7, $8,$9,$10,$11, $12,$13,$14,$15, $16,$17,
-      $18,$19,$20,$21, $22,$23,$24,$25,$26, $27,$28,$29,$30,$31, $32
+      $18,$19,$20,$21, $22,$23,$24,$25,$26, $27,$28,$29,$30,$31, $32, $33
     ) RETURNING id`,
     [
       appt.client_id, f.fullName || null, f.nickName || null, f.age ? parseInt(f.age) : null, f.dob || null,
@@ -58,6 +58,7 @@ async function promoteIntakeForAppointment(appointmentId) {
       f.guardianContact || null, f.guardianRelation || null, f.minorOtherReason || null, f.emerName || null,
       f.emerAddress || null, f.emerContact || null, f.emerEmail || null, f.emerRelation || null,
       f.dataPrivacyConsent === true || f.dataPrivacyConsent === 'true' || f.dataPrivacyConsent === 1,
+      f.codeOfEthicsConsent === true || f.codeOfEthicsConsent === 'true' || f.codeOfEthicsConsent === 1,
     ]
   );
   const intakeId = result.rows[0].id;

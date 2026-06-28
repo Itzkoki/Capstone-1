@@ -308,6 +308,17 @@ const startAssessment = async (req, res, next) => {
 
     await Case.updateStatus(caseId, 'Assessment In Progress', { staffId, ipAddress: getClientIP(req) });
 
+    // Advance the intake form's review status so it tracks the workflow
+    // (Pending → Assessment in Progress) and is persisted for display.
+    await db.query(
+      `UPDATE intake_forms SET review_status = 'Assessment in Progress' WHERE case_id = $1`,
+      [caseId]
+    ).catch(() => {});
+    await db.query(
+      `UPDATE assessment_intake_forms SET review_status = 'Assessment in Progress' WHERE case_id = $1`,
+      [caseId]
+    ).catch(() => {}); // assessment_intake_forms may not have review_status yet
+
     // Read-only notification to the client that their assessment has started.
     // Passing a null link keeps it informational (no action button).
     try {
@@ -359,6 +370,13 @@ const completeAssessment = async (req, res, next) => {
     if (caseData.service_type === 'counseling') {
       await Case.updateStatus(caseId, 'Assessment Completed', { staffId, ipAddress: getClientIP(req) });
       await Case.close(caseId, staffId, getClientIP(req));
+
+      // Reflect completion on the intake form's review status (→ Closed) so it is
+      // persisted and shown correctly in Case Management.
+      await db.query(
+        `UPDATE intake_forms SET review_status = 'Closed' WHERE case_id = $1`,
+        [caseId]
+      ).catch(() => {});
 
       try {
         await notificationService.notifyRoles(
@@ -651,7 +669,7 @@ const reassignPsychologist = async (req, res, next) => {
 };
 
 // ─── POST /api/cases/:caseId/no-show ───────────────────────────────
-// Handle no-show: revert to Awaiting Appointment
+// Handle no-show: close the case (and its review status).
 const handleNoShow = async (req, res, next) => {
   try {
     const { caseId } = req.params;
@@ -670,19 +688,28 @@ const handleNoShow = async (req, res, next) => {
       [caseId]
     );
 
-    await Case.updateStatus(caseId, 'Awaiting Appointment', { staffId, ipAddress: getClientIP(req) });
+    // A no-show closes the case; the intake form's review status is closed too.
+    await Case.close(caseId, staffId, getClientIP(req));
+    await db.query(
+      `UPDATE intake_forms SET review_status = 'Closed' WHERE case_id = $1`,
+      [caseId]
+    ).catch(() => {});
+    await db.query(
+      `UPDATE assessment_intake_forms SET review_status = 'Closed' WHERE case_id = $1`,
+      [caseId]
+    ).catch(() => {}); // assessment_intake_forms may not have review_status yet
 
     // Notify client
     try {
       await notificationService.notifyUser(
         caseData.user_id, 'appointment',
-        'Missed Appointment — Please Reschedule',
-        `You missed your scheduled appointment for Case ID ${caseId}. Please coordinate with the clinic to reschedule.`,
+        'Missed Appointment — Case Closed',
+        `You missed your scheduled appointment for Case ID ${caseId}. The case has been closed. Please contact the clinic if you wish to book again.`,
         null
       );
     } catch (_) {}
 
-    return res.json({ success: true, message: 'No-show recorded. Case reverted to Awaiting Appointment.' });
+    return res.json({ success: true, message: 'No-show recorded. Case closed.' });
   } catch (error) { next(error); }
 };
 

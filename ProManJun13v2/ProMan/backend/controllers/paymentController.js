@@ -350,6 +350,22 @@ const uploadProof = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Could not record proof of payment. Please try again.' });
     }
 
+    // Record the submission on the Audit TRAIL ("Payment Verification" module)
+    // so the full payment lifecycle is captured. Ticket/report submissions are
+    // logged via requestController; here we cover appointment payments to avoid
+    // double-logging the request-linked ones.
+    if (!updated.client_request_id) {
+      await CaseAuditLog.log({
+        tableName: 'payments',
+        recordId: updated.id,
+        action: 'PAYMENT_SUBMITTED',
+        userId: clientId,
+        oldValue: { status: 'pending' },
+        newValue: { status: 'under_review', reference: updated.reference_number },
+        ipAddress: getClientIP(req),
+      });
+    }
+
     // Notify the client of receipt…
     try {
       await notificationService.notifyUser(

@@ -291,6 +291,15 @@ const deleteProfile = async (req, res, next) => {
       ipAddress
     );
 
+    // Record the account deletion in the privacy audit so it surfaces under the
+    // "Privacy Controls" module of the Clinical Director's Audit Trail. (user_id
+    // has no FK, so this row persists after the user row is removed.)
+    await client.query(
+      `INSERT INTO data_deletion_log (user_id, deleted_by, content_types_deleted, item_count, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [userId, userId, ['account'], 1, 'user_request']
+    );
+
     // Delete the user — ON DELETE CASCADE handles profiles, privacy, verifications, and audit logs
     await client.query('DELETE FROM users WHERE id = $1', [userId]);
 

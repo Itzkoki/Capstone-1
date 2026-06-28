@@ -1,12 +1,27 @@
 const db = require('../config/db');
 
+// Authors may be clients (users.id) or clinical staff (staff.staff_id) — two
+// SEPARATE id sequences sharing the single author_id column. Join both tables
+// and use the stored author_role to resolve the correct display name + role
+// (legacy rows without author_role fall back to whichever table matches).
+const AUTHOR_JOIN = `
+  LEFT JOIN users u ON u.id = t.author_id
+  LEFT JOIN staff s ON s.staff_id = t.author_id`;
+const STAFF_NAME = `NULLIF(TRIM(CONCAT(s.first_name, ' ', s.last_name)), '')`;
+const AUTHOR_NAME = `COALESCE(
+  CASE WHEN t.author_role IS NOT NULL AND t.author_role <> 'client' THEN ${STAFF_NAME} END,
+  u.full_name,
+  ${STAFF_NAME}
+)`;
+const AUTHOR_ROLE = `COALESCE(NULLIF(t.author_role, 'client'), CASE WHEN u.id IS NULL THEN s.role END)`;
+
 const ForumThread = {
-  async create(authorId, title, content, category, tags, isAnonymous, status = 'pending') {
+  async create(authorId, title, content, category, tags, isAnonymous, status = 'pending', authorRole = null) {
     const result = await db.query(
-      `INSERT INTO forum_threads (author_id, title, content, category, tags, is_anonymous, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO forum_threads (author_id, title, content, category, tags, is_anonymous, status, author_role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [authorId, title, content, category || null, tags || [], isAnonymous || false, status]
+      [authorId, title, content, category || null, tags || [], isAnonymous || false, status, authorRole]
     );
     return result.rows[0];
   },
@@ -17,10 +32,11 @@ const ForumThread = {
   async findApproved(category = null, limit = 20, offset = 0) {
     let query = `
       SELECT t.*,
-             CASE WHEN t.is_anonymous THEN NULL ELSE u.full_name END AS author_name,
+             CASE WHEN t.is_anonymous THEN NULL ELSE ${AUTHOR_NAME} END AS author_name,
+             CASE WHEN t.is_anonymous THEN NULL ELSE ${AUTHOR_ROLE} END AS author_role,
              COALESCE((SELECT SUM(vote_value) FROM votes WHERE content_type = 'thread' AND content_id = t.id), 0) AS vote_score
       FROM forum_threads t
-      LEFT JOIN users u ON u.id = t.author_id
+      ${AUTHOR_JOIN}
       WHERE t.status = 'approved'`;
     const params = [];
     let idx = 1;
@@ -42,9 +58,9 @@ const ForumThread = {
    */
   async findPending(limit = 50, offset = 0) {
     const result = await db.query(
-      `SELECT t.*, u.full_name AS author_name
+      `SELECT t.*, ${AUTHOR_NAME} AS author_name, ${AUTHOR_ROLE} AS author_role
        FROM forum_threads t
-       LEFT JOIN users u ON u.id = t.author_id
+       ${AUTHOR_JOIN}
        WHERE t.status = 'pending'
        ORDER BY t.created_at ASC
        LIMIT $1 OFFSET $2`,
@@ -58,9 +74,9 @@ const ForumThread = {
    */
   async findFlagged(limit = 50, offset = 0) {
     const result = await db.query(
-      `SELECT t.*, u.full_name AS author_name
+      `SELECT t.*, ${AUTHOR_NAME} AS author_name, ${AUTHOR_ROLE} AS author_role
        FROM forum_threads t
-       LEFT JOIN users u ON u.id = t.author_id
+       ${AUTHOR_JOIN}
        WHERE t.status = 'flagged'
        ORDER BY t.created_at ASC
        LIMIT $1 OFFSET $2`,
@@ -75,9 +91,9 @@ const ForumThread = {
    */
   async findByStatus(status, limit = 20) {
     const result = await db.query(
-      `SELECT t.*, u.full_name AS author_name
+      `SELECT t.*, ${AUTHOR_NAME} AS author_name, ${AUTHOR_ROLE} AS author_role
        FROM forum_threads t
-       LEFT JOIN users u ON u.id = t.author_id
+       ${AUTHOR_JOIN}
        WHERE t.status = $1
        ORDER BY t.updated_at DESC
        LIMIT $2`,
@@ -89,10 +105,11 @@ const ForumThread = {
   async findById(id) {
     const result = await db.query(
       `SELECT t.*,
-              u.full_name AS author_name,
+              ${AUTHOR_NAME} AS author_name,
+              ${AUTHOR_ROLE} AS author_role,
               COALESCE((SELECT SUM(vote_value) FROM votes WHERE content_type = 'thread' AND content_id = t.id), 0) AS vote_score
        FROM forum_threads t
-       LEFT JOIN users u ON u.id = t.author_id
+       ${AUTHOR_JOIN}
        WHERE t.id = $1`,
       [id]
     );

@@ -178,6 +178,13 @@ exports.getReport = async (req, res) => {
     const narratives = await PsychologicalReport.getNarratives(report.id);
     const approvals = await PsychologicalReport.getApprovals(report.id);
 
+    // Has a signed PDF been saved for the CURRENT signature stage? The frontend
+    // keeps the "Submit to …" button disabled until this is true, so the report
+    // cannot advance until the signer has saved their signed PDF for this stage.
+    report.has_stage_signed_pdf = ['supervising', 'quality_control', 'psychologist'].includes(report.signature_stage)
+      ? await ReportSignedPdf.existsForStage(report.id, report.signature_stage)
+      : false;
+
     await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'viewed', details: 'Report viewed', req });
 
     res.json({ success: true, report, sections, assessmentData, narratives, approvals });
@@ -774,6 +781,32 @@ exports.bulkArchiveReports = async (req, res) => {
   } catch (err) {
     console.error('Bulk archive error:', err);
     res.status(500).json({ success: false, message: 'Failed to archive selected reports.' });
+  }
+};
+
+// ── Archive (single report) ────────────────────────────────────
+// Archives one report (used by the report detail view for Ready-For-Release /
+// Released reports instead of deleting). The CD can archive any report; other
+// staff can archive only their own.
+exports.archiveReport = async (req, res) => {
+  try {
+    const report = await PsychologicalReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+
+    // The CD and QC Psychometrician (a reviewer, not the author) may archive any
+    // report; the Supervising Psychometrician / Psychologist only their own.
+    const noOwnerRestrict = req.user.role === 'clinical_director' || req.user.role === 'qc_psychometrician';
+    const restrict = noOwnerRestrict ? null : req.user.id;
+    const affected = await PsychologicalReport.archiveMany([Number(req.params.id)], restrict);
+    if (!affected.length) {
+      return res.status(403).json({ success: false, message: 'You cannot archive this report.' });
+    }
+
+    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'archived', details: `Report archived for client: ${report.client_name}`, req });
+    res.json({ success: true, affected, message: 'Report archived.' });
+  } catch (err) {
+    console.error('Archive report error:', err);
+    res.status(500).json({ success: false, message: 'Failed to archive report.' });
   }
 };
 
@@ -1433,7 +1466,7 @@ exports.submitToQc = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Report is not awaiting the Supervising Psychometrician signature.' });
     }
 
-    const hasSigned = await ReportSignedPdf.exists(report.id);
+    const hasSigned = await ReportSignedPdf.existsForStage(report.id, 'supervising');
     if (!hasSigned) {
       return res.status(400).json({ success: false, message: 'Please save your signed PDF before submitting to Quality Control.' });
     }
@@ -1465,7 +1498,7 @@ exports.markSigned = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Report is not awaiting the Quality Control signature.' });
     }
 
-    const hasSigned = await ReportSignedPdf.exists(report.id);
+    const hasSigned = await ReportSignedPdf.existsForStage(report.id, 'quality_control');
     if (!hasSigned) {
       return res.status(400).json({ success: false, message: 'Please save your signed PDF before submitting to the Psychologist.' });
     }
@@ -1501,7 +1534,7 @@ exports.submitToDirector = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Report is not awaiting the Psychologist signature.' });
     }
 
-    const hasSigned = await ReportSignedPdf.exists(report.id);
+    const hasSigned = await ReportSignedPdf.existsForStage(report.id, 'psychologist');
     if (!hasSigned) {
       return res.status(400).json({ success: false, message: 'Please save your signed PDF before submitting to the Clinical Director.' });
     }

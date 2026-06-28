@@ -365,6 +365,13 @@ const forceResetPassword = async (req, res, next) => {
         message: 'Password must be at least 12 characters and include upper, lower, a number and a special character.',
       });
     }
+    // Prevent reusing the current password — the new one must be different.
+    if (user.password && await bcrypt.compare(password, user.password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your new password must be different from your previous password.',
+      });
+    }
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     await User.updatePassword(user.id, hashedPassword);
     await User.setMustResetPassword(user.id, false);
@@ -602,6 +609,15 @@ const resetPassword = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset link. Please request a new one.',
+      });
+    }
+
+    // Prevent reusing the current password — the new one must be different.
+    const existingUser = await User.findByIdWithPassword(matchedRecord.user_id);
+    if (existingUser && existingUser.password && await bcrypt.compare(password, existingUser.password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your new password must be different from your previous password.',
       });
     }
 

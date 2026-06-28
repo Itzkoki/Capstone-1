@@ -31,6 +31,7 @@ router.put('/:id',                       authorizeMinRole('supervising_psychomet
 router.delete('/:id',                    authorizeMinRole('supervising_psychometrician'), ctrl.deleteReport);
 
 // ── Archive / Trash management ─────────────────────────────────
+router.post('/:id/archive',              authorizeMinRole('supervising_psychometrician'), ctrl.archiveReport);
 router.post('/:id/unarchive',            authorizeMinRole('supervising_psychometrician'), ctrl.unarchiveReport);
 router.post('/:id/restore',              authorize('clinical_director'),   ctrl.restoreReport);
 router.delete('/:id/permanent',          authorize('clinical_director'),   ctrl.permanentlyDeleteReport);

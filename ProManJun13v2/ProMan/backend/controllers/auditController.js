@@ -79,7 +79,12 @@ const TRAIL_UNION = `
               WHEN a.table_name = 'payments' THEN 'Payment Verification'
               WHEN a.table_name IN ('psychological_reports','assessments') THEN 'Report Generation'
               ELSE a.table_name END,
-         a.action, a.record_id,
+         a.action,
+         -- For payments, show the human-readable reference number (e.g.
+         -- BPS-20260628-0003) instead of the internal payment id.
+         CASE WHEN a.table_name = 'payments'
+              THEN COALESCE((SELECT p.reference_number FROM payments p WHERE p.id::text = a.record_id), a.record_id)
+              ELSE a.record_id END,
          COALESCE(a.changed_by_user_id, a.changed_by_staff_id),
          a.old_value::text, a.new_value::text, NULL, 'case'
     FROM audit_log a

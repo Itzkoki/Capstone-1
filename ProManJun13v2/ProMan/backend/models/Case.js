@@ -174,7 +174,7 @@ const Case = {
     'Intake Rejected':                   [],  // terminal
     'Awaiting Initial Payment':          ['Awaiting Appointment', 'Scheduled'],  // Scheduled when appointment already confirmed before payment
     'Awaiting Appointment':              ['Scheduled'],
-    'Scheduled':                         ['Assessment In Progress', 'Awaiting Appointment'],  // no-show reverts
+    'Scheduled':                         ['Assessment In Progress', 'Awaiting Appointment', 'Closed'],  // no-show closes the case
     'Assessment In Progress':            ['Assessment Completed'],
     'Assessment Completed':              ['Report Drafting', 'Closed'],
     'Report Drafting':                   ['Awaiting Director Approval'],

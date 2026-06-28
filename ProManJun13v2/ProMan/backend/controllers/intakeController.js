@@ -32,7 +32,7 @@ const submitIntakeForm = async (req, res, next) => {
       });
     }
 
-    // ── Date of Birth / Age Validation (min age: 5 years) ──
+    // ── Date of Birth / Age Validation (min age: 2 years) ──
     if (f.dob) {
       const dobDate = new Date(f.dob);
       const today = new Date();
@@ -41,18 +41,18 @@ const submitIntakeForm = async (req, res, next) => {
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < dobDate.getDate())) {
         computedAge--;
       }
-      if (computedAge < 5) {
+      if (computedAge < 2) {
         return res.status(400).json({
           success: false,
-          message: 'Client must be at least 5 years old to submit an intake form.',
+          message: 'Client must be at least 2 years old to submit an intake form.',
         });
       }
     }
 
-    if (f.age && parseInt(f.age) < 5) {
+    if (f.age && parseInt(f.age) < 2) {
       return res.status(400).json({
         success: false,
-        message: 'Client must be at least 5 years old to submit an intake form.',
+        message: 'Client must be at least 2 years old to submit an intake form.',
       });
     }
 
@@ -205,19 +205,19 @@ const checkoutIntake = async (req, res, next) => {
       });
     }
 
-    // ── Age validation (min 5 years) ──
+    // ── Age validation (min 2 years) ──
     if (f.dob) {
       const dobDate = new Date(f.dob);
       const today = new Date();
       let computedAge = today.getFullYear() - dobDate.getFullYear();
       const mDiff = today.getMonth() - dobDate.getMonth();
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < dobDate.getDate())) computedAge--;
-      if (computedAge < 5) {
-        return res.status(400).json({ success: false, message: 'Client must be at least 5 years old to submit an intake form.' });
+      if (computedAge < 2) {
+        return res.status(400).json({ success: false, message: 'Client must be at least 2 years old to submit an intake form.' });
       }
     }
-    if (f.age && parseInt(f.age) < 5) {
-      return res.status(400).json({ success: false, message: 'Client must be at least 5 years old to submit an intake form.' });
+    if (f.age && parseInt(f.age) < 2) {
+      return res.status(400).json({ success: false, message: 'Client must be at least 2 years old to submit an intake form.' });
     }
 
     // ── Slot availability (only paid_verified slots are reserved) ──

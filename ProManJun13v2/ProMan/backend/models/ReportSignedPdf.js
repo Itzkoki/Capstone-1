@@ -49,6 +49,16 @@ const ReportSignedPdf = {
     return r.rowCount > 0;
   },
 
+  /** True if a signed PDF has been saved for this report AT a specific stage. */
+  async existsForStage(reportId, stage) {
+    if (!stage) return false;
+    const r = await db.query(
+      `SELECT 1 FROM report_signed_pdfs WHERE report_id = $1 AND signature_stage = $2 LIMIT 1`,
+      [reportId, stage]
+    );
+    return r.rowCount > 0;
+  },
+
   /** Version history metadata (no payloads) — kept internally even if hidden in UI. */
   async listVersions(reportId) {
     const r = await db.query(

@@ -1368,6 +1368,14 @@ async function runMigrations() {
       await db.query(`ALTER TABLE ${tbl} DROP CONSTRAINT IF EXISTS ${con}`).catch(() => {});
     }
 
+    // Forum posts/replies record the author's role at creation. Staff authors are
+    // stored by staff_id (a SEPARATE sequence from users.id), so a single
+    // author_id cannot be resolved unambiguously — author_role disambiguates
+    // staff vs client and lets the UI show the staff member's name AND role
+    // instead of "Community Member".
+    await db.query(`ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS author_role VARCHAR(40)`);
+    await db.query(`ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS author_role VARCHAR(40)`);
+
     // ════════════════════════════════════════════════════════════════════
     // CASE-CENTERED ARCHITECTURE (v2) — Steps 34–40
     // ════════════════════════════════════════════════════════════════════

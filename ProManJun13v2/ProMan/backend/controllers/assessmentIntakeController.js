@@ -7,12 +7,12 @@ const notificationService = require('../services/notificationService');
 /**
  * POST /api/assessment-intake-forms
  *
- * Submit an Assessment intake form. The answers are persisted to
- * assessment_intake_forms immediately so there is always a database record, and
- * a new appointment is linked to that row (assessment_form_id). It then reuses
- * the same payment pipeline as Counseling (the shared appointments + payments
- * flow keyed on appointment_id). Because the row already exists, the payment
- * verification promotion step (services/intakePromote) is a no-op for assessments.
+ * Submit an Assessment intake form. The answers are staged on the appointment
+ * (pending_intake_data) for staff review and are NOT written to
+ * assessment_intake_forms until payment is verified — mirroring the Counseling
+ * flow. On payment verification, services/intakePromote → promoteAssessment
+ * persists the row and links it to the case (assessment_form_id). This ensures
+ * an unpaid submission never creates a permanent assessment record.
  */
 const submitAssessmentIntake = async (req, res, next) => {
   try {
@@ -30,19 +30,19 @@ const submitAssessmentIntake = async (req, res, next) => {
     f.formType = 'assessment';
     f.serviceType = 'Assessment';
 
-    // ── Date of Birth / Age validation (min age: 5 years) ──
+    // ── Date of Birth / Age validation (min age: 2 years) ──
     if (f.birthdate) {
       const dobDate = new Date(f.birthdate);
       const today = new Date();
       let computedAge = today.getFullYear() - dobDate.getFullYear();
       const mDiff = today.getMonth() - dobDate.getMonth();
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < dobDate.getDate())) computedAge--;
-      if (computedAge < 5) {
-        return res.status(400).json({ success: false, message: 'Client must be at least 5 years old to submit an assessment form.' });
+      if (computedAge < 2) {
+        return res.status(400).json({ success: false, message: 'Client must be at least 2 years old to submit an assessment form.' });
       }
     }
-    if (f.age && parseInt(f.age) < 5) {
-      return res.status(400).json({ success: false, message: 'Client must be at least 5 years old to submit an assessment form.' });
+    if (f.age && parseInt(f.age) < 2) {
+      return res.status(400).json({ success: false, message: 'Client must be at least 2 years old to submit an assessment form.' });
     }
 
     // A preferred schedule is required.
@@ -76,38 +76,18 @@ const submitAssessmentIntake = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'This appointment time is already taken. Please choose another available time.' });
     }
 
-    // Persist the assessment intake immediately so there is always a database
-    // record from the moment the client submits. The appointment is linked to
-    // this row (assessment_form_id); the shared payment pipeline still applies.
-    const interventions = Array.isArray(f.interventions) ? f.interventions.join(', ') : (f.interventions || null);
-    const primaryLanguage = Array.isArray(f.primaryLanguage) ? f.primaryLanguage.join(', ') : (f.primaryLanguage || null);
-    const inserted = await db.query(
-      `INSERT INTO assessment_intake_forms (
-        user_id, family_name, given_name, middle_name, nickname,
-        birthdate, age, sex, contact_number, email, home_address,
-        primary_language, reason_for_referral,
-        assessed_before, assessed_before_details,
-        existing_diagnoses, existing_diagnoses_details,
-        current_interventions, intervention_other, answering_for,
-        preferred_schedule, session_modality,
-        data_privacy_consent, code_of_ethics_consent
-      ) VALUES (
-        $1,$2,$3,$4,$5, $6,$7,$8,$9,$10,$11, $12,$13, $14,$15, $16,$17,
-        $18,$19,$20, $21,$22, $23,$24
-      ) RETURNING id, created_at`,
-      [
-        userId, f.familyName || null, f.givenName || null, f.middleName || null, f.nickname || null,
-        f.birthdate || null, f.age ? parseInt(f.age) : null, f.sex || null, f.contactNumber || null,
-        f.email || null, f.homeAddress || null, primaryLanguage, f.reasonForReferral || null,
-        f.assessedBefore || null, f.assessedBeforeDetails || null,
-        f.existingDiagnoses || null, f.existingDiagnosesDetails || null,
-        interventions, f.interventionOther || null, f.answeringFor || null,
-        f.prefSchedule || null, f.modality || null,
-        f.dataPrivacyConsent === true || f.dataPrivacyConsent === 'true' || f.dataPrivacyConsent === 1,
-        f.codeOfEthicsConsent === true || f.codeOfEthicsConsent === 'true' || f.codeOfEthicsConsent === 1,
-      ]
-    );
-    const assessmentFormId = inserted.rows[0].id;
+    // The assessment answers are held on the appointment (pending_intake_data)
+    // for staff review. They are only written to assessment_intake_forms once
+    // payment is verified (services/intakePromote → promoteAssessment), so an
+    // unpaid submission never creates a permanent DB record.
+    const appointment = await Appointment.create({
+      intakeFormId: null,
+      assessmentFormId: null,
+      clientId: userId,
+      preferredDatetime: f.prefSchedule,
+      modality: f.modality || null,
+      pendingIntakeData: f,
+    });
 
     // ── Create a Case for this assessment intake ──
     let assignedStaffId = null;
@@ -128,18 +108,7 @@ const submitAssessmentIntake = async (req, res, next) => {
       serviceType: 'assessment',
     });
 
-    // Link assessment intake form to the case
-    await db.query(`UPDATE assessment_intake_forms SET case_id = $1 WHERE id = $2`, [newCase.case_id, assessmentFormId]);
-
-    const appointment = await Appointment.create({
-      intakeFormId: null,
-      assessmentFormId,
-      clientId: userId,
-      preferredDatetime: f.prefSchedule,
-      modality: f.modality || null,
-    });
-
-    // Link appointment to the case
+    // Link the appointment to the case
     await db.query(`UPDATE appointments SET case_id = $1 WHERE id = $2`, [newCase.case_id, appointment.id]);
 
     // ── Role-based notifications (identical to counseling) ──

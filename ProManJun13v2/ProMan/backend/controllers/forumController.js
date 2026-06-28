@@ -118,7 +118,7 @@ const createThread = async (req, res, next) => {
     }
 
     const thread = await ForumThread.create(
-      req.user.id, title, content, category, tags, is_anonymous || false, status
+      req.user.id, title, content, category, tags, is_anonymous || false, status, req.user.role || null
     );
 
     // Automated Action-Center flag detection (category + severity + cues).
@@ -249,7 +249,7 @@ const createReply = async (req, res, next) => {
     const crisisCheck = crisisDetection.checkContent(content);
 
     const reply = await ForumReply.create(
-      req.params.id, parent_id, req.user.id, content, is_anonymous || false
+      req.params.id, parent_id, req.user.id, content, is_anonymous || false, req.user.role || null
     );
     await ForumThread.incrementReplyCount(req.params.id);
 

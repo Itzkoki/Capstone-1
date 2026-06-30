@@ -91,8 +91,8 @@ async function listIncidents(req, res, next) {
       `SELECT i.*, ${INCIDENT_CODE} AS incident_code, ${SUBJECT_NAME} AS subject_name
          FROM security_incidents i ${where}
         ORDER BY
-          CASE i.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC,
-          i.created_at DESC
+          i.created_at DESC,
+          CASE i.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC
         LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
       dataParams
     )).rows;

@@ -914,6 +914,11 @@ async function runMigrations() {
     // Drop the FK if an earlier build created the table with REFERENCES users(id).
     await db.query(`ALTER TABLE report_signed_pdfs DROP CONSTRAINT IF EXISTS report_signed_pdfs_signed_by_fkey`).catch(() => {});
     await db.query(`CREATE INDEX IF NOT EXISTS idx_signed_pdfs_report ON report_signed_pdfs (report_id, version_number DESC)`);
+    // S3 serving copy: when the signed PDF is uploaded to the app-files bucket,
+    // its object key is stored here. The DB (pdf_base64) stays the source of
+    // truth; s3_key just lets downloads be served via a presigned URL. NULL for
+    // older rows → callers fall back to pdf_base64.
+    await db.query(`ALTER TABLE report_signed_pdfs ADD COLUMN IF NOT EXISTS s3_key VARCHAR(512)`).catch(() => {});
 
     // 20. Report sections
     await db.query(`
@@ -2456,6 +2461,11 @@ async function ensureRequestTables() {
       )
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_creq_ver_request ON client_request_report_versions (request_id)`);
+    // S3 serving copy of this report version. The base64 `file` column stays the
+    // source of truth (covered by the daily DB backup); s3_key lets the client's
+    // Download / "Use Stored Report" be served from S3 via a presigned URL.
+    // NULL for older versions → callers fall back to the base64 `file`.
+    await db.query(`ALTER TABLE client_request_report_versions ADD COLUMN IF NOT EXISTS s3_key VARCHAR(512)`).catch(() => {});
 
     // ── Move report blobs OUT of client_requests into the version table ──
     // client_request_report_versions is the single source of truth for report

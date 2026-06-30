@@ -56,6 +56,16 @@ const registerRules = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
+    .bail()
+    // Reject made-up / typo domains that can't receive mail before we waste an
+    // OTP email on them. (The OTP itself proves the actual mailbox exists.)
+    .custom(async (email) => {
+      const { domainCanReceiveMail } = require('../utils/emailValidation');
+      if (!(await domainCanReceiveMail(email))) {
+        throw new Error('That email domain doesn’t appear to exist. Please use a valid email address.');
+      }
+      return true;
+    })
     .normalizeEmail(),
 
   strongPasswordRules('password'),
@@ -64,8 +74,8 @@ const registerRules = [
     .trim()
     .notEmpty()
     .withMessage('Contact number is required')
-    .matches(/^[+]?[\d\s()-]{7,20}$/)
-    .withMessage('Please provide a valid contact number'),
+    .matches(/^\d{7,15}$/)
+    .withMessage('Contact number must contain digits only (7–15 numbers, no spaces or symbols)'),
 ];
 
 const loginRules = [

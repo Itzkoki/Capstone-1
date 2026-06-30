@@ -343,6 +343,7 @@ async function getAuditTrail(req, res, next) {
     const conds = ['1=1'];
 
     if (q.module && q.module !== 'all') { params.push(q.module); conds.push(`x.module = $${params.length}`); }
+    if (q.role && q.role !== 'all')     { params.push(q.role); conds.push(`COALESCE(u.role, ${STAFF_ROLE_SUBQ}) = $${params.length}`); }
     if (q.action && q.action !== 'all') { params.push(`%${q.action}%`); conds.push(`x.action ILIKE $${params.length}`); }
     if (q.q) {
       params.push(`%${q.q}%`);

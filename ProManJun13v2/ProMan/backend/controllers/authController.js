@@ -11,6 +11,8 @@ const LoginAttempt = require('../models/LoginAttempt');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
 const { validateClearance } = require('./captchaController');
 const securityEvents = require('../services/securityEvents');
+const { isValidEmailSyntax, domainCanReceiveMail } = require('../utils/emailValidation');
+const { sweepUnverifiedAccounts } = require('../services/accountCleanup');
 
 // Number of failed attempts before CAPTCHA is required (lower than MAX_FAILED_ATTEMPTS=5 lockout)
 const CAPTCHA_REQUIRED_AFTER = 3;
@@ -58,6 +60,35 @@ const maskEmail = (email) => {
 const register = async (req, res, next) => {
   try {
     const { full_name, email, password, contact_number } = req.body;
+
+    // Opportunistically purge abandoned (unverified > 24h) accounts. This also
+    // frees a previously-abandoned email so it can be registered again. Lazy
+    // sweep — mirrors services/intakeCleanup.js (no cron in this codebase).
+    await sweepUnverifiedAccounts();
+
+    // Reject malformed emails before doing any work.
+    if (!isValidEmailSyntax(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address.',
+      });
+    }
+
+    // Reject syntactically-valid emails whose domain can't receive mail
+    // (typos / made-up domains like "@fake.com"). Fails open on transient DNS
+    // errors so a network blip never blocks a legitimate sign-up. The OTP step
+    // then proves the specific mailbox exists.
+    if (!(await domainCanReceiveMail(email))) {
+      securityEvents.record({
+        module: 'user_access', eventType: 'registration_invalid_email',
+        userId: null, ip: req.ip,
+        details: `Registration blocked — email domain cannot receive mail: ${email}`,
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'That email domain doesn’t appear to exist. Please use a valid email address.',
+      });
+    }
 
     // Check if email already exists
     const existingUser = await User.findByEmail(email);

@@ -1,7 +1,7 @@
 const { body } = require('express-validator');
 
-// Philippine phone format: +639XXXXXXXXX or 09XXXXXXXXX
-const PH_PHONE_REGEX = /^(\+63|0)9\d{9}$/;
+// Contact number: digits only (Philippine mobile 09XXXXXXXXX = 11 digits).
+const PH_PHONE_REGEX = /^09\d{9}$/;
 
 const GENDER_VALUES = ['male', 'female', 'other', 'prefer_not_to_say'];
 const CIVIL_STATUS_VALUES = ['single', 'married', 'widowed', 'separated', 'divorced'];
@@ -27,7 +27,7 @@ const updateProfileRules = [
     .optional()
     .trim()
     .matches(PH_PHONE_REGEX)
-    .withMessage('Contact number must follow Philippine format (+639XXXXXXXXX or 09XXXXXXXXX)'),
+    .withMessage('Contact number must be digits only in the format 09XXXXXXXXX (11 numbers)'),
 
   body('gender')
     .optional()

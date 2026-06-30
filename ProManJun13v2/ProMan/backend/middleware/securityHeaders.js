@@ -85,7 +85,10 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com",
   "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' http://localhost:5000 ws://localhost:5000 https://cdn.docuseal.com https://api.docuseal.com https://www.google.com https://nominatim.openstreetmap.org https://*.twilio.com wss://*.twilio.com",
+  // 'self' covers same-origin HTTP(S) API calls AND same-origin ws/wss — the
+  // frontend uses relative URLs, so this works on localhost and the live domain
+  // alike without hardcoding either. Twilio handles realtime video sockets.
+  "connect-src 'self' https://cdn.docuseal.com https://api.docuseal.com https://www.google.com https://nominatim.openstreetmap.org https://*.twilio.com wss://*.twilio.com",
   // `blob:` is required so the app can preview its OWN generated report PDFs:
   // the frontend fetches /reports/:id/pdf, wraps the bytes in a Blob and loads
   // the blob: URL into the preview <iframe>. Without it Chromium refuses the

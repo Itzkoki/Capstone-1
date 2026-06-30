@@ -62,6 +62,8 @@ router.post('/:id/workflow/qc-revise', authorize('qc_psychometrician'),         
 router.post('/:id/workflow/approve',  authorize('psychologist'),                ctrl.workflowApprove);
 // Psychologist approves their OWN authored draft (solo flow): draft → Approved + signature_stage 'psychologist'
 router.post('/:id/workflow/psychologist-approve', authorize('psychologist'),    ctrl.psychologistApprove);
+// Clinical Director approves their OWN authored draft (solo flow): draft → Approved + signature_stage 'director'
+router.post('/:id/workflow/cd-approve', authorize('clinical_director'),         ctrl.clinicalDirectorApprove);
 // Psychologist requests revision (report: Review → revision_requested; notifies SupPsy)
 router.post('/:id/workflow/revise',   authorize('psychologist'),                ctrl.workflowRevise);
 // QCP or SupPsy resubmits after revision (revision_requested → Review; revision_requested_qc → Prepared)
@@ -76,7 +78,7 @@ router.get('/:id/client-pdf',           ctrl.getClientPdf);
 
 // ── Signature & Release Workflow ───────────────────────────────
 // Supervising / QC / Psychologist save their signed PDF (persisted as a new version)
-router.post('/:id/save-signed-pdf', authorize('supervising_psychometrician', 'qc_psychometrician', 'psychologist'), ctrl.saveSignedPdf);
+router.post('/:id/save-signed-pdf', authorize('supervising_psychometrician', 'qc_psychometrician', 'psychologist', 'clinical_director'), ctrl.saveSignedPdf);
 // Supervising hands off to QC (requires a saved signed PDF)
 router.post('/:id/submit-to-qc',    authorize('supervising_psychometrician'), ctrl.submitToQc);
 // QC hands off to the Psychologist for signing (button: "Submit to Psychologist")

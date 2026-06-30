@@ -9,10 +9,49 @@ const {
   reportRequestStatus, PAYMENT_JOIN,
 } = require('./requestShared');
 const securityEvents = require('../services/securityEvents');
+const s3 = require('../services/s3Storage');
 const Payment = require('../models/Payment');
 const PsychologicalReport = require('../models/PsychologicalReport');
 const ReportSignedPdf = require('../models/ReportSignedPdf');
 const ReportTemplate = require('../models/ReportTemplate');
+
+// Decode a "data:<mime>;base64,..." string into a raw Buffer for S3 upload.
+function dataUrlToBuffer(dataUrl) {
+  const comma = dataUrl.indexOf(',');
+  return Buffer.from(dataUrl.slice(comma + 1), 'base64');
+}
+
+// Best-effort upload of a stored report version to the S3 app-files bucket. The
+// DB row remains the source of truth; this just creates a serving copy and
+// stamps its key onto the version row. Never throws — a failed upload leaves
+// s3_key NULL and downloads transparently fall back to the base64 in `file`.
+async function uploadVersionToS3(versionId, requestId, versionNumber, dataUrl, mime) {
+  if (!s3.isConfigured()) return null;
+  try {
+    const key = `reports/request-${requestId}/v${versionNumber}-${Date.now()}.pdf`;
+    await s3.putObject(key, dataUrlToBuffer(dataUrl), mime || 'application/pdf');
+    await db.query(`UPDATE client_request_report_versions SET s3_key = $1 WHERE id = $2`, [key, versionId]);
+    return key;
+  } catch (e) {
+    console.error('S3 upload of report version failed (kept DB copy):', e.message);
+    return null;
+  }
+}
+
+// Resolve what to hand the browser for a download. If an S3 serving copy exists
+// (and S3 is configured/reachable), return a short-lived presigned URL so the
+// file streams straight from S3. Otherwise fall back to the DB base64 data URL.
+// Either way the frontend just sets it as the link href — no UI change needed.
+async function servingUrlOrBase64(s3Key, base64File, downloadName) {
+  if (s3Key && s3.isConfigured()) {
+    try {
+      return await s3.getPresignedUrl(s3Key, 120, downloadName || 'report.pdf');
+    } catch (e) {
+      console.error('Presigned URL failed, serving DB copy:', e.message);
+    }
+  }
+  return base64File;
+}
 
 // Re-fetch a single request WITH its linked-payment join so publicRow can derive
 // the payment fields (used after writes, since UPDATE ... RETURNING * lacks the
@@ -301,7 +340,9 @@ const getRequestFile = async (req, res, next) => {
           return res.status(403).json({ success: false, message: 'Only the latest released report version is available to you.' });
         }
       }
-      dataUrl = v.file; name = v.filename;
+      name = v.filename;
+      // Prefer the S3 serving copy (presigned URL); fall back to the DB base64.
+      dataUrl = await servingUrlOrBase64(v.s3_key, v.file, name);
     }
     else if (type === 'report') {
       // Report is delivered to the client only after the Clinical Director
@@ -317,9 +358,15 @@ const getRequestFile = async (req, res, next) => {
       // The report blob lives in the version table now (not on the request row).
       // Serve the latest version; the request row only holds the display name.
       const lv = await db.query(
-        `SELECT file, filename FROM client_request_report_versions
+        `SELECT file, filename, s3_key FROM client_request_report_versions
          WHERE request_id = $1 ORDER BY version_number DESC LIMIT 1`, [req.params.id]);
-      if (lv.rowCount) { dataUrl = lv.rows[0].file; name = row.report_filename || lv.rows[0].filename; }
+      if (lv.rowCount) {
+        name = row.report_filename || lv.rows[0].filename;
+        dataUrl = await servingUrlOrBase64(lv.rows[0].s3_key, lv.rows[0].file, name);
+        // Audit the report access (spec: data-access logging).
+        await reqAudit(req.params.id, req.user.id, 'REPORT_DOWNLOADED',
+          `Report downloaded (${staff ? 'staff' : 'client'}, via ${lv.rows[0].s3_key ? 'S3' : 'DB'}).`).catch(() => {});
+      }
     }
     if (!dataUrl) return res.status(404).json({ success: false, message: 'File not found.' });
     return res.json({ success: true, data: { name, dataUrl } });
@@ -713,10 +760,13 @@ const sendReport = async (req, res, next) => {
         `SELECT COALESCE(MAX(version_number),0)+1 AS n FROM client_request_report_versions WHERE request_id = $1`,
         [req.params.id]);
       const vnum = Number(vq.rows[0].n);
-      await db.query(
+      const insVer = await db.query(
         `INSERT INTO client_request_report_versions (request_id, version_number, file, filename, mime, change_note, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
         [req.params.id, vnum, file, fname, mime, 'Report uploaded for sending', req.user.id]);
+      // Mirror the saved PDF to S3 (serving copy). The base64 above stays the
+      // source of truth; this just enables presigned-URL delivery.
+      await uploadVersionToS3(insVer.rows[0].id, req.params.id, vnum, file, mime);
       await db.query(
         `UPDATE client_requests
          SET report_filename = $1, report_mime = $2, report_version = $3,

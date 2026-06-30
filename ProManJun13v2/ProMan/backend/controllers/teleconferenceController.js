@@ -313,15 +313,19 @@ const createSession = async (req, res, next) => {
     const joinLink = `meetings.html?join=${session.id}`;
     const invited = [client_id, ...staffList.filter(s => parseInt(s, 10) !== req.user.id)];
     for (const participantId of invited) {
+      if (participantId == null) continue; // skip a missing client_id (staff-only room)
       const isClient = parseInt(participantId, 10) === parseInt(client_id, 10);
       const link = (isClient && clientInviteLink) ? clientInviteLink : joinLink;
+      // Invited STAFF get an explicit invitation message; the CLIENT keeps the
+      // "your meeting has started" wording. Both fire immediately on creation.
+      const notifTitle = isClient
+        ? 'Your scheduled meeting has started'
+        : 'You have been invited to a teleconference';
+      const notifBody = isClient
+        ? 'Click to join your scheduled consultation meeting.'
+        : `You've been invited to the teleconference "${title}". Click to join.`;
       try {
-        await notificationService.notifyUser(
-          participantId, 'teleconference',
-          'Your scheduled meeting has started',
-          'Click to join your scheduled consultation meeting.',
-          link
-        );
+        await notificationService.notifyUser(participantId, 'teleconference', notifTitle, notifBody, link);
       } catch (err) { console.error('Meeting notification failed:', err.message); }
     }
 
@@ -1022,12 +1026,17 @@ const getClients = async (req, res, next) => {
 const getStaffList = async (req, res, next) => {
   try {
     const staff = await Staff.findAssignable({});
-    const data = staff.map((s) => ({
-      id: s.staff_id,
-      full_name: [s.first_name, s.last_name].filter(Boolean).join(' ').trim(),
-      role: s.role,
-      specialization: s.specialization || null,
-    }));
+    const data = staff
+      // The creator is the host of the room they're about to make — never offer
+      // them as an "additional staff" option. Enforced server-side so it holds
+      // regardless of any client-side id type mismatch.
+      .filter((s) => s.staff_id !== req.user.id)
+      .map((s) => ({
+        id: s.staff_id,
+        full_name: [s.first_name, s.last_name].filter(Boolean).join(' ').trim(),
+        role: s.role,
+        specialization: s.specialization || null,
+      }));
     return res.json({ success: true, data });
   } catch (error) { next(error); }
 };

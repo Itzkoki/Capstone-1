@@ -57,9 +57,10 @@ exports.createReport = async (req, res) => {
       client_id: resolvedClientId,
     });
 
-    // When a Psychologist authors a report they are the sole accountable party:
-    // auto-populate Prepared By / Reviewed By / Approved By with their own name.
-    if (req.user.role === 'psychologist') {
+    // When a Psychologist OR Clinical Director authors a report they are the sole
+    // accountable party: auto-populate Prepared By / Reviewed By / Approved By
+    // with their own name (both run a solo flow with no hand-offs).
+    if (req.user.role === 'psychologist' || req.user.role === 'clinical_director') {
       await db.query(
         `UPDATE psychological_reports SET prepared_by = $1, reviewed_by = $1, approved_by = $1 WHERE id = $2`,
         [req.user.id, report.id]
@@ -1262,6 +1263,52 @@ exports.psychologistApprove = async (req, res) => {
   }
 };
 
+// ── Clinical Director SOLO flow ─────────────────────────────────
+// The Clinical Director is the highest report-generation authority and needs no
+// QC / Supervising / Psychologist review. Approving their OWN authored draft
+// records them as Prepared/Reviewed/Approved By and drops the report straight
+// into the 'director' signature stage, from which they Sign → Release the report
+// directly to the client (no hand-offs to any other role).
+exports.clinicalDirectorApprove = async (req, res) => {
+  try {
+    const report = await PsychologicalReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+    if (report.is_locked) return res.status(400).json({ success: false, message: 'Report is locked.' });
+    if (String(report.psychologist_id) !== String(req.user.id)) {
+      return res.status(403).json({ success: false, message: 'You can only approve your own report.' });
+    }
+    if (!['draft', 'rejected'].includes(report.status)) {
+      return res.status(400).json({ success: false, message: 'Only a draft report can be approved.' });
+    }
+
+    // Clinical report: block approval unless the Assessment Tests/Methods table
+    // has at least one valid, non-duplicate entry.
+    const ctmErrors = await validateClinicalTestsMethodsForSubmission(report);
+    if (ctmErrors.length) {
+      return res.status(400).json({ success: false, message: 'Assessment Tests/Methods validation failed.', errors: ctmErrors });
+    }
+
+    await db.query(
+      `UPDATE psychological_reports
+         SET status = 'Approved', prepared_by = $1, reviewed_by = $1, approved_by = $1,
+             signature_stage = 'director', updated_at = NOW()
+       WHERE id = $2`,
+      [req.user.id, report.id]
+    );
+    await ReportAudit.log({ reportId: report.id, userId: req.user.id, action: 'approved', details: 'Report approved by Clinical Director (solo flow) — ready to sign and release', req });
+
+    if (report.case_id) {
+      try { await Case.updateStatus(report.case_id, 'Report Approved', { staffId: req.user.id, ipAddress: req.ip }); }
+      catch (e) { console.warn('clinicalDirectorApprove case update skipped:', e.message); }
+    }
+
+    res.json({ success: true, message: 'Report approved. You can now save the signed PDF and release it to the client.' });
+  } catch (err) {
+    console.error('clinicalDirectorApprove error:', err);
+    res.status(500).json({ success: false, message: 'Failed to approve report.' });
+  }
+};
+
 // Psychologist requests revision — status → 'revision_requested', original submitter (SupPsy) is notified
 // Case: Awaiting Director Approval → Report Drafting
 exports.workflowRevise = async (req, res) => {
@@ -1435,7 +1482,7 @@ exports.saveSignedPdf = async (req, res) => {
       return res.status(409).json({ success: false, message: 'This report has been released and can no longer be modified.' });
     }
 
-    const VALID_STAGES = ['supervising', 'quality_control', 'psychologist'];
+    const VALID_STAGES = ['supervising', 'quality_control', 'psychologist', 'director'];
     const stage = VALID_STAGES.includes(signature_stage) ? signature_stage : 'supervising';
     const saved = await ReportSignedPdf.save(report.id, { pdfBase64: pdf, signatureStage: stage, signedBy: req.user.id });
 
@@ -1571,7 +1618,9 @@ exports.release = async (req, res) => {
   try {
     const report = await PsychologicalReport.findById(req.params.id);
     if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
-    if (report.signature_stage !== 'ready_for_release') {
+    // 'ready_for_release' = normal pipeline (handed off by the Psychologist).
+    // 'director' = Clinical Director solo flow (they approved + signed it themselves).
+    if (!['ready_for_release', 'director'].includes(report.signature_stage)) {
       return res.status(400).json({ success: false, message: 'Report is not Ready For Release.' });
     }
 

@@ -187,10 +187,12 @@ const Payment = {
   async findAll({ status } = {}) {
     let q = `SELECT p.*,
                     c.full_name AS client_name, c.email AS client_email,
-                    v.full_name AS verifier_name
+                    v.full_name AS verifier_name,
+                    cr.ticket_number AS request_ticket, cr.nature AS request_nature
              FROM payments p
              LEFT JOIN users c ON c.id = p.client_id
              LEFT JOIN users v ON v.id = p.verified_by
+             LEFT JOIN client_requests cr ON cr.id = p.client_request_id
              WHERE 1=1`;
     const params = [];
     if (status) { q += ` AND p.status = $1`; params.push(status); }

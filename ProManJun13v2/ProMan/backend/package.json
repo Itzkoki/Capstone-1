@@ -12,6 +12,8 @@
     "knowledge:extract": "node scripts/extractKnowledge.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1076.0",
+    "@aws-sdk/s3-request-presigner": "^3.1076.0",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@maxmind/geoip2-node": "^6.3.4",
     "@sendgrid/mail": "^8.1.6",

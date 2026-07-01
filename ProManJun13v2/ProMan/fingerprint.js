@@ -14,7 +14,7 @@
   'use strict';
 
   var STORAGE_KEY = 'bps_device_fp';
-  var FP_SRC = 'http://localhost:5000/vendor/fingerprintjs/fp.umd.min.js';
+  var FP_SRC = '/vendor/fingerprintjs/fp.umd.min.js';
 
   // Current id (may be null until FingerprintJS resolves on first ever load).
   var deviceId = null;

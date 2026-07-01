@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcarse Psychological Services | Mental Health Clinic in Sampaloc, Manila</title>
@@ -671,7 +672,7 @@
         try {
           const token = sessionStorage.getItem('bps_token');
           if (!token) return;
-          const res = await fetch('http://localhost:5000/api/auth/verify-token', {
+          const res = await fetch('/api/auth/verify-token', {
             headers: { 'Authorization': `Bearer ${token}` },
           });
           if (!res.ok) {

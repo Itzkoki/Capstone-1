@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verify Email | Barcarse Psychological Services</title>
@@ -72,7 +73,7 @@
 
   <script>
     // ── Configuration ──────────────────────────────────
-    const API_BASE = 'http://localhost:5000/api/auth';
+    const API_BASE = '/api/auth';
     const RESEND_COOLDOWN = 120; // seconds (2-minute resend rate limit)
 
     // ── DOM Elements ───────────────────────────────────
@@ -171,8 +172,11 @@
     }
 
     // ── Show status message ────────────────────────────
-    function showStatus(message, type) {
-      statusEl.textContent = message;
+    // Plain text by default (textContent — XSS-safe for server/error messages).
+    // Pass isHtml=true only for trusted, static markup (e.g. the success icon).
+    function showStatus(message, type, isHtml) {
+      if (isHtml) statusEl.innerHTML = message;
+      else statusEl.textContent = message;
       statusEl.className = 'otp-status ' + type;
     }
 
@@ -218,7 +222,7 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          showStatus('<svg viewBox="0 0 24 24" width="16" height="16" style="fill:#0A5C31;vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Email verified successfully! Redirecting to login...', 'success');
+          showStatus('<svg viewBox="0 0 24 24" width="16" height="16" style="fill:#0A5C31;vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Email verified successfully! Redirecting to login...', 'success', true);
           otpInputs.forEach(input => {
             input.disabled = true;
             input.classList.add('filled');

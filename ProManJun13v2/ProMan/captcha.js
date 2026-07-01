@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = '/api';
   const RECAPTCHA_SITE_KEY = window.RECAPTCHA_SITE_KEY || '6Le6iSotAAAAAJmV_yLm7hZn5m6wZa-3NKcXhBkF';
   // reCAPTCHA v2 (checkbox) fallback — used when the backend escalates a
   // suspicious v3 score. The backend returns the site key to use; this is the

@@ -47,7 +47,7 @@
 
   var STAFF_LOGIN = 'staff-login.html';
   var ACCESS_DENIED = 'access-denied.html';
-  var API_BASE = 'http://localhost:5000/api/auth';
+  var API_BASE = '/api/auth';
 
   // ── Hide the page until the server confirms the role ──
   // This prevents both a privileged-UI flash AND any module OTP/MFA prompt from

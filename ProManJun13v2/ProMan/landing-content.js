@@ -14,7 +14,7 @@
 (function () {
   'use strict';
 
-  var API = 'http://localhost:5000/api/landing/public';
+  var API = '/api/landing/public';
   // Backend origin used to resolve uploaded image paths (/uploads/team/...).
   var ASSET_BASE = API.replace(/\/api\/.*$/, '');
   function resolveAsset(p) {

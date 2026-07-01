@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Case Management | Barcarse Psychological Services</title>
@@ -678,7 +679,7 @@
     })();
   </script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = sessionStorage.getItem('bps_token');
     const user = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
     const role = user.role || '';
@@ -1001,7 +1002,7 @@
     }
 
     // Fields that are internal/technical and should not be shown to the reviewer.
-    const FORM_HIDDEN_FIELDS = new Set(['id','case_id','user_id','client_id','staff_id','reviewed_by','review_status','reviewed_at','updated_at','is_minor_flag','status']);
+    const FORM_HIDDEN_FIELDS = new Set(['id','case_id','user_id','client_id','staff_id','reviewed_by','reviewed_by_name','review_status','reviewed_at','updated_at','is_minor_flag','status']);
     function prettyLabel(key) {
       return String(key).replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
     }
@@ -1038,7 +1039,23 @@
       }
 
       const formLabel = isAssessment ? 'Assessment Intake Form' : 'Counseling Intake Form';
-      let html = `<div class="section-title">${formLabel}${form ? ' — ' + esc(form.review_status || 'Pending Review') + pendingNote : ''}</div>`;
+      // Show who reviewed the intake and when (instead of a bare "Pending"):
+      // once reviewed, surface the reviewer's name + review timestamp; before
+      // that, show "Awaiting Review".
+      let reviewLabel = '';
+      if (form) {
+        if (form.reviewed_at) {
+          const who = form.reviewed_by_name ? esc(form.reviewed_by_name) : 'Staff';
+          const st = form.review_status ? esc(form.review_status) : 'Reviewed';
+          reviewLabel = ` — ${st} · Reviewed by ${who} on ${fmtDateTime(form.reviewed_at)}`;
+        } else if (form.review_status && form.review_status !== 'Pending' && form.review_status !== 'Pending Review') {
+          reviewLabel = ` — ${esc(form.review_status)}`;
+        } else {
+          reviewLabel = ' — Awaiting Review';
+        }
+        reviewLabel += pendingNote;
+      }
+      let html = `<div class="section-title">${formLabel}${reviewLabel}</div>`;
       if (!form) {
         return html + '<p style="color:#94a3b8;font-size:13px">No intake form has been submitted for this case yet.</p>';
       }

@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notifications | Barcarse Psychological Services</title>
@@ -303,8 +304,8 @@
   <script src="bps-calendar.js"></script>
   <script>
     // ── API Configuration ─────────────────────────────────
-    const API_BASE = 'http://localhost:5000/api/notifications';
-    const ARTICLES_API = 'http://localhost:5000/api/articles';
+    const API_BASE = '/api/notifications';
+    const ARTICLES_API = '/api/articles';
     const token = BPSSession.getToken();
     const currentUser = BPSSession.getUser();
     const isStaff = currentUser.role && currentUser.role !== 'client';
@@ -386,7 +387,7 @@
       });
       bar.innerHTML = html;
     }
-    const PAY_API = 'http://localhost:5000/api/payments';
+    const PAY_API = '/api/payments';
 
     // Static clinic payment display values (no secrets — these mirror the QR).
     const PAY_QR = { full: 'qr-full-payment.jpg', half: 'qr-half-payment.jpg' };
@@ -681,7 +682,7 @@
     }
 
     // Fetch a released report's signed PDF (with auth) and open it in a new tab.
-    const REPORTS_API = 'http://localhost:5000/api/reports';
+    const REPORTS_API = '/api/reports';
     async function openClientReportPdf(reportId) {
       // Open the tab synchronously (still within the click gesture) so it isn't
       // blocked, then stream the PDF blob into it once fetched.
@@ -789,8 +790,8 @@
 
       try {
         const [res, payRes] = await Promise.all([
-          fetch('http://localhost:5000/api/appointments', { headers: authHeaders }),
-          fetch('http://localhost:5000/api/payments', { headers: authHeaders }),
+          fetch('/api/appointments', { headers: authHeaders }),
+          fetch('/api/payments', { headers: authHeaders }),
         ]);
         const json = await res.json();
 
@@ -974,7 +975,7 @@
 
         if (apptId) {
           // New path: fetch exact form data for this specific appointment
-          const previewRes = await fetch(`http://localhost:5000/api/appointments/${apptId}/intake-preview`, { headers: authHeaders });
+          const previewRes = await fetch(`/api/appointments/${apptId}/intake-preview`, { headers: authHeaders });
           const previewJson = await previewRes.json();
           if (!previewJson.success) {
             body.innerHTML = '<p style="color:#a0aec0;">Form data is not available.</p>';
@@ -985,17 +986,17 @@
           formCreatedAt = previewJson.created_at;
 
           // Fetch the appointment itself for the linked appointment section
-          const apptRes = await fetch(`http://localhost:5000/api/appointments/${apptId}`, { headers: authHeaders });
+          const apptRes = await fetch(`/api/appointments/${apptId}`, { headers: authHeaders });
           const apptJson = await apptRes.json();
           if (apptJson.success) linkedAppt = apptJson.data;
         } else {
           // Fallback for old notifications that have no appt_id in the link
           const apiUrl = isAssessment
-            ? 'http://localhost:5000/api/assessment-intake-forms'
-            : 'http://localhost:5000/api/intake-forms';
+            ? '/api/assessment-intake-forms'
+            : '/api/intake-forms';
           const [formRes, apptRes] = await Promise.all([
             fetch(apiUrl, { headers: authHeaders }),
-            fetch('http://localhost:5000/api/appointments', { headers: authHeaders }),
+            fetch('/api/appointments', { headers: authHeaders }),
           ]);
           const formJson = await formRes.json();
           const apptJson = await apptRes.json();
@@ -1353,7 +1354,7 @@
       }
 
       try {
-        const res = await fetch(`http://localhost:5000/api/teleconference/${sessionId}`, { headers: authHeaders });
+        const res = await fetch(`/api/teleconference/${sessionId}`, { headers: authHeaders });
         const json = await res.json();
 
         if (!json.success || !json.data) {
@@ -1411,7 +1412,7 @@
     // ── Inline appointment actions (Confirm / Decline / Reschedule) ──
     async function confirmAppointment(apptId) {
       try {
-        const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/confirm`, {
+        const res = await fetch(`/api/appointments/${apptId}/confirm`, {
           method: 'PUT',
           headers: authHeaders,
         });
@@ -1431,7 +1432,7 @@
     async function declineAppointment(apptId) {
       if (!await BPSModal.confirm('Are you sure you want to decline this appointment?', { title: 'Decline appointment', confirmText: 'Decline', danger: true })) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/decline`, {
+        const res = await fetch(`/api/appointments/${apptId}/decline`, {
           method: 'PUT',
           headers: authHeaders,
           body: JSON.stringify({ notes: 'Declined by client from notifications' }),
@@ -1492,7 +1493,7 @@
         return;
       }
       try {
-        const res = await fetch(`http://localhost:5000/api/appointments/${apptId}/request-change`, {
+        const res = await fetch(`/api/appointments/${apptId}/request-change`, {
           method: 'PUT',
           headers: authHeaders,
           body: JSON.stringify({ new_datetime: input.value, notes: reason }),

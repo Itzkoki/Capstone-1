@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mental Health Articles | Barcarse Psychological Services</title>
@@ -194,7 +195,7 @@
     })();
   </script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = BPSSession.getToken();
 
     const CATEGORIES = ['All Articles', 'Anxiety', 'Depression', 'Self-Care', 'Relationships', 'Student Wellness', 'Stress Management'];
@@ -209,6 +210,17 @@
       return map[cat] || 'linear-gradient(135deg,#dbeafe,#d1fae5)';
     }
     const FILE_SVG = '<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>';
+
+    // Render an article's image: show the fetched featured_image when present,
+    // otherwise fall back to the category-colored placeholder. On a broken image
+    // URL the <img> hides itself, leaving the gradient background.
+    function articleImg(a, cls) {
+      const bg = `background:${articleBg(a.category || '')}`;
+      if (a.featured_image) {
+        return `<div class="${cls}" style="${bg}"><img src="${esc(a.featured_image)}" alt="${esc(a.title || '')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'"></div>`;
+      }
+      return `<div class="${cls}" style="${bg}">${FILE_SVG}</div>`;
+    }
 
     async function apiFetch(url, opts = {}) {
       const res = await fetch(`${API}${url}`, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
@@ -255,7 +267,7 @@
       const showFeatured = feat && !document.getElementById('search').value.trim();
       fw.innerHTML = showFeatured ? `
         <div class="cfeatured" onclick="openArticle(${feat.id})">
-          <div class="cfeatured__img" style="background:${articleBg(feat.category || '')}">${FILE_SVG}</div>
+          ${articleImg(feat, 'cfeatured__img')}
           <div class="cfeatured__body">
             <span class="cbadge">${esc(feat.category || 'Featured')}</span>
             <h3 class="cfeatured__title">${esc(feat.title)}</h3>
@@ -281,7 +293,7 @@
 
       grid.innerHTML = page.map(a => `
         <div class="ccard" onclick="openArticle(${a.id})">
-          <div class="ccard__img" style="background:${articleBg(a.category || '')}">${FILE_SVG}</div>
+          ${articleImg(a, 'ccard__img')}
           <div class="ccard__body">
             <span class="cbadge">${esc(a.category || 'General')}</span>
             <div class="ccard__title">${esc(a.title)}</div>
@@ -301,8 +313,17 @@
       document.getElementById('m-cat').textContent = a.category || 'Article';
       document.getElementById('m-title').textContent = a.title;
       document.getElementById('m-meta').innerHTML = `<span>${esc(a.author_name || 'Staff')}</span><span>·</span><span>${fmtDate(a.created_at)}</span><span>·</span><span>${readTime(a.content)}</span>`;
-      const more = a.source_url ? `\n\n` : '';
-      document.getElementById('m-body').innerHTML = `${esc(a.content)}${a.source_url ? `<div style="margin-top:20px"><a class="cbtn cbtn--primary" href="${esc(a.source_url)}" target="_blank" rel="noopener">Read full article ↗</a></div>` : ''}`;
+      // Show a concise preview (not the full scraped dump). The full text lives
+      // at the source — mirrors the article preview on community.html.
+      const PREVIEW_LEN = 600;
+      // Collapse the scraped line breaks/whitespace so the preview flows as a
+      // single paragraph (matches the article preview on community.html).
+      const full = (a.content || '').replace(/\s+/g, ' ').trim();
+      const excerpt = full.length > PREVIEW_LEN ? full.slice(0, PREVIEW_LEN).trimEnd() + '…' : full;
+      const seeMore = a.source_url
+        ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);"><a href="${esc(a.source_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:linear-gradient(135deg,#1E3A8A,#15306E);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(30,58,138,0.3);"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff;"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg> See More — Read Full Article</a></div>`
+        : '';
+      document.getElementById('m-body').innerHTML = `<p>${esc(excerpt)}</p>${seeMore}`;
       document.getElementById('modal').classList.add('open');
       document.body.style.overflow = 'hidden';
     }

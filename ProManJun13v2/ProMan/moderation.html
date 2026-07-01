@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moderation Dashboard | Barcarse Psychological Services</title>
@@ -306,7 +307,7 @@
   <script src="toast.js"></script>
   <script src="bps-ui.js"></script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = BPSSession.getToken();
     const user = BPSSession.getUser();
     if (!token) { window.location.href = 'staff-login.html'; }
@@ -629,13 +630,15 @@
         const r = await apiFetch('/articles/import/preview', { method:'POST', body: JSON.stringify({ url }) });
         if(!r.success){ toast('error', r.message || 'Could not fetch that link.'); return; }
         const d = r.data || {};
+        // The scraper returns camelCase keys (featuredImage, sourceUrl, author,
+        // publishedDate); accept snake_case too for safety.
         document.getElementById('import-title').value = d.title || '';
-        document.getElementById('import-content').value = d.content || '';
+        document.getElementById('import-content').value = d.content || d.contentText || '';
         document.getElementById('import-cat').value = d.category || '';
-        document.getElementById('import-source').value = d.source_url || url;
-        document.getElementById('import-image').value = d.featured_image || '';
-        document.getElementById('import-author').value = d.original_author || '';
-        document.getElementById('import-date').value = d.published_date || '';
+        document.getElementById('import-source').value = d.sourceUrl || d.source_url || url;
+        document.getElementById('import-image').value = d.featuredImage || d.featured_image || '';
+        document.getElementById('import-author').value = d.author || d.original_author || '';
+        document.getElementById('import-date').value = d.publishedDate || d.published_date || '';
         updateImportThumb();
         document.getElementById('import-preview').classList.remove('hidden');
         document.getElementById('import-publish-btn').classList.remove('hidden');

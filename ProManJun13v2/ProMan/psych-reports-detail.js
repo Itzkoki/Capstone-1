@@ -69,6 +69,11 @@ async function openReport(id) {
     if (sigStage === 'ready_for_release' && isCD) {
       btns += `<button class="btn btn-success btn-sm" onclick="releaseReport(${r.id})">${ICON.check} Release Report</button> `;
     }
+    // Clinical Director SOLO flow: they sign and release their own report directly.
+    if (sigStage === 'director' && isCD) {
+      btns += `<button class="btn btn-primary btn-sm" onclick="pickSignedPdf(${r.id},'director')">${ICON.check} Save Signed PDF</button> `;
+      btns += `<button class="btn btn-success btn-sm" onclick="releaseReport(${r.id})">${ICON.check} Release Report</button> `;
+    }
 
     // ── 3-Stage Workflow buttons ──────────────────────────────
     // SupPsy: edit while draft, then submit as Prepared
@@ -82,6 +87,12 @@ async function openReport(id) {
     const isAuthor = String(r.psychologist_id) === String(USER.id);
     if ((r.status==='draft'||r.status==='rejected') && isPsy && isAuthor && !sigStage)
       btns += `<button class="btn btn-success btn-sm" onclick="psychologistApprove(${r.id})">${ICON.check} Approve</button> `;
+
+    // Clinical Director SOLO flow: on their OWN draft they Edit (above), Delete
+    // (below), and Approve. Approving drops it straight into the director signing
+    // stage — no QC / Supervising / Psychologist hand-off.
+    if ((r.status==='draft'||r.status==='rejected') && isCD && isAuthor && !sigStage)
+      btns += `<button class="btn btn-success btn-sm" onclick="clinicalDirectorApprove(${r.id})">${ICON.check} Approve</button> `;
 
     // SupPsy: edit & resubmit when revision was requested by QCP (revision_requested_qc)
     if (r.status==='revision_requested_qc' && isSup) {
@@ -129,13 +140,9 @@ async function openReport(id) {
     if (r.status==='finalized' && isCD)
       btns += `<button class="btn btn-primary btn-sm" onclick="editRpt(${r.id})">${ICON.pencil} Edit</button> `;
 
-    // CD: lock/unlock — no longer offered once the report is Ready For Release
-    // or Released (those stages are managed via release/archive, not locking).
+    // Lock/Unlock removed for the Clinical Director — the CD runs reports end-to-end
+    // (create → approve → sign → release) and no longer manually locks them.
     const isReleaseStage = sigStage === 'ready_for_release' || sigStage === 'released';
-    if (isCD && !isReleaseStage)
-      btns += r.is_locked
-        ? `<button class="btn btn-ghost btn-sm" onclick="workflowLock(${r.id},false)">${ICON.unlock} Unlock</button> `
-        : `<button class="btn btn-ghost btn-sm" onclick="workflowLock(${r.id},true)">${ICON.lock} Lock</button> `;
 
     // Ready-For-Release / Released reports are archived (not deleted) so they are
     // preserved rather than permanently removed. On earlier stages the Clinical
@@ -177,6 +184,7 @@ function signatureStageLabel(stage) {
     case 'supervising':       return 'Signature Required';
     case 'quality_control':   return 'Signature Required';
     case 'psychologist':      return 'Signature Required';
+    case 'director':          return 'Signature Required';
     case 'ready_for_release': return 'Ready For Release';
     case 'released':          return 'Released';
     default:                  return '';
@@ -263,6 +271,20 @@ function psychologistApprove(id) {
     try {
       await api('/reports/' + id + '/workflow/psychologist-approve', { method: 'POST' });
       toast('Report approved. You can now sign and submit it.');
+      await openReport(id);
+    } catch (e) { toast(e.message, 'error'); }
+    hideLoading();
+  });
+}
+
+// Clinical Director solo flow: approve their own authored draft → director signing
+// stage, from which they save the signed PDF and release directly to the client.
+function clinicalDirectorApprove(id) {
+  prConfirm('Approve Report', 'Approve this report? As Clinical Director you can then save the signed PDF and release it to the client directly — no QC or psychologist review needed.', async () => {
+    showLoading();
+    try {
+      await api('/reports/' + id + '/workflow/cd-approve', { method: 'POST' });
+      toast('Report approved. You can now save the signed PDF and release it.');
       await openReport(id);
     } catch (e) { toast(e.message, 'error'); }
     hideLoading();

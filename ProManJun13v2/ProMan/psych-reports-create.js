@@ -171,6 +171,7 @@ function nextCreateStep(n) {
     // supervising psychometricians submit to QC, everyone else submits for review.
     var role = USER && USER.role;
     var lbl = (role === 'psychologist') ? 'Save'
+            : (role === 'clinical_director') ? 'Save'
             : (role === 'supervising_psychometrician') ? 'Submit to QC'
             : 'Submit for Review';
     var lblTop = document.getElementById('submitBtnLabel');
@@ -837,6 +838,12 @@ async function submitReport() {
   } else if (role === 'psychologist') {
     // Psychologist SOLO flow: "Save" keeps the report as a draft. They re-open it
     // from the detail view to Edit / Delete / Approve (no Submit-to-QC pipeline).
+    toast('Report saved as draft.');
+    await openReport(currentReport.id);
+  } else if (role === 'clinical_director') {
+    // Clinical Director SOLO flow: "Save" keeps the report as a draft. They re-open
+    // it from the detail view to Edit / Approve / Sign / Release — no QC, Supervising
+    // or Psychologist hand-off. (Must precede the generic draft → Submit-to-QC branch.)
     toast('Report saved as draft.');
     await openReport(currentReport.id);
   } else if (role === 'supervising_psychometrician' || status === 'draft') {

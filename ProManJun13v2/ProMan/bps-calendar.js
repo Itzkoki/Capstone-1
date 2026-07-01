@@ -10,7 +10,7 @@
  *     onChange: (isoString) => { console.log('Selected:', isoString); },
  *     minDate: new Date(),          // default: today
  *     showTime: true,               // default: true
- *     apiBase: 'http://localhost:5000/api',  // enables real-time availability
+ *     apiBase: '/api',  // enables real-time availability
  *     token: 'Bearer ...',          // auth token for API calls
  *   });
  *

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment | Barcarse Psychological Services</title>
@@ -103,7 +104,7 @@
   </script>
   <script src="toast.js"></script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = BPSSession.getToken();
     const authHeaders = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
     const PAY_QR = 'qr-full-payment.jpg';

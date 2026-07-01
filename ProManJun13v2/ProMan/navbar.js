@@ -276,7 +276,7 @@
   }
 
   // ---------- notification unread badge (real-time) ----------
-  var NOTIF_API = 'http://localhost:5000/api/notifications';
+  var NOTIF_API = '/api/notifications';
   function getToken() { try { return sessionStorage.getItem('bps_token'); } catch (e) { return null; } }
   // Guarantee a badge span exists inside the bell on every page that has one.
   function ensureBadgeEl() {
@@ -331,7 +331,7 @@
   // derives from the verified JWT and, if it disagrees, rebuild the navbar from
   // the trusted value — so a tampered role can never reveal the staff menu, and
   // an expired/revoked token collapses back to the public menu.
-  var VERIFY_API = 'http://localhost:5000/api/auth/verify-token';
+  var VERIFY_API = '/api/auth/verify-token';
 
   // Read the role straight out of the JWT payload. The token is server-signed,
   // so this value can't be forged by editing sessionStorage — a client can't

@@ -2,7 +2,7 @@
    PSYGEN — Core: globals, API helper, auth init, navigation
    ══════════════════════════════════════════════════════════ */
 
-const API = 'http://localhost:5000/api';
+const API = '/api';
 let TOKEN = sessionStorage.getItem('bps_token') || '';
 let USER = null;
 let currentReport = null;

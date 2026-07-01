@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile | Barcarse Psychological Services</title>
@@ -52,6 +53,7 @@
       </div>
       <div class="sidebar__name" id="sidebar-name">Nickname</div>
       <div class="sidebar__nickname" id="sidebar-fullname"></div>
+      <div class="sidebar__role" id="sidebar-role" style="display:none;"></div>
       <a href="mailto:" class="sidebar__email" id="sidebar-email">user@email.com</a>
 
       <nav class="sidebar__nav">
@@ -117,8 +119,8 @@
               </div>
               <div class="form-field">
                 <label for="profileContact">Contact Number</label>
-                <input type="tel" id="profileContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX">
-                <small class="field-hint">Philippine format: +639XXXXXXXXX or 09XXXXXXXXX</small>
+                <input type="tel" id="profileContact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/\D/g,'')">
+                <small class="field-hint">Digits only — 09XXXXXXXXX (11 numbers)</small>
               </div>
             </div>
 
@@ -311,6 +313,18 @@
               <option>Payment Verification</option>
               <option>Report Generation</option>
               <option>Privacy Controls</option>
+            </select>
+          </div>
+          <div class="audit-field">
+            <label for="trail-role">User Role</label>
+            <select id="trail-role">
+              <option value="all">All Roles</option>
+              <option value="client">Client</option>
+              <option value="psychometrician">Psychometrician</option>
+              <option value="supervising_psychometrician">Supervising Psychometrician</option>
+              <option value="qc_psychometrician">QC Psychometrician</option>
+              <option value="psychologist">Psychologist</option>
+              <option value="clinical_director">Clinical Director</option>
             </select>
           </div>
           <div class="audit-field">
@@ -605,7 +619,7 @@
     }
 
     // ── Config ────────────────────────────────────────────
-    const API_BASE = 'http://localhost:5000/api';
+    const API_BASE = '/api';
     const TOKEN = BPSSession.getToken();
 
     const authHeaders = {
@@ -981,16 +995,45 @@
     });
 
     // ── Role-based section visibility ────────────────────
-    // Hide "Generated Reports" from Clinical Directors (they don't have personal reports)
+    // Display labels shown as a badge under the profile name.
+    const ROLE_LABELS = {
+      clinical_director:           'Clinical Director',
+      psychologist:                'Psychologist',
+      qc_psychometrician:          'QC Psychometrician',
+      supervising_psychometrician: 'Supervising Psychometrician',
+      psychometrician:             'Psychometrician'
+    };
+
+    function hideNavSection(linkSelector, sectionId) {
+      const link = document.querySelector(linkSelector);
+      if (link) link.style.display = 'none';
+      const sec = document.getElementById(sectionId);
+      if (sec) sec.style.display = 'none';
+    }
+
     function applyRoleVisibility() {
       try {
         const user = JSON.parse(sessionStorage.getItem('bps_user') || '{}');
-        if (user && user.role === 'clinical_director') {
-          const reportsLink = document.getElementById('sidebar-reports');
-          if (reportsLink) reportsLink.style.display = 'none';
-          const reportsSection = document.getElementById('section-reports');
-          if (reportsSection) reportsSection.style.display = 'none';
-          // Audit Trail & Audit Logs are Clinical-Director only.
+        const role = user && user.role;
+        if (!role) return;
+
+        // Show the role badge for staff roles.
+        const roleBadge = document.getElementById('sidebar-role');
+        if (roleBadge && ROLE_LABELS[role]) {
+          roleBadge.textContent = ROLE_LABELS[role];
+          roleBadge.style.display = '';
+        }
+
+        // Any staff role: hide the client-only sections
+        // (My Requests, Generated Reports, Transaction History).
+        if (role !== 'client') {
+          hideNavSection('#sidebar-my-requests', 'section-my-requests');
+          hideNavSection('#sidebar-reports', 'section-reports');
+          hideNavSection('.sidebar__nav a[data-section="transactions"]', 'section-transactions');
+        }
+
+        // Clinical Director additionally gets the Audit / Action Center tools.
+        if (role === 'clinical_director') {
           const at = document.getElementById('sidebar-audit-trail');
           const al = document.getElementById('sidebar-audit-logs');
           const ac = document.getElementById('sidebar-action-center');
@@ -1528,11 +1571,12 @@
         collectFilters: ($, p) => {
           const q = $('q').value.trim(); if (q) p.set('q', q);
           const m = $('module').value; if (m && m !== 'all') p.set('module', m);
+          const r = $('role').value; if (r && r !== 'all') p.set('role', r);
           const a = $('action').value.trim(); if (a) p.set('action', a);
           const s = $('start').value; if (s) p.set('startDate', s);
           const e = $('end').value; if (e) p.set('endDate', e);
         },
-        clearFilters: ($) => { $('q').value=''; $('module').value='all'; $('action').value=''; $('start').value=''; $('end').value=''; },
+        clearFilters: ($) => { $('q').value=''; $('module').value='all'; $('role').value='all'; $('action').value=''; $('start').value=''; $('end').value=''; },
         renderRow: (r) => `<tr>
           <td>${fmtTime(r.timestamp)}</td>
           <td><span class="a-pill a-pill--module ${moduleClass(r.module)}">${esc(r.module)}</span></td>

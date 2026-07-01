@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Account | Barcarse Psychological Services</title>
@@ -58,7 +59,7 @@
             </div>
             <div class="form-group">
               <label for="contact">Contact Number</label>
-              <input type="tel" id="contact" name="contact" placeholder="(+63) 000-0000-000" autocomplete="tel">
+              <input type="tel" id="contact" name="contact" inputmode="numeric" maxlength="15" placeholder="09XXXXXXXXX" autocomplete="tel" oninput="this.value=this.value.replace(/\D/g,'')">
             </div>
             <div class="form-group">
               <label for="password">Password</label>
@@ -369,7 +370,7 @@
     });
 
     // Form submit — call backend API and redirect to OTP verification
-    const API_BASE = 'http://localhost:5000/api/auth';
+    const API_BASE = '/api/auth';
     const registerForm = document.getElementById('register-form');
     const registerBtn = document.getElementById('register-btn');
 

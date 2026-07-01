@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Assessment Intake Form | Barcarse Psychological Services</title>
@@ -238,7 +239,7 @@
             <div class="field-row">
               <div class="field">
                 <label for="contactNumber">Contact Number <span class="req">*</span></label>
-                <input type="tel" id="contactNumber" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required aria-required="true" oninput="restrictToPhone(this)">
+                <input type="tel" id="contactNumber" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" required aria-required="true" oninput="restrictToPhone(this)">
                 <div class="field__error-msg" id="err-contactNumber">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
               </div>
               <div class="field">
@@ -523,9 +524,9 @@
   <script src="toast.js"></script>
   <script src="captcha.js"></script>
   <script>
-    const API_BASE = 'http://localhost:5000';
+    const API_BASE = '';
     // Assessment intake: only Psychologists are assignable (service=assessment).
-    const STAFF_DIRECTORY_API = 'http://localhost:5000/api/staff-directory/assignable?service=assessment';
+    const STAFF_DIRECTORY_API = '/api/staff-directory/assignable?service=assessment';
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -657,7 +658,7 @@
       return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(c => c.value);
     }
 
-    const phPhoneRegex = /^(\+63|0)9\d{9}$/;
+    const phPhoneRegex = /^09\d{9}$/; // digits only, PH mobile 09XXXXXXXXX
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Strip non-name characters (letters, spaces, hyphens, apostrophes, periods only)
@@ -666,7 +667,8 @@
     }
     // Strip non-phone characters (digits, +, spaces, hyphens, parentheses only)
     function restrictToPhone(el) {
-      el.value = el.value.replace(/[^0-9+\s\-()]/g, '');
+      // Contact numbers accept digits only — strip everything else.
+      el.value = el.value.replace(/\D/g, '');
     }
 
     // ============================================

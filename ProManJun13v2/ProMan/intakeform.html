@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Intake Form | Barcarse Psychological Services</title>
@@ -286,12 +287,12 @@
         <div class="field-row">
           <div class="field">
             <label for="cellphone">Cellphone Number <span class="req">*</span></label>
-            <input type="tel" id="cellphone" placeholder="+63 9XXXXXXXXX or 09XXXXXXXXX" required oninput="restrictToPhone(this)">
+            <input type="tel" id="cellphone" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" required oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-cellphone">Enter a valid PH mobile number (e.g. 09XXXXXXXXX).</div>
           </div>
           <div class="field">
             <label for="homePhone">Landline</label>
-            <input type="tel" id="homePhone" placeholder="(02) XXXX-XXXX" oninput="restrictToPhone(this)">
+            <input type="tel" id="homePhone" inputmode="numeric" maxlength="10" placeholder="02XXXXXXXX" oninput="restrictToPhone(this)">
           </div>
         </div>
 
@@ -518,7 +519,7 @@
           </div>
           <div class="field">
             <label for="guardianContact">Parent / Guardian Contact Number <span class="req">*</span></label>
-            <input type="tel" id="guardianContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" oninput="restrictToPhone(this)">
+            <input type="tel" id="guardianContact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-guardianContact">Valid contact number is required.</div>
           </div>
           <div class="field">
@@ -572,7 +573,7 @@
         <div class="field-row">
           <div class="field">
             <label for="emerContact">Contact Number <span class="req">*</span></label>
-            <input type="tel" id="emerContact" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" required oninput="restrictToPhone(this)">
+            <input type="tel" id="emerContact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" required oninput="restrictToPhone(this)">
             <div class="field__error-msg" id="err-emerContact">Enter a valid phone number.</div>
           </div>
           <div class="field">
@@ -738,7 +739,7 @@
     // staff member's Specialization is shown here (it is intentionally hidden in
     // the Staff Management table itself).
     // ============================================
-    const STAFF_DIRECTORY_API = 'http://localhost:5000/api/staff-directory/assignable?service=counseling';
+    const STAFF_DIRECTORY_API = '/api/staff-directory/assignable?service=counseling';
 
     async function populateStaff(preference) {
       const field    = document.getElementById('staff-field');
@@ -948,16 +949,16 @@
       return checked ? checked.value : '';
     }
 
-    const phPhoneRegex = /^(\+63|0)9\d{9}$/;
+    const phPhoneRegex = /^09\d{9}$/; // digits only, PH mobile 09XXXXXXXXX
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Strip non-name characters (letters, spaces, hyphens, apostrophes, periods only)
     function restrictToName(el) {
       el.value = el.value.replace(/[^a-zA-ZÀ-ÿñÑ\s\-'.]/g, '');
     }
-    // Strip non-phone characters (digits, +, spaces, hyphens, parentheses only)
+    // Contact numbers accept digits only — strip everything else.
     function restrictToPhone(el) {
-      el.value = el.value.replace(/[^0-9+\s\-()]/g, '');
+      el.value = el.value.replace(/\D/g, '');
     }
 
     function validateStep(step) {
@@ -1320,7 +1321,7 @@
         try {
           const token = BPSSession.getToken();
           if (!token) return null;
-          const res = await fetch(`http://localhost:5000/api/appointments/availability?date=${dateStr}`, {
+          const res = await fetch(`/api/appointments/availability?date=${dateStr}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const json = await res.json();
@@ -1668,7 +1669,7 @@
       const token = typeof BPSSession !== 'undefined' ? BPSSession.getToken() : sessionStorage.getItem('bps_token');
       if (token) {
         try {
-          const res = await fetch('http://localhost:5000/api/intake-forms', {
+          const res = await fetch('/api/intake-forms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data),

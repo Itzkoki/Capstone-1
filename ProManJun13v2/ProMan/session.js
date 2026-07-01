@@ -19,7 +19,7 @@
 (function () {
   'use strict';
 
-  const API_BASE = 'http://localhost:5000/api/auth';
+  const API_BASE = '/api/auth';
   const LOGIN_PAGE = 'login.html';
   const STAFF_LOGIN_PAGE = 'staff-login.html';
   const CLIENT_HOME = 'landingpage.html';

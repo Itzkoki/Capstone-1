@@ -2,7 +2,7 @@
    Teleconference — all page logic (extracted from meetings.html)
    ══════════════════════════════════════════════════════════ */
 
-const API = 'http://localhost:5000/api';
+const API = '/api';
 const token = BPSSession.getToken();
 const user = BPSSession.getUser();
 const isStaffUser = user.role && user.role !== 'client';
@@ -849,7 +849,23 @@ async function connectToRoom(joinData) {
     BPSToast.success('Connected to session successfully!', { title: 'Session Active' });
   } catch (err) {
     console.error('Failed to join video:', err);
-    BPSToast.error('Failed to connect to video. Please check camera/mic permissions.', { title: 'Connection Failed' });
+    // Report the ACTUAL cause instead of always blaming camera/mic. The video
+    // SDK failing to load, a denied permission, a missing device, and a bad
+    // Twilio token all land here but need different fixes.
+    let msg = 'Failed to connect to video. Please try again.';
+    const name = err && err.name;
+    if (typeof Twilio === 'undefined' || /is not defined|reading 'Video'|undefined/.test((err && err.message) || '')) {
+      msg = 'The video library failed to load. Check your internet connection and refresh the page.';
+    } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+      msg = 'Camera/microphone access was blocked. Allow camera & mic permissions in your browser, then try again.';
+    } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      msg = 'No camera or microphone was found. Connect a device and try again.';
+    } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+      msg = 'Your camera/microphone is already in use by another app. Close it and try again.';
+    } else if (err && typeof err.code === 'number') {
+      msg = `Could not join the video room (error ${err.code}). Please try again or contact support.`;
+    }
+    BPSToast.error(msg, { title: 'Connection Failed' });
     btn.disabled = false;
     btn.textContent = 'Join Session';
   }

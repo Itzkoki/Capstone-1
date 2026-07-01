@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Requests &amp; Concerns | Barcarse Psychological Services</title>
@@ -139,7 +140,7 @@
             </div>
           </div>
         </div>
-        <div class="f-field"><label>Contact Number</label><input id="contactNumber" maxlength="40"></div>
+        <div class="f-field"><label>Contact Number</label><input id="contactNumber" type="tel" inputmode="numeric" maxlength="15" placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/\D/g,'')"></div>
       </div>
       <div style="margin-top:18px;">
         <label style="font-size:12px;font-weight:700;color:#2d3748;">Nature of Request *</label>
@@ -265,7 +266,7 @@
     })();
   </script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = BPSSession.getToken();
     const authHeaders = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};
     let nature = null;

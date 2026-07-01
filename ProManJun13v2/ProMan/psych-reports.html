@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PSYGEN — Psychological Report Module</title>
@@ -1260,7 +1261,7 @@
       // Log that CAPTCHA was displayed for audit trail
       const _at = sessionStorage.getItem('bps_token');
       if (_at) {
-        fetch('http://localhost:5000/api/captcha/audit', {
+        fetch('/api/captcha/audit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_at}` },
           body: JSON.stringify({ event: 'captcha_displayed', action: 'psych_reports', context: 'psych_reports' }),
@@ -1281,7 +1282,7 @@
           // Notify backend: log access granted + validate server-side
           try {
             const authToken = sessionStorage.getItem('bps_token');
-            await fetch('http://localhost:5000/api/captcha/psych-access', {
+            await fetch('/api/captcha/psych-access', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
               body: JSON.stringify({ captcha_clearance: BPSCaptcha.getClearanceToken() }),
@@ -1316,6 +1317,27 @@
   <script src="psych-reports-legacy.js"></script>
   <script src="navbar.js"></script>
   <script>document.querySelectorAll('.nav-dropdown a.active').forEach(function(a){a.classList.remove('active');});</script>
+  <script>
+    // Sidebar count badges should only appear when there is something to act on.
+    // Hide any of these badges whose value is 0 (or empty); show it for 1+.
+    // A MutationObserver keeps it in sync regardless of which script updates the
+    // count (requests / concerns / legacy / pending reviews each update their own).
+    (function () {
+      var ids = ['reportReqBadge', 'reportConcernBadge', 'legacyBadge', 'pendingBadge'];
+      function syncBadge(el) {
+        if (!el) return;
+        var n = parseInt((el.textContent || '').trim(), 10);
+        el.style.display = (!n || n <= 0) ? 'none' : '';
+      }
+      ids.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        syncBadge(el);
+        new MutationObserver(function () { syncBadge(el); })
+          .observe(el, { childList: true, characterData: true, subtree: true });
+      });
+    })();
+  </script>
 </body>
 
 </html>

@@ -3,7 +3,7 @@
    Core application logic, API integration, and UI control
    ══════════════════════════════════════════════════════════ */
 
-const API = 'http://localhost:5000/api';
+const API = '/api';
 // Use the same session storage keys as the existing BPSSession system
 let TOKEN = sessionStorage.getItem('bps_token') || '';
 let USER = null;

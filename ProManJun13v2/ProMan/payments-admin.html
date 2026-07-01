@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Verification | Barcarse Psychological Services</title>
@@ -15,79 +16,138 @@
   <link rel="stylesheet" href="toast.css">
   <link rel="stylesheet" href="captcha.css">
   <style>
-    .pay-container { max-width: 1200px; margin: 100px auto 40px; padding: 0 24px; }
-    .pay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 12px; }
+    .pay-container { max-width: 1280px; margin: 100px auto 40px; padding: 0 24px; }
     .pay-header__title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: #1a202c; }
-    .pay-header__sub { font-size: 13.5px; color: #718096; margin-bottom: 22px; max-width: 720px; line-height: 1.6; }
+    .pay-header__sub { font-size: 13.5px; color: #718096; margin: 6px 0 24px; max-width: 720px; line-height: 1.6; }
 
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+    /* ── Stat cards ───────────────────────────────────────── */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 26px; }
+    .stat-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 18px rgba(20,30,60,0.04); }
+    .stat-card__icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .stat-card__icon .ico { width: 22px; height: 22px; }
+    .stat-card__icon--pending { background: #fef5e7; color: #B7791F; }
+    .stat-card__icon--verified { background: #e6f6ec; color: #0B6E3B; }
+    .stat-card__icon--rejected { background: #fde8e8; color: #c53030; }
+    .stat-card__icon--total { background: #ebf2ff; color: #1E3A8A; }
+    .stat-card__label { font-size: 12.5px; color: #718096; font-weight: 600; }
+    .stat-card__value { font-size: 26px; font-weight: 800; color: #1a202c; line-height: 1.15; font-family: 'Inter', sans-serif; }
+
+    /* ── Filter tabs ──────────────────────────────────────── */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
     .filter-btn {
       padding: 7px 16px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff;
       cursor: pointer; font-weight: 600; font-size: 13px; color: #4a5568; transition: all 0.2s;
-      font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 7px;
     }
     .filter-btn.active { background: var(--green-primary, #1E3A8A); color: #fff; border-color: var(--green-primary, #1E3A8A); }
-    .filter-badge { background: #e53e3e; color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
+    .filter-badge { background: #edf2f7; color: #4a5568; border-radius: 999px; font-size: 11px; padding: 1px 8px; font-weight: 700; }
+    .filter-btn.active .filter-badge { background: rgba(255,255,255,0.25); color: #fff; }
 
-    .pay-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
+    /* ── Toolbar ──────────────────────────────────────────── */
+    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-box { flex: 1 1 280px; position: relative; }
+    .search-box .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #a0aec0; }
+    .search-box input { width: 100%; padding: 11px 14px 11px 40px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; font-family: 'Inter', sans-serif; }
+    .search-box input:focus { outline: none; border-color: var(--green-primary, #1E3A8A); }
+    .sort-select { padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 13px; font-weight: 600; color: #4a5568; font-family: 'Inter', sans-serif; background: #fff; cursor: pointer; }
 
-    .pcard { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px; padding: 20px; box-shadow: 0 4px 18px rgba(20,30,60,0.05); }
-    .pcard__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-    .pcard__client { font-weight: 700; font-size: 15px; color: #1a202c; }
-    .pcard__email { font-size: 12.5px; color: #718096; }
-    .pcard__ref { font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.5px; color: #1a202c; font-size: 13.5px; margin-top: 6px; }
+    /* ── Table ────────────────────────────────────────────── */
+    .pay-table-wrap { background: #fff; border: 1px solid #e6eaf1; border-radius: 16px; box-shadow: 0 4px 18px rgba(20,30,60,0.04); overflow: hidden; }
+    table.pay-table { width: 100%; border-collapse: collapse; }
+    .pay-table thead th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aec0; padding: 14px 18px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+    .pay-table tbody td { padding: 14px 18px; border-bottom: 1px solid #f1f4f8; font-size: 13.5px; color: #2d3748; vertical-align: middle; }
+    .pay-table tbody tr:last-child td { border-bottom: none; }
+    .pay-table tbody tr { transition: background 0.12s; }
+    .pay-table tbody tr:hover { background: #f8fafc; }
+    .pay-table tbody tr.is-selected { background: #eef2fb; }
 
-    .pstatus { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .cell-client { display: flex; align-items: center; gap: 11px; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; }
+    .cell-client__name { font-weight: 700; color: #1a202c; font-size: 13.5px; }
+    .cell-client__email { font-size: 12px; color: #a0aec0; }
+    .cell-ref { font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.3px; color: var(--green-primary, #1E3A8A); }
+    .amount-strong { font-weight: 700; color: #1a202c; }
+    .cell-date__d { font-size: 13px; color: #2d3748; }
+    .cell-date__t { font-size: 12px; color: #a0aec0; }
+    .cell-method { display: inline-flex; align-items: center; gap: 6px; }
+    .method-dot { width: 8px; height: 8px; border-radius: 50%; background: #2563eb; }
+
+    .pstatus { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+    .pstatus .ico { width: 12px; height: 12px; }
     .pstatus--pending { background: #fef5e7; color: #8A6A18; }
-    .pstatus--under_review { background: #ebf2ff; color: #1E3A8A; }
+    .pstatus--under_review { background: #fff7e6; color: #B7791F; }
     .pstatus--verified { background: #e6f6ec; color: #0B6E3B; }
     .pstatus--rejected { background: #fde8e8; color: #c53030; }
     .pstatus--expired { background: #edf2f7; color: #718096; }
 
-    .pcard__rows { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 14px 0; }
-    .prow__label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #a0aec0; }
-    .prow__value { font-size: 13.5px; color: #2d3748; font-weight: 600; }
-    .prow--full { grid-column: 1 / -1; }
-    .amount-strong { color: var(--green-primary, #1E3A8A); font-size: 16px; }
+    .icon-btn { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #4a5568; transition: all 0.15s; }
+    .icon-btn:hover { border-color: var(--green-primary, #1E3A8A); color: var(--green-primary, #1E3A8A); background: #f8fafc; }
+    .icon-btn .ico { width: 17px; height: 17px; }
 
-    .pproof { margin: 12px 0; }
-    .pproof__btn {
-      display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
-      color: var(--green-primary, #1E3A8A); background: var(--royal-wash, #EEF1FA);
-      border: 1px solid #d7def2; border-radius: 10px; padding: 9px 14px; cursor: pointer;
-    }
-    .pproof__btn:hover { background: #e1e8fa; }
-    .pproof__btn svg { fill: var(--green-primary, #1E3A8A); }
-    .pproof--none { font-size: 12.5px; color: #a0aec0; font-style: italic; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .empty-state .ico { width: 42px; height: 42px; margin-bottom: 10px; }
 
-    .pcard__actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-    .pbtn { border: none; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+    /* ── Right detail drawer ──────────────────────────────── */
+    .drawer-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.35); z-index: 1100; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 430px; max-width: 92vw; background: #fff; z-index: 1101; box-shadow: -12px 0 40px rgba(15,23,42,.16); transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; }
+    .drawer.open { transform: translateX(0); }
+    .drawer__head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px; border-bottom: 1px solid #edf2f7; flex: 0 0 auto; }
+    .drawer__title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 800; color: #1a202c; }
+    .drawer__close { background: none; border: none; cursor: pointer; color: #a0aec0; display: flex; padding: 4px; }
+    .drawer__close .ico { width: 22px; height: 22px; }
+    .drawer__close:hover { color: #e53e3e; }
+    .drawer__body { padding: 22px; overflow-y: auto; flex: 1 1 auto; }
+
+    .dref { font-family: 'Courier New', monospace; font-weight: 700; font-size: 16px; color: var(--green-primary, #1E3A8A); }
+    .drawer__refrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .drawer__clientrow { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #f1f4f8; margin-bottom: 18px; }
+    .drawer__clientrow .cell-client__name { font-size: 14.5px; }
+    .dmeta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; margin-bottom: 20px; }
+    .dmeta__label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #a0aec0; margin-bottom: 3px; }
+    .dmeta__value { font-size: 14px; color: #2d3748; font-weight: 600; }
+    .dsection-title { font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.4px; margin: 4px 0 10px; }
+
+    .proof-frame { background: #f8fafc; border: 1px solid #e6eaf1; border-radius: 12px; padding: 10px; overflow: auto; max-height: 320px; display: flex; align-items: center; justify-content: center; }
+    .proof-frame img { max-width: 100%; border-radius: 8px; transition: transform .15s; transform-origin: center top; }
+    .proof-tools { display: flex; gap: 8px; margin: 10px 0 22px; }
+
+    .dnotes { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; font-family: 'Inter', sans-serif; min-height: 80px; resize: vertical; margin-bottom: 14px; }
+    .dnotes:focus { outline: none; border-color: var(--green-primary, #1E3A8A); }
+    .drawer__actions { display: flex; gap: 10px; margin-bottom: 24px; }
+    .pbtn { border: none; border-radius: 10px; padding: 11px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 1; }
     .pbtn--approve { background: #0B6E3B; color: #fff; }
     .pbtn--approve:hover { background: #095a30; }
     .pbtn--reject { background: #fff; color: #c53030; border: 1.5px solid #feb2b2; }
     .pbtn--reject:hover { background: #fff5f5; }
     .pbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dnote-box { font-size: 12.5px; color: #4a5568; background: #f7fafc; border-radius: 8px; padding: 10px 12px; margin-bottom: 22px; }
 
-    .pcard__meta { font-size: 11.5px; color: #a0aec0; margin-top: 12px; }
-    .pcard__note { margin-top: 10px; font-size: 12.5px; color: #4a5568; background: #f7fafc; border-radius: 8px; padding: 8px 12px; }
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline li { position: relative; padding: 0 0 18px 26px; }
+    .timeline li:before { content: ''; position: absolute; left: 5px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #0B6E3B; }
+    .timeline li:after { content: ''; position: absolute; left: 9px; top: 14px; bottom: 0; width: 2px; background: #edf2f7; }
+    .timeline li:last-child { padding-bottom: 0; }
+    .timeline li:last-child:after { display: none; }
+    .timeline li.pending:before { background: #cbd5e0; }
+    .timeline li.rejected:before { background: #c53030; }
+    .tl-title { font-size: 13px; font-weight: 700; color: #2d3748; }
+    .tl-sub { font-size: 12px; color: #a0aec0; }
 
-    .empty-state { text-align: center; padding: 60px 20px; color: #a0aec0; }
-    .empty-state svg { width: 48px; height: 48px; fill: currentColor; margin-bottom: 12px; }
+    /* Fullscreen proof lightbox */
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1200; align-items: center; justify-content: center; padding: 30px; }
+    .lightbox.active { display: flex; }
+    .lightbox img, .lightbox iframe { max-width: 95%; max-height: 92vh; border-radius: 8px; background: #fff; }
+    .lightbox__close { position: absolute; top: 20px; right: 24px; background: none; border: none; color: #fff; cursor: pointer; display: flex; }
+    .lightbox__close .ico { width: 30px; height: 30px; }
 
-    /* Modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; justify-content: center; align-items: flex-start; padding: 70px 24px; overflow-y: auto; }
-    .modal-overlay.active { display: flex; }
-    .modal-content { background: #fff; border-radius: 18px; max-width: 640px; width: 100%; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
-    .modal-content h2 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 16px; color: #1a202c; }
-    .modal-close { float: right; background: none; border: none; font-size: 26px; cursor: pointer; color: #a0aec0; line-height: 1; }
-    .modal-close:hover { color: #e53e3e; }
-    .modal-content img { width: 100%; border-radius: 12px; border: 1px solid #e6eaf1; }
-    .modal-content textarea {
-      width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-      font-size: 14px; font-family: 'Inter', sans-serif; margin: 6px 0 14px; min-height: 90px; resize: vertical;
+    @media (max-width: 720px) {
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .pay-table thead { display: none; }
+      .pay-table, .pay-table tbody, .pay-table tr, .pay-table td { display: block; width: 100%; }
+      .pay-table tbody tr { padding: 8px 4px; border-bottom: 1px solid #edf2f7; }
+      .pay-table tbody td { border: none; padding: 4px 14px; }
     }
-    .modal-content label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
-    .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
   </style>
   <link rel="stylesheet" href="design-system.css">
   <link rel="stylesheet" href="navbar.css">
@@ -116,42 +176,51 @@
       Match the reference number in the payment note, confirm the correct amount for the selected option, then approve
       or reject. Every action is logged for audit and reconciliation.</p>
 
+    <!-- Stat cards (counts computed from the loaded list) -->
+    <div class="stat-row" id="stat-row"></div>
+
+    <!-- Filter tabs -->
     <div class="filter-bar" id="filter-bar">
-      <button class="filter-btn active" onclick="filterBy('all', this)">All</button>
-      <button class="filter-btn" onclick="filterBy('under_review', this)">Under Review <span class="filter-badge" id="badge-review" style="display:none;">0</span></button>
-      <button class="filter-btn" onclick="filterBy('pending', this)">Pending</button>
-      <button class="filter-btn" onclick="filterBy('verified', this)">Verified</button>
-      <button class="filter-btn" onclick="filterBy('rejected', this)">Rejected</button>
-      <button class="filter-btn" onclick="filterBy('expired', this)">Expired</button>
+      <button class="filter-btn active" data-status="all" onclick="filterBy('all', this)">All <span class="filter-badge" id="badge-all">0</span></button>
+      <button class="filter-btn" data-status="under_review" onclick="filterBy('under_review', this)">Under Review <span class="filter-badge" id="badge-under_review">0</span></button>
+      <button class="filter-btn" data-status="pending" onclick="filterBy('pending', this)">Pending <span class="filter-badge" id="badge-pending">0</span></button>
+      <button class="filter-btn" data-status="verified" onclick="filterBy('verified', this)">Verified <span class="filter-badge" id="badge-verified">0</span></button>
+      <button class="filter-btn" data-status="rejected" onclick="filterBy('rejected', this)">Rejected <span class="filter-badge" id="badge-rejected">0</span></button>
+      <button class="filter-btn" data-status="expired" onclick="filterBy('expired', this)">Expired <span class="filter-badge" id="badge-expired">0</span></button>
     </div>
 
-    <div id="pay-list"></div>
-  </div>
-
-  <!-- Proof viewer modal -->
-  <div class="modal-overlay" id="proof-modal">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('proof-modal')">&times;</button>
-      <h2>Proof of Payment</h2>
-      <div id="proof-modal-body"></div>
-    </div>
-  </div>
-
-  <!-- Reject modal -->
-  <div class="modal-overlay" id="reject-modal">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('reject-modal')">&times;</button>
-      <h2>Reject Payment</h2>
-      <p style="font-size:13px;color:#718096;margin-bottom:14px;">The client will be notified and the appointment slot
-        released. Provide a reason (e.g. incorrect amount, missing reference number, tampered screenshot).</p>
-      <input type="hidden" id="reject-payment-id">
-      <label for="reject-reason">Reason for rejection</label>
-      <textarea id="reject-reason" placeholder="Explain why this proof was not accepted..."></textarea>
-      <div class="modal-buttons">
-        <button class="pbtn pbtn--reject" onclick="closeModal('reject-modal')" style="border-color:#e2e8f0;color:#4a5568;">Cancel</button>
-        <button class="pbtn pbtn--reject" id="btn-confirm-reject" onclick="confirmReject()">Reject Payment</button>
+    <!-- Toolbar: search + sort -->
+    <div class="toolbar">
+      <div class="search-box">
+        <span id="search-icon"></span>
+        <input type="text" id="search-input" placeholder="Search by name, email or reference number..." oninput="renderList()">
       </div>
+      <select class="sort-select" id="sort-select" onchange="renderList()">
+        <option value="latest">Sort by: Latest</option>
+        <option value="oldest">Sort by: Oldest</option>
+        <option value="amount">Sort by: Amount</option>
+      </select>
     </div>
+
+    <div class="pay-table-wrap" id="pay-table-wrap">
+      <div id="pay-list"></div>
+    </div>
+  </div>
+
+  <!-- Right detail drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer__head">
+      <span class="drawer__title">Payment Proof &amp; Verification</span>
+      <button class="drawer__close" id="drawer-close" onclick="closeDrawer()" aria-label="Close"></button>
+    </div>
+    <div class="drawer__body" id="drawer-body"></div>
+  </aside>
+
+  <!-- Fullscreen proof lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox__close" id="lightbox-close" onclick="closeLightbox()" aria-label="Close"></button>
+    <div id="lightbox-body"></div>
   </div>
 
   <script src="icons.js"></script>
@@ -198,7 +267,7 @@
     })();
   </script>
   <script>
-    const API = 'http://localhost:5000/api';
+    const API = '/api';
     const token = BPSSession.getToken();
     const user = BPSSession.getUser();
 
@@ -206,6 +275,8 @@
 
     let allPayments = [];
     let currentFilter = 'all';
+    let selectedId = null;
+    let proofScale = 1;
 
     async function apiFetch(url, opts = {}) {
       const res = await fetch(`${API}${url}`, {
@@ -219,74 +290,89 @@
     function peso(n) { return '₱' + Number(n || 0).toFixed(2); }
     function statusLabel(s) { return (s || '').replace(/_/g, ' '); }
     function fmtDate(d) { return d ? new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
-    function timeAgo(d) {
-      const diff = Date.now() - new Date(d).getTime();
-      const m = Math.floor(diff / 60000); if (m < 60) return m + 'm ago';
-      const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
-      const days = Math.floor(h / 24); return days + 'd ago';
-    }
+    function fmtDateOnly(d) { return d ? new Date(d).toLocaleDateString('en-PH', { dateStyle: 'medium' }) : '—'; }
+    function fmtTimeOnly(d) { return d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : ''; }
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function isToday(d) { if (!d) return false; const a = new Date(d), b = new Date(); return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
 
-    function filterBy(status, btn) {
-      currentFilter = status;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderList();
+    // Deterministic avatar colour from a name.
+    const AV_COLORS = ['#1E3A8A', '#0B6E3B', '#B7791F', '#7C3AED', '#C53030', '#0E7490', '#9D174D', '#2563EB'];
+    function avatarColor(name) { const s = String(name || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return AV_COLORS[Math.abs(h) % AV_COLORS.length]; }
+    function initials(name) { const p = String(name || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+
+    function statusIcon(s) {
+      if (s === 'verified') return ICON.checkCircle;
+      if (s === 'rejected') return ICON.x;
+      if (s === 'expired') return ICON.archive;
+      return ICON.document;
+    }
+
+    function optionLabel(p) { return p.payment_option === 'full' ? 'Full Payment' : 'Half Payment'; }
+
+    // ── Stat cards + tab counts ─────────────────────────────
+    function renderStats() {
+      const pending = allPayments.filter(p => p.status === 'under_review' || p.status === 'pending').length;
+      const verifiedToday = allPayments.filter(p => p.status === 'verified' && isToday(p.verified_at)).length;
+      const rejected = allPayments.filter(p => p.status === 'rejected').length;
+      const total = allPayments.length;
+      document.getElementById('stat-row').innerHTML = `
+        <div class="stat-card"><div class="stat-card__icon stat-card__icon--pending">${ICON.document}</div>
+          <div><div class="stat-card__label">Pending Verification</div><div class="stat-card__value">${pending}</div></div></div>
+        <div class="stat-card"><div class="stat-card__icon stat-card__icon--verified">${ICON.checkCircle}</div>
+          <div><div class="stat-card__label">Verified Today</div><div class="stat-card__value">${verifiedToday}</div></div></div>
+        <div class="stat-card"><div class="stat-card__icon stat-card__icon--rejected">${ICON.x}</div>
+          <div><div class="stat-card__label">Rejected Payments</div><div class="stat-card__value">${rejected}</div></div></div>
+        <div class="stat-card"><div class="stat-card__icon stat-card__icon--total">${ICON.archive}</div>
+          <div><div class="stat-card__label">Total Transactions</div><div class="stat-card__value">${total}</div></div></div>`;
+
+      const counts = { all: allPayments.length };
+      ['under_review', 'pending', 'verified', 'rejected', 'expired'].forEach(s => counts[s] = allPayments.filter(p => p.status === s).length);
+      Object.keys(counts).forEach(k => { const b = document.getElementById('badge-' + k); if (b) b.textContent = counts[k]; });
+    }
+
+    function getFiltered() {
+      const q = (document.getElementById('search-input').value || '').trim().toLowerCase();
+      let rows = currentFilter === 'all' ? allPayments.slice() : allPayments.filter(p => p.status === currentFilter);
+      if (q) rows = rows.filter(p =>
+        (p.client_name || '').toLowerCase().includes(q) ||
+        (p.client_email || '').toLowerCase().includes(q) ||
+        (p.reference_number || '').toLowerCase().includes(q));
+      const sort = document.getElementById('sort-select').value;
+      rows.sort((a, b) => {
+        if (sort === 'amount') return Number(b.amount_due || 0) - Number(a.amount_due || 0);
+        const ta = new Date(a.created_at).getTime(), tb = new Date(b.created_at).getTime();
+        return sort === 'oldest' ? ta - tb : tb - ta;
+      });
+      return rows;
     }
 
     function renderList() {
       const list = document.getElementById('pay-list');
-      const filtered = currentFilter === 'all' ? allPayments : allPayments.filter(p => p.status === currentFilter);
-
-      if (!filtered.length) {
-        list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><p>No payments in this category.</p></div>`;
+      const rows = getFiltered();
+      if (!rows.length) {
+        list.innerHTML = `<div class="empty-state">${ICON.document}<p>No payments in this category.</p></div>`;
         return;
       }
-
-      list.innerHTML = '<div class="pay-grid">' + filtered.map(p => {
-        const hasProof = !!p.proof_filename || p.status === 'under_review' || p.status === 'verified' || p.status === 'rejected';
-        const proofHtml = hasProof
-          ? `<button class="pproof__btn" onclick="viewProof(${p.id})"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg> View Proof of Payment</button>`
-          : `<span class="pproof--none">No proof uploaded yet.</span>`;
-
-        let actions = '';
-        if (p.status === 'under_review') {
-          actions = `<div class="pcard__actions">
-            <button class="pbtn pbtn--approve" onclick="approve(${p.id})">${ICON.check} Approve &amp; Verify</button>
-            <button class="pbtn pbtn--reject" onclick="openReject(${p.id})">${ICON.x} Reject</button>
-          </div>`;
-        }
-
-        let note = '';
-        if (p.status === 'verified' && p.admin_note) note = `<div class="pcard__note"><strong>Admin note:</strong> ${esc(p.admin_note)}</div>`;
-        if (p.status === 'rejected' && p.rejection_reason) note = `<div class="pcard__note"><strong>Rejection reason:</strong> ${esc(p.rejection_reason)}</div>`;
-
-        const balanceRow = (p.payment_option === 'half')
-          ? `<div><div class="prow__label">Balance (in person)</div><div class="prow__value">${peso(p.outstanding_balance)}</div></div>` : '';
-
-        return `<div class="pcard">
-          <div class="pcard__top">
-            <div>
-              <div class="pcard__client">${esc(p.client_name || 'Unknown')}</div>
-              <div class="pcard__email">${esc(p.client_email || '')}</div>
-              <div class="pcard__ref">${esc(p.reference_number)}</div>
-              ${p.case_id ? '<div style="font-size:12px;color:#667eea;font-weight:700;margin-top:2px">' + esc(p.case_id) + '</div>' : ''}
-            </div>
-            <span class="pstatus pstatus--${p.status}">${statusLabel(p.status)}</span>
-          </div>
-          <div class="pcard__rows">
-            <div><div class="prow__label">Option</div><div class="prow__value">${p.payment_option === 'full' ? 'Full Payment' : 'Half Payment'}</div></div>
-            <div><div class="prow__label">Amount Due</div><div class="prow__value amount-strong">${peso(p.amount_due)}</div></div>
-            <div><div class="prow__label">Method</div><div class="prow__value">${esc(p.payment_method || 'GCash')}</div></div>
-            ${balanceRow}
-            ${p.service_label ? `<div class="prow--full"><div class="prow__label">Service</div><div class="prow__value">${esc(p.service_label)}</div></div>` : ''}
-          </div>
-          <div class="pproof">${proofHtml}</div>
-          ${actions}
-          ${note}
-          <div class="pcard__meta">Created ${timeAgo(p.created_at)} · Booking #${p.appointment_id || '—'}${p.verified_at ? ' · Reviewed ' + fmtDate(p.verified_at) + (p.verifier_name ? ' by ' + esc(p.verifier_name) : '') : ''}</div>
-        </div>`;
-      }).join('') + '</div>';
+      list.innerHTML = `<table class="pay-table">
+        <thead><tr>
+          <th>Client</th><th>Reference No.</th><th>Payment Option</th><th>Amount Due</th>
+          <th>Method</th><th>Submitted On</th><th>Status</th><th style="text-align:right;">Actions</th>
+        </tr></thead>
+        <tbody>` + rows.map(p => `
+          <tr id="row-${p.id}" class="${p.id === selectedId ? 'is-selected' : ''}">
+            <td><div class="cell-client">
+              <div class="avatar" style="background:${avatarColor(p.client_name)}">${esc(initials(p.client_name))}</div>
+              <div><div class="cell-client__name">${esc(p.client_name || 'Unknown')}</div>
+              <div class="cell-client__email">${esc(p.client_email || '')}</div></div>
+            </div></td>
+            <td><span class="cell-ref">${esc(p.reference_number)}</span></td>
+            <td>${esc(optionLabel(p))}</td>
+            <td><span class="amount-strong">${peso(p.amount_due)}</span></td>
+            <td><span class="cell-method"><span class="method-dot"></span>${esc(p.payment_method || 'GCash')}</span></td>
+            <td><div class="cell-date__d">${fmtDateOnly(p.created_at)}</div><div class="cell-date__t">${fmtTimeOnly(p.created_at)}</div></td>
+            <td><span class="pstatus pstatus--${p.status}">${statusIcon(p.status)}${statusLabel(p.status)}</span></td>
+            <td style="text-align:right;"><button class="icon-btn" title="View &amp; verify" onclick="openDrawer(${p.id})">${ICON.search}</button></td>
+          </tr>`).join('') + `</tbody></table>`;
     }
 
     async function loadPayments() {
@@ -294,10 +380,7 @@
         const res = await apiFetch('/payments');
         if (res.success) {
           allPayments = res.data;
-          const reviewCount = allPayments.filter(p => p.status === 'under_review').length;
-          const badge = document.getElementById('badge-review');
-          if (reviewCount > 0) { badge.textContent = reviewCount; badge.style.display = 'inline-block'; }
-          else { badge.style.display = 'none'; }
+          renderStats();
           renderList();
         } else {
           document.getElementById('pay-list').innerHTML = `<div class="empty-state"><p>Failed to load payments.</p></div>`;
@@ -308,93 +391,180 @@
       }
     }
 
-    async function viewProof(id) {
-      const body = document.getElementById('proof-modal-body');
-      body.innerHTML = '<p style="color:#718096;">Loading proof…</p>';
-      document.getElementById('proof-modal').classList.add('active');
-      const res = await apiFetch(`/payments/${id}`);
-      if (res.success && res.data && res.data.proof_of_payment) {
-        const proof = res.data.proof_of_payment;
-        const ref = res.data.reference_number;
-        if (proof.startsWith('data:application/pdf')) {
-          body.innerHTML = `<p style="margin-bottom:10px;font-weight:600;">${esc(ref)}</p><iframe src="${proof}" style="width:100%;height:480px;border:1px solid #e6eaf1;border-radius:12px;"></iframe>`;
-        } else {
-          body.innerHTML = `<p style="margin-bottom:10px;font-weight:600;">${esc(ref)}</p><img src="${proof}" alt="Proof of payment">`;
-        }
-      } else {
-        body.innerHTML = '<p style="color:#a0aec0;">No proof of payment is available for this record.</p>';
+    function filterBy(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderList();
+    }
+
+    // ── Detail drawer ───────────────────────────────────────
+    function buildTimeline(p) {
+      let items = `<li><div class="tl-title">Submitted by ${esc(p.client_name || 'Client')}</div><div class="tl-sub">${fmtDate(p.created_at)}</div></li>`;
+      if (p.status === 'verified' && p.verified_at) {
+        items += `<li><div class="tl-title">Verified${p.verifier_name ? ' by ' + esc(p.verifier_name) : ''}</div><div class="tl-sub">${fmtDate(p.verified_at)}</div></li>`;
+      } else if (p.status === 'rejected' && p.verified_at) {
+        items += `<li class="rejected"><div class="tl-title">Rejected${p.verifier_name ? ' by ' + esc(p.verifier_name) : ''}</div><div class="tl-sub">${fmtDate(p.verified_at)}</div></li>`;
+      } else if (p.status === 'under_review') {
+        items += `<li class="pending"><div class="tl-title">Under Review</div><div class="tl-sub">Awaiting verification</div></li>`;
       }
+      return `<ul class="timeline">${items}</ul>`;
     }
 
-    async function approve(id) {
-      const note = await BPSModal.prompt('Optional note to the client (e.g. confirmation message). Leave blank to skip:', { title: 'Approve payment', placeholder: 'Confirmation message…', confirmText: 'Approve' });
-      if (note === null) return; // cancelled
+    async function openDrawer(id) {
+      selectedId = id;
+      proofScale = 1;
+      document.querySelectorAll('.pay-table tbody tr').forEach(r => r.classList.remove('is-selected'));
+      const row = document.getElementById('row-' + id);
+      if (row) row.classList.add('is-selected');
+
+      const drawer = document.getElementById('drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      drawer.classList.add('open'); backdrop.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
+
+      const body = document.getElementById('drawer-body');
+      const base = allPayments.find(p => p.id === id) || {};
+      body.innerHTML = `<p style="color:#a0aec0;">Loading…</p>`;
+
+      const res = await apiFetch(`/payments/${id}`);
+      const p = (res.success && res.data) ? res.data : base;
+      const proof = p.proof_of_payment || null;
+
+      const isActionable = p.status === 'under_review' || p.status === 'pending';
+      const balanceRow = (p.payment_option === 'half')
+        ? `<div><div class="dmeta__label">Balance (in person)</div><div class="dmeta__value">${peso(p.outstanding_balance)}</div></div>` : '';
+
+      let proofHtml = `<div class="proof-frame"><span style="color:#a0aec0;font-size:13px;">No proof of payment uploaded.</span></div>`;
+      let toolsHtml = '';
+      if (proof) {
+        if (String(proof).startsWith('data:application/pdf')) {
+          proofHtml = `<div class="proof-frame"><iframe src="${proof}" style="width:100%;height:280px;border:none;border-radius:8px;"></iframe></div>`;
+          toolsHtml = `<div class="proof-tools"><button class="icon-btn" title="Fullscreen" onclick="openLightbox()">${ICON.document}</button><a class="icon-btn" title="Download" href="${proof}" download="proof-${esc(p.reference_number || id)}.pdf">${ICON.download}</a></div>`;
+        } else {
+          proofHtml = `<div class="proof-frame"><img id="proof-img" src="${proof}" alt="Proof of payment"></div>`;
+          toolsHtml = `<div class="proof-tools">
+            <button class="icon-btn" title="Zoom in" onclick="zoomProof(0.2)">${ICON.search}</button>
+            <button class="icon-btn" title="Zoom out" onclick="zoomProof(-0.2)">${ICON.scale}</button>
+            <button class="icon-btn" title="Fullscreen" onclick="openLightbox()">${ICON.document}</button>
+            <a class="icon-btn" title="Download" href="${proof}" download="proof-${esc(p.reference_number || id)}.png">${ICON.download}</a>
+          </div>`;
+        }
+      }
+
+      let actionHtml = '';
+      if (isActionable) {
+        actionHtml = `
+          <div class="dsection-title">Verification Notes (optional)</div>
+          <textarea class="dnotes" id="verify-notes" placeholder="Add notes about this verification..."></textarea>
+          <div class="drawer__actions">
+            <button class="pbtn pbtn--reject" id="btn-drawer-reject" onclick="drawerReject(${id})">${ICON.x} Reject Payment</button>
+            <button class="pbtn pbtn--approve" id="btn-drawer-approve" onclick="drawerApprove(${id})">${ICON.check} Approve Payment</button>
+          </div>`;
+      } else if (p.status === 'verified' && p.admin_note) {
+        actionHtml = `<div class="dnote-box"><strong>Admin note:</strong> ${esc(p.admin_note)}</div>`;
+      } else if (p.status === 'rejected' && p.rejection_reason) {
+        actionHtml = `<div class="dnote-box"><strong>Rejection reason:</strong> ${esc(p.rejection_reason)}</div>`;
+      }
+
+      body.innerHTML = `
+        <div class="drawer__refrow">
+          <span class="dref">${esc(p.reference_number)}</span>
+          <span class="pstatus pstatus--${p.status}">${statusIcon(p.status)}${statusLabel(p.status)}</span>
+        </div>
+        <div class="drawer__clientrow">
+          <div class="avatar" style="background:${avatarColor(p.client_name)}">${esc(initials(p.client_name))}</div>
+          <div><div class="cell-client__name">${esc(p.client_name || 'Unknown')}</div>
+          <div class="cell-client__email">${esc(p.client_email || '')}</div></div>
+          <div style="margin-left:auto;text-align:right;">
+            <div class="dmeta__label">Submitted On</div>
+            <div class="cell-date__d">${fmtDateOnly(p.created_at)}</div>
+            <div class="cell-date__t">${fmtTimeOnly(p.created_at)}</div>
+          </div>
+        </div>
+        <div class="dmeta-grid">
+          <div><div class="dmeta__label">Payment Type</div><div class="dmeta__value">${esc(optionLabel(p))}</div></div>
+          <div><div class="dmeta__label">Payment Method</div><div class="dmeta__value">${esc(p.payment_method || 'GCash')}</div></div>
+          <div><div class="dmeta__label">Amount Due</div><div class="dmeta__value">${peso(p.amount_due)}</div></div>
+          ${balanceRow}
+          ${p.service_label ? `<div style="grid-column:1/-1;"><div class="dmeta__label">Service</div><div class="dmeta__value">${esc(p.service_label)}</div></div>` : ''}
+          ${p.case_id ? `<div style="grid-column:1/-1;"><div class="dmeta__label">Case</div><div class="dmeta__value">${esc(p.case_id)}</div></div>` : ''}
+        </div>
+        <div class="dsection-title">Proof of Payment</div>
+        ${proofHtml}
+        ${toolsHtml}
+        ${actionHtml}
+        <div class="dsection-title">Activity History</div>
+        ${buildTimeline(p)}`;
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+      document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+      selectedId = null;
+      document.querySelectorAll('.pay-table tbody tr').forEach(r => r.classList.remove('is-selected'));
+    }
+
+    function zoomProof(delta) {
+      proofScale = Math.min(3, Math.max(0.5, proofScale + delta));
+      const img = document.getElementById('proof-img');
+      if (img) img.style.transform = `scale(${proofScale})`;
+    }
+
+    function openLightbox() {
+      const p = allPayments.find(x => x.id === selectedId);
+      const src = document.querySelector('#drawer-body #proof-img') ? document.querySelector('#drawer-body #proof-img').src
+        : (document.querySelector('#drawer-body iframe') ? document.querySelector('#drawer-body iframe').src : null);
+      if (!src) return;
+      const lb = document.getElementById('lightbox-body');
+      lb.innerHTML = src.startsWith('data:application/pdf')
+        ? `<iframe src="${src}" style="width:90vw;height:90vh;"></iframe>`
+        : `<img src="${src}" alt="Proof of payment">`;
+      document.getElementById('lightbox').classList.add('active');
+    }
+    function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); document.getElementById('lightbox-body').innerHTML = ''; }
+
+    // ── Approve / Reject (same endpoints, logic unchanged) ──
+    async function drawerApprove(id) {
+      const notes = (document.getElementById('verify-notes') || {}).value || '';
+      const btn = document.getElementById('btn-drawer-approve');
+      if (btn) btn.disabled = true;
       const res = await apiFetch(`/payments/${id}/verify`, {
-        method: 'PUT', body: JSON.stringify({ action: 'approve', note: note || null }),
+        method: 'PUT', body: JSON.stringify({ action: 'approve', note: notes.trim() || null }),
       });
-      if (res.success) { BPSToast.success('Payment verified. Slot reserved and client notified.'); loadPayments(); }
-      else { BPSToast.error(res.message || 'Failed to verify payment.', { title: 'Error' }); }
+      if (res.success) { BPSToast.success('Payment verified. Slot reserved and client notified.'); closeDrawer(); loadPayments(); }
+      else { if (btn) btn.disabled = false; BPSToast.error(res.message || 'Failed to verify payment.', { title: 'Error' }); }
     }
 
-    function openReject(id) {
-      document.getElementById('reject-payment-id').value = id;
-      document.getElementById('reject-reason').value = '';
-      document.getElementById('reject-modal').classList.add('active');
-    }
-
-    async function confirmReject() {
-      const id = document.getElementById('reject-payment-id').value;
-      const reason = document.getElementById('reject-reason').value.trim();
-      if (!reason) { BPSToast.warning('Please provide a reason for rejection.', { title: 'Reason Required' }); return; }
-      const btn = document.getElementById('btn-confirm-reject');
-      btn.disabled = true;
+    async function drawerReject(id) {
+      const reason = ((document.getElementById('verify-notes') || {}).value || '').trim();
+      if (!reason) { BPSToast.warning('Please provide a reason for rejection in the notes field.', { title: 'Reason Required' }); return; }
+      const btn = document.getElementById('btn-drawer-reject');
+      if (btn) btn.disabled = true;
       const res = await apiFetch(`/payments/${id}/verify`, {
         method: 'PUT', body: JSON.stringify({ action: 'reject', note: reason }),
       });
-      btn.disabled = false;
-      if (res.success) {
-        closeModal('reject-modal');
-        BPSToast.success('Payment rejected and slot released. Client notified.');
-        loadPayments();
-      } else {
-        BPSToast.error(res.message || 'Failed to reject payment.', { title: 'Error' });
-      }
+      if (res.success) { BPSToast.success('Payment rejected and slot released. Client notified.'); closeDrawer(); loadPayments(); }
+      else { if (btn) btn.disabled = false; BPSToast.error(res.message || 'Failed to reject payment.', { title: 'Error' }); }
     }
 
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-      m.addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
-    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeDrawer(); } });
 
     // Auto-open a specific payment if ?paymentId= is in the URL (e.g. from SupPsy notification link)
-    async function autoOpenPaymentFromUrl() {
+    function autoOpenPaymentFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const targetId = params.get('paymentId');
       if (!targetId) return;
-
-      // Find the payment in allPayments (already loaded) and open its proof viewer
       const target = allPayments.find(p => String(p.id) === String(targetId));
       if (!target) return;
-
-      // Switch to "All" filter to make the card visible regardless of current filter
       filterBy('all', document.querySelector('.filter-btn'));
-
-      // Highlight and scroll to the specific card
-      setTimeout(() => {
-        const cards = document.querySelectorAll('.pcard');
-        for (const card of cards) {
-          if (card.innerHTML.includes(esc(target.reference_number))) {
-            card.style.outline = '3px solid #1E3A8A';
-            card.style.boxShadow = '0 0 0 4px rgba(30,58,138,0.15)';
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            break;
-          }
-        }
-      }, 150);
-
-      // Automatically open the proof viewer so the SupPsy can verify immediately
-      viewProof(Number(targetId));
+      setTimeout(() => openDrawer(Number(targetId)), 150);
     }
+
+    // Inject shared icons into static chrome (kept out of HTML so it uses the icon set)
+    document.getElementById('search-icon').innerHTML = ICON.search;
+    document.getElementById('drawer-close').innerHTML = ICON.x;
+    document.getElementById('lightbox-close').innerHTML = ICON.x;
 
     loadPayments().then(autoOpenPaymentFromUrl);
   </script>

@@ -191,6 +191,24 @@
     </div>
   </div>
 
+  <!-- Delete Staff Confirmation Modal (director's password required) -->
+  <div class="modal-overlay" id="delete-staff-modal">
+    <div class="modal" style="max-width:440px;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(229,62,62,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#e53e3e"/></svg>
+      </div>
+      <h3 class="modal__title" style="text-align:center;margin-bottom:10px;">Delete Account?</h3>
+      <p style="font-size:14px;color:var(--text-body);margin-bottom:6px;">This will permanently delete <strong id="delete-staff-name"></strong>'s account, profile data, and all records. This action <strong>cannot be undone</strong>.</p>
+      <p style="font-size:13px;color:var(--text-body);margin-bottom:8px;">Enter your password to confirm:</p>
+      <input type="password" id="delete-staff-password" class="modal__select" placeholder="Enter your password" autocomplete="current-password" style="margin-bottom:8px;">
+      <div id="delete-staff-error" style="display:none;color:#e53e3e;font-size:13px;margin-bottom:10px;text-align:left;"></div>
+      <div class="modal__actions" style="justify-content:center;">
+        <button type="button" class="btn-modal btn-modal--cancel" id="delete-staff-cancel">Cancel</button>
+        <button type="button" class="btn-modal btn-modal--danger" id="delete-staff-confirm">Delete Account</button>
+      </div>
+    </div>
+  </div>
+
   <script src="session.js"></script>
   <script src="role-guard.js"></script>
   <script src="captcha.js"></script>
@@ -304,6 +322,10 @@
           : (active
             ? `<button class="btn-sm btn-sm--danger" onclick="setStatus(${s.staff_id},false,'${name}')">Deactivate</button>`
             : `<button class="btn-sm btn-sm--edit" onclick="setStatus(${s.staff_id},true,'${name}')">Activate</button>`);
+        // Permanent deletion — never offered for the acting director's own row.
+        const deleteBtn = isSelf
+          ? ''
+          : `<button class="btn-sm btn-sm--delete" onclick="openDeleteStaffModal(${s.staff_id},'${name}')">Delete</button>`;
         return `
         <tr>
           <td><strong>${name}</strong></td>
@@ -315,6 +337,7 @@
           <td class="staff-actions-cell">
             <button class="btn-sm btn-sm--edit" onclick="openRoleModal(${s.staff_id},'${name}','${escHtml(s.role)}')">Edit Role</button>
             ${statusBtn}
+            ${deleteBtn}
           </td>
         </tr>`;
       }).join('');
@@ -346,6 +369,76 @@
       loadStaff();
       loadLogs();
     }
+
+    // ── Delete staff account (director's password required) ──
+    let deletingStaffId = null;
+    const deleteStaffModal   = document.getElementById('delete-staff-modal');
+    const deleteStaffPwd     = document.getElementById('delete-staff-password');
+    const deleteStaffError   = document.getElementById('delete-staff-error');
+    const deleteStaffConfirm = document.getElementById('delete-staff-confirm');
+
+    function openDeleteStaffModal(id, name) {
+      deletingStaffId = id;
+      document.getElementById('delete-staff-name').textContent = name;
+      deleteStaffPwd.value = '';
+      deleteStaffError.style.display = 'none';
+      deleteStaffConfirm.disabled = false;
+      deleteStaffConfirm.textContent = 'Delete Account';
+      deleteStaffModal.classList.add('active');
+      setTimeout(() => deleteStaffPwd.focus(), 100);
+    }
+    function closeDeleteStaffModal() { deleteStaffModal.classList.remove('active'); }
+
+    document.getElementById('delete-staff-cancel').addEventListener('click', closeDeleteStaffModal);
+    deleteStaffModal.addEventListener('click', (e) => { if (e.target === deleteStaffModal) closeDeleteStaffModal(); });
+    deleteStaffPwd.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); deleteStaffConfirm.click(); } });
+
+    deleteStaffConfirm.addEventListener('click', async () => {
+      const password = deleteStaffPwd.value;
+      if (!password) {
+        deleteStaffError.textContent = 'Please enter your password.';
+        deleteStaffError.style.display = 'block';
+        return;
+      }
+      deleteStaffConfirm.disabled = true;
+      deleteStaffConfirm.textContent = 'Deleting…';
+      deleteStaffError.style.display = 'none';
+
+      try {
+        // Raw fetch (not apiFetch) so a 401 shows an inline "incorrect password"
+        // error instead of bouncing the director to the login page.
+        const res = await fetch(`${API}/staff/${deletingStaffId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const json = await res.json().catch(() => ({}));
+
+        if (res.status === 401) {
+          deleteStaffError.textContent = json.message || 'Incorrect password.';
+          deleteStaffError.style.display = 'block';
+          deleteStaffConfirm.disabled = false;
+          deleteStaffConfirm.textContent = 'Delete Account';
+          return;
+        }
+        if (res.ok && json.success) {
+          closeDeleteStaffModal();
+          loadStaff();
+          loadLogs();
+          BPSModal.alert('Staff account permanently deleted.', { title: 'Account Deleted' });
+        } else {
+          deleteStaffError.textContent = json.message || 'Failed to delete account.';
+          deleteStaffError.style.display = 'block';
+          deleteStaffConfirm.disabled = false;
+          deleteStaffConfirm.textContent = 'Delete Account';
+        }
+      } catch (err) {
+        deleteStaffError.textContent = 'Network error. Please try again.';
+        deleteStaffError.style.display = 'block';
+        deleteStaffConfirm.disabled = false;
+        deleteStaffConfirm.textContent = 'Delete Account';
+      }
+    });
 
     // ── Schedule builder ──
     const addSchedule = [];

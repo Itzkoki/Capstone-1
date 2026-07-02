@@ -105,6 +105,15 @@
 .staff-actions-cell {
   display: flex;
   gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* Fixed-width, single-line action buttons so Edit Role / Activate-Deactivate /
+   Delete line up into consistent columns across every row. */
+.staff-actions-cell .btn-sm {
+  min-width: 92px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .btn-sm {
@@ -131,6 +140,15 @@
 }
 
 .btn-sm--danger:hover { background: rgba(229,62,62,0.2); }
+
+/* Solid red — the permanent-delete action, distinct from the lighter
+   deactivate button. */
+.btn-sm--delete {
+  background: #e53e3e;
+  color: #fff;
+}
+
+.btn-sm--delete:hover { background: #c53030; }
 
 /* ── Modal ─────────────────── */
 .modal-overlay {
@@ -218,6 +236,13 @@
 }
 
 .btn-modal--cancel:hover { background: #e0e0e0; }
+
+.btn-modal--danger {
+  background: #e53e3e;
+  color: #fff;
+}
+
+.btn-modal--danger:hover { background: #c53030; }
 
 /* ── Activity Logs Section ── */
 .logs-section {

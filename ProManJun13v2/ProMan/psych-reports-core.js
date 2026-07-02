@@ -97,14 +97,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (params.get('create') === '1') {
     var caseIdParam = params.get('caseId') || null;
     window._caseLockedTemplateType = null; // reset on every create entry
+    window._pendingCaseId = null;          // only set below when a case is supplied
     if (caseIdParam) {
       window._pendingCaseId = caseIdParam;
       try {
         var caseData = await api('/cases/' + encodeURIComponent(caseIdParam));
         var caseDetail = caseData.data || caseData;
-        // Open any active report for this case (draft, Prepared, Review, or Approved)
+        // Open any active report that belongs to THIS case (draft, Prepared,
+        // Review, or Approved). The case detail also surfaces the client's other
+        // reports that were never stamped with a case_id — those must NOT be
+        // treated as this case's report, otherwise a stray draft from another
+        // case would hijack the create flow and skip the template lock.
         var existingDraft = (caseDetail.reports || []).find(function(r) {
-          return ['draft','Prepared','Review','Approved'].indexOf(r.status) !== -1;
+          return r.case_id === caseIdParam
+              && ['draft','Prepared','Review','Approved'].indexOf(r.status) !== -1;
         });
         if (existingDraft) { await openReport(existingDraft.id); return; }
 
@@ -121,6 +127,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._caseLockedTemplateType = lockedType || null;
       } catch(e) { /* ignore — proceed to create */ }
     }
+    // Activate the Create view directly. We must NOT route through
+    // showView('create') here: that path is for a fresh, manual "New Report" and
+    // deliberately clears the case lock (_caseLockedTemplateType / _pendingCaseId).
+    // Coming from a case we must PRESERVE those so the template is locked to the
+    // case's assessment type and the client is auto-filled.
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    var createView = document.getElementById('view-create');
+    if (createView) createView.classList.add('active');
+    var createNav = document.querySelector('.nav-item[data-view="create"]');
+    if (createNav) createNav.classList.add('active');
     await loadTemplatesForCreate();
     return;
   }
@@ -154,7 +171,13 @@ function showView(name) {
   const n = document.querySelector(`.nav-item[data-view="${name}"]`);
   if (n) n.classList.add('active');
   if (name==='dashboard') loadDashboard();
-  else if (name==='create') loadTemplatesForCreate();
+  else if (name==='create') {
+    // Manual "New Report" entry: not tied to any case, so clear any case lock
+    // left over from a previous Case Management → Create Report entry.
+    window._pendingCaseId = null;
+    window._caseLockedTemplateType = null;
+    loadTemplatesForCreate();
+  }
   else if (name==='reviews') loadPendingReviews();
   else if (name==='reportRequests') loadReportRequests();
   else if (name==='reportConcerns') loadReportConcerns();

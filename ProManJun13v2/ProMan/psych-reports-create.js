@@ -220,6 +220,24 @@ async function loadIntakeClients() {
         const tag = `${caseLabel} · Assessment`;
         return `<option value="${i}">${esc(c.full_name || c.account_name || 'Unknown')} — ${esc(c.email || c.account_email || '')} (${esc(tag)})</option>`;
       }).join('');
+
+    // When the wizard was entered from an open case (Case Management → "Create
+    // Report in PsyGen"), the report is for that case's client only. Auto-select
+    // that client, populate their basic information from the intake, and lock the
+    // dropdown so it can't be changed. Matching is by case_id because one client
+    // may own several assessment cases (each a separate intake row here).
+    if (window._pendingCaseId) {
+      const lockedIdx = intakeClients.findIndex(c => c.case_id === window._pendingCaseId);
+      if (lockedIdx !== -1) {
+        sel.value = String(lockedIdx);
+        onClientSelect();
+        sel.disabled = true;
+      } else {
+        sel.disabled = false;
+      }
+    } else {
+      sel.disabled = false;
+    }
   } catch(e) {
     console.error('Failed to load intake clients:', e);
     toast('Could not load clients from intake forms', 'error');

@@ -2442,6 +2442,11 @@ function renderStaffQuickActions() {
         <span class="cd-quick__txt"><strong>Test My Connection</strong><small>Check your camera &amp; microphone</small></span>
         <i data-lucide="chevron-right" class="cd-quick__chev"></i>
       </button>
+      <button type="button" class="cd-quick__item" onclick="openRecordings()">
+        <span class="cd-quick__ic cd-quick__ic--blue"><i data-lucide="play-circle"></i></span>
+        <span class="cd-quick__txt"><strong>View Recordings</strong><small>Watch your past session recordings</small></span>
+        <i data-lucide="chevron-right" class="cd-quick__chev"></i>
+      </button>
     </section>`;
 }
 
@@ -2461,6 +2466,79 @@ function closeScheduleModal() {
   const m = document.getElementById('schedule-modal'); if (m) m.style.display = 'none';
   selectedStaff = [];
   renderSelectedStaff();
+}
+
+// ── Session Recordings (host + invited staff) ──
+// Lists ended sessions that have a stored recording and plays them inline via a
+// short-lived presigned URL from GET /teleconference/:id/recording. The list is
+// built from the host's own sessions cache, so only rooms they host or were
+// added to appear here.
+function openRecordings() {
+  renderRecordingsList();
+  const wrap = document.getElementById('recording-player-wrap'); if (wrap) wrap.style.display = 'none';
+  const m = document.getElementById('recordings-modal'); if (m) m.style.display = 'flex';
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeRecordings() {
+  const m = document.getElementById('recordings-modal'); if (m) m.style.display = 'none';
+  const v = document.getElementById('recording-player');
+  // Don't leave the presigned URL sitting in the DOM after the modal closes.
+  if (v) { v.pause(); v.onerror = null; v.removeAttribute('src'); v.load(); }
+}
+
+function renderRecordingsList() {
+  const wrap = document.getElementById('recordings-list');
+  if (!wrap) return;
+  const recs = (staffSessionsCache || [])
+    .filter(s => s.session_status === 'ended' && s.recording_url)
+    .sort((a, b) => new Date(b.ended_at || b.started_at || b.created_at) - new Date(a.ended_at || a.started_at || a.created_at));
+
+  if (!recs.length) {
+    wrap.innerHTML = `
+      <div class="cd-sched__empty">
+        <div class="cd-sched__emptyart"><i data-lucide="video-off"></i></div>
+        <div class="cd-sched__emptytitle">No recordings yet</div>
+        <p class="cd-sched__emptytext">Recorded sessions appear here once they end and finish processing.</p>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = recs.map(s => {
+    const when = new Date(s.ended_at || s.started_at || s.created_at);
+    return `
+      <div class="cd-sched__item">
+        <div class="cd-sched__info">
+          <div class="cd-sched__title">${escHtml(s.meeting_title || 'Consultation Session')}</div>
+          <div class="cd-sched__with">${escHtml(s.client_name ? 'with ' + s.client_name : 'No client assigned')}</div>
+          <div class="cd-sched__time"><i data-lucide="clock"></i> ${escHtml(when.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</div>
+        </div>
+        <div class="cd-sched__side">
+          <button class="cd-btn cd-btn--joinsm" onclick="viewRecording(${s.id})"><i data-lucide="play"></i> Play</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function viewRecording(id) {
+  const data = await apiFetch(`/teleconference/${id}/recording`);
+  if (!data || !data.success) {
+    BPSToast.info(data && data.code === 'NO_RECORDING'
+      ? 'Recording is still processing — check back shortly.'
+      : ((data && data.message) || 'Recording is unavailable.'), { title: 'Recording' });
+    return;
+  }
+  const wrap = document.getElementById('recording-player-wrap');
+  const v = document.getElementById('recording-player');
+  const dl = document.getElementById('recording-download');
+  if (dl) dl.href = data.data.url;
+  if (v) {
+    v.src = data.data.url;
+    // Presigned URLs expire (~300s); if playback fails after expiry, mint a fresh one.
+    v.onerror = () => { v.onerror = null; viewRecording(id); };
+    if (wrap) { wrap.style.display = 'block'; wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    v.play().catch(() => {});
+  }
 }
 
 // ===== INIT =====

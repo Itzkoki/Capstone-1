@@ -410,7 +410,19 @@ const completeAssessment = async (req, res, next) => {
 
     await Case.updateStatus(caseId, 'Assessment Completed', { staffId, ipAddress: getClientIP(req) });
 
-    // Notify Clinical Director
+    // Notify the Supervising Psychometrician — they are the next actor and must
+    // create the report in PsyGen for this completed assessment. Without this the
+    // SupPsy has no prompt that a case is ready for report generation.
+    try {
+      await notificationService.notifyRoles(
+        ['supervising_psychometrician'], 'report',
+        'Assessment Completed — Create Report',
+        `The assessment for Case ID ${caseId} is complete and ready for report generation. Open the case and click "Create Report in PsyGen".`,
+        'case-dashboard.html'
+      );
+    } catch (_) {}
+
+    // Notify Clinical Director (oversight / FYI)
     try {
       await notificationService.notifyRoles(
         ['clinical_director'], 'report',

@@ -303,6 +303,27 @@
     </div>
   </div>
 
+  <!-- Session Recordings Modal (host + invited staff) -->
+  <div class="cd-modal-overlay" id="recordings-modal" style="display:none;" onclick="if(event.target===this)closeRecordings()">
+    <div class="cd-modal" role="dialog" aria-modal="true" aria-label="Session Recordings">
+      <div class="cd-modal__head">
+        <h3 class="cd-modal__title"><i data-lucide="play-circle"></i> Session Recordings</h3>
+        <button class="cd-modal__close" onclick="closeRecordings()" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="cd-modal__body">
+        <div id="recording-player-wrap" style="display:none;margin-bottom:14px;">
+          <video id="recording-player" controls playsinline style="width:100%;border-radius:12px;background:#000;"></video>
+          <div style="text-align:right;margin-top:8px;">
+            <a id="recording-download" href="#" download class="btn-modal btn-modal--cancel" style="text-decoration:none;">
+              <i data-lucide="download" style="width:14px;height:14px;margin-right:4px;"></i>Download
+            </a>
+          </div>
+        </div>
+        <div id="recordings-list"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Security Fingerprint Details Modal -->
   <div class="tc-modal-overlay" id="tc-security-modal" style="display:none;">
     <div class="tc-modal" style="max-width:480px;">

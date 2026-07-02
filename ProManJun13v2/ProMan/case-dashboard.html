@@ -1196,7 +1196,12 @@
 
     function buildActions(c) {
       const s = c.status;
-      const reportId = (c.reports && c.reports.length > 0) ? c.reports[0].id : null;
+      // Only this case's own report drives the report action buttons. The case
+      // detail also includes the client's other case-less reports, which must not
+      // hijack "Create Report in PsyGen" (a stray report id would open an
+      // unrelated report instead of starting the template-locked create wizard).
+      const caseReports = (c.reports || []).filter(r => r.case_id === c.case_id);
+      const reportId = caseReports.length > 0 ? caseReports[0].id : null;
       const isCD       = role === 'clinical_director';
       const isSupPsy   = role === 'supervising_psychometrician';
       const isPsymet   = role === 'psychometrician';

@@ -229,12 +229,17 @@ const Case = {
       try {
         const notificationService = require('../services/notificationService');
         const clientName = current.client_name || 'a client';
+        // assigned_psychologist_id is a STAFF id (psychologists live in the
+        // `staff` table). Tag the notification 'staff' so it lands in the staff
+        // namespace the recipient reads from — otherwise it defaults to 'user'
+        // and the psychologist never sees it.
         await notificationService.notifyUser(
           current.assigned_psychologist_id,
           'appointment',
           'New Case Assigned to You',
           `Case ${caseId} (${clientName}) has been assigned to you and is now scheduled. Click View Details to open it in Case Management.`,
-          `case-dashboard.html?case=${encodeURIComponent(caseId)}`
+          `case-dashboard.html?case=${encodeURIComponent(caseId)}`,
+          'staff'
         );
       } catch (e) { console.warn('Scheduled-case notification failed:', e.message); }
     }

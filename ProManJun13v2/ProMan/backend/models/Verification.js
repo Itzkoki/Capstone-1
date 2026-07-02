@@ -1,6 +1,15 @@
 const db = require('../config/db');
 
+// Max wrong guesses allowed against a single OTP code before it is invalidated.
+// A 6-digit code has 1,000,000 combinations; capping guesses per code makes
+// brute-forcing self-defeating — the attacker's wrong tries destroy the very
+// code they are trying to guess. Requesting a new code starts a fresh row
+// (attempts = 0), so this never traps a legitimate user.
+const MAX_OTP_ATTEMPTS = 5;
+
 const Verification = {
+  MAX_OTP_ATTEMPTS,
+
   /**
    * Store a hashed OTP for a user.
    * Deletes any existing OTPs for this user first (single-use enforcement).
@@ -44,7 +53,7 @@ const Verification = {
    */
   async findByUserId(userId) {
     const result = await db.query(
-      `SELECT id, user_id, otp_hash, expires_at, created_at
+      `SELECT id, user_id, otp_hash, expires_at, created_at, attempts
        FROM email_verifications
        WHERE user_id = $1
        ORDER BY created_at DESC
@@ -52,6 +61,22 @@ const Verification = {
       [userId]
     );
     return result.rows[0] || null;
+  },
+
+  /**
+   * Record a failed OTP guess against a specific code row and return the new
+   * failed-attempt count. Callers invalidate the code once this reaches
+   * MAX_OTP_ATTEMPTS (see verifyLoginOtp), so wrong guesses are self-defeating.
+   */
+  async incrementAttempts(id) {
+    const r = await db.query(
+      `UPDATE email_verifications
+          SET attempts = attempts + 1
+        WHERE id = $1
+        RETURNING attempts`,
+      [id]
+    );
+    return r.rows[0]?.attempts ?? 0;
   },
 
   /**

@@ -75,6 +75,11 @@
   border-bottom: 2px solid rgba(30,58,138,0.15);
 }
 
+/* Center only the Actions header; all other column headers stay left-aligned. */
+.staff-table th:last-child {
+  text-align: center;
+}
+
 .staff-table td {
   padding: 14px 20px;
   font-size: 14px;

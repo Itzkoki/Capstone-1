@@ -1,5 +1,10 @@
 const db = require('../config/db');
 
+// Max wrong guesses allowed against a single staff OTP before it is invalidated
+// (mirrors the client Verification policy). Requesting a new code starts a fresh
+// row (attempts = 0), so this never traps a legitimate user.
+const MAX_OTP_ATTEMPTS = 5;
+
 /**
  * Per-login email OTP store for STAFF accounts.
  * Mirrors the client-side Verification model but is keyed by staff_id and
@@ -7,6 +12,8 @@ const db = require('../config/db');
  * `email_verifications`, whose user_id references users(id)).
  */
 const StaffVerification = {
+  MAX_OTP_ATTEMPTS,
+
   /**
    * Store a hashed OTP for a staff member, replacing any previous code
    * (single active code per staff at a time).
@@ -45,7 +52,7 @@ const StaffVerification = {
   /** Latest verification record for a staff member. */
   async findByStaffId(staffId) {
     const result = await db.query(
-      `SELECT id, staff_id, otp_hash, expires_at, created_at
+      `SELECT id, staff_id, otp_hash, expires_at, created_at, attempts
        FROM staff_verifications
        WHERE staff_id = $1
        ORDER BY created_at DESC
@@ -53,6 +60,22 @@ const StaffVerification = {
       [staffId]
     );
     return result.rows[0] || null;
+  },
+
+  /**
+   * Record a failed OTP guess against a specific code row and return the new
+   * failed-attempt count. Callers invalidate the code once this reaches
+   * MAX_OTP_ATTEMPTS, so wrong guesses are self-defeating.
+   */
+  async incrementAttempts(id) {
+    const r = await db.query(
+      `UPDATE staff_verifications
+          SET attempts = attempts + 1
+        WHERE id = $1
+        RETURNING attempts`,
+      [id]
+    );
+    return r.rows[0]?.attempts ?? 0;
   },
 
   /** Remove all codes for a staff member (after successful verification). */

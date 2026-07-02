@@ -9,7 +9,9 @@
     "test": "node test/ruleEngine.golden.js && node test/themeDetection.test.js && node test/thresholds.test.js",
     "test:update": "node test/ruleEngine.golden.js --update",
     "knowledge:build": "node scripts/buildKnowledgeBase.js",
-    "knowledge:extract": "node scripts/extractKnowledge.js"
+    "knowledge:extract": "node scripts/extractKnowledge.js",
+    "backup": "node scripts/db-backup.js",
+    "restore": "node scripts/db-restore.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1076.0",

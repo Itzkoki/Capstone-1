@@ -686,7 +686,7 @@ const verifyPayment = async (req, res, next) => {
             try {
               await notificationService.notifyUser(psyId, 'ticket', 'Report Concern — Action Required',
                 `A client concern (${cr.ticket_number}) about a report you authored has been approved and paid. Review the concern and modify the report.`,
-                `psych-reports.html?concern=${cr.id}`);
+                `psych-reports.html?concern=${cr.id}`, 'staff');
             } catch (_) { /* non-fatal */ }
           } else {
             console.error(`Concern ${cr.ticket_number}: no assigned psychologist could be resolved — psychologist not notified.`);

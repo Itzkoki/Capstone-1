@@ -343,7 +343,7 @@ const finalReviewConcern = async (req, res, next) => {
         try {
           await notificationService.notifyUser(psyId, 'ticket', 'Revision Required',
             `The Clinical Director requested a revision on concern ${ticket.ticket_number}. Note: ${noteTxt}`,
-            `psych-reports.html?concern=${ticket.id}`);
+            `psych-reports.html?concern=${ticket.id}`, 'staff');
         } catch (_) {}
       }
       return res.json({ success: true, message: 'Revision requested from the psychologist.', data: publicRow(r.rows[0]) });

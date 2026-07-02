@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs'); // pure-JS bcrypt — no native binary (avoi
 const crypto = require('crypto');
 const db     = require('../config/db');
 const User   = require('../models/User');
+const Staff  = require('../models/Staff');
 const { Profile, PrivacySettings } = require('../models/Profile');
 const AuditLog = require('../models/AuditLog');
 const Verification = require('../models/Verification');
@@ -27,10 +28,73 @@ const getClientIP = (req) => {
     || 'unknown';
 };
 
+/**
+ * Staff and clients live in SEPARATE tables (`staff` vs `users`) with their own
+ * independent, overlapping integer IDs. Every handler below operates in the
+ * CLIENT namespace (Profile/User models query `users` by id). A staff JWT carries
+ * `id = staff_id`, so resolving it against `users` would silently return — and
+ * worse, mutate/delete — whichever unrelated client happens to share that integer
+ * id. That is both an identity mix-up and a broken-object-level-authorization
+ * flaw. This guard blocks staff tokens from the client-only account endpoints.
+ *
+ * Returns true (and sends a 403) when the caller is staff; false otherwise.
+ */
+const blockStaff = (req, res) => {
+  if (req.user && req.user.type === 'staff') {
+    res.status(403).json({
+      success: false,
+      message: 'Staff accounts are managed through Staff Management, not the client profile.',
+    });
+    return true;
+  }
+  return false;
+};
+
 // ── GET /api/profile ─────────────────────────────────
 
 const getProfile = async (req, res, next) => {
   try {
+    // Staff have no row in the client `users` table — serve their identity from
+    // the `staff` table instead of a colliding client record. The account-editing
+    // sections are client-only, so only the read-only identity fields are filled.
+    if (req.user.type === 'staff') {
+      const staff = await Staff.findById(req.user.id);
+      if (!staff) {
+        return res.status(404).json({ success: false, message: 'Profile not found.' });
+      }
+      const fullName = [staff.first_name, staff.last_name].filter(Boolean).join(' ').trim()
+        || staff.username;
+      return res.status(200).json({
+        success: true,
+        data: {
+          id:             staff.staff_id,
+          full_name:      fullName,
+          email:          staff.email,
+          contact_number: null,
+          is_verified:    true,
+          gender:         staff.gender || null,
+          date_of_birth:  null,
+          civil_status:   null,
+          address:        null,
+          medical_history:     null,
+          current_medications: null,
+          previous_treatments: null,
+          privacy: {
+            show_contact_number:      false,
+            show_date_of_birth:       false,
+            show_address:             false,
+            show_medical_history:     false,
+            show_current_medications: false,
+            show_previous_treatments: false,
+          },
+          is_staff:           true,
+          role:               staff.role,
+          created_at:         staff.created_at,
+          profile_updated_at: staff.updated_at || null,
+        },
+      });
+    }
+
     const profile = await Profile.findByUserId(req.user.id);
 
     if (!profile) {
@@ -76,6 +140,7 @@ const getProfile = async (req, res, next) => {
 
 const verifyPassword = async (req, res, next) => {
   try {
+    if (blockStaff(req, res)) return;
     const { password } = req.body;
 
     if (!password) {
@@ -111,6 +176,7 @@ const verifyPassword = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
   try {
+    if (blockStaff(req, res)) return;
     const userId = req.user.id;
     const ipAddress = getClientIP(req);
 
@@ -164,12 +230,16 @@ const updateProfile = async (req, res, next) => {
         });
       }
 
-      // Check if new email is already taken
+      // Reject an address already taken in EITHER table. users.id and staff_id
+      // overlap, so letting a client adopt a staff address (or vice versa)
+      // recreates the tangled dual-identity this guard exists to prevent. Use
+      // the neutral invalid-email message so a logged-in user can't enumerate
+      // which addresses already have an account.
       const existing = await User.findByEmail(email);
-      if (existing && existing.id !== userId) {
-        return res.status(409).json({
+      if ((existing && existing.id !== userId) || (await Staff.existsEmail(email))) {
+        return res.status(400).json({
           success: false,
-          message: 'This email address is already in use.',
+          message: 'Please enter a valid email address.',
         });
       }
 
@@ -259,6 +329,7 @@ const updateProfile = async (req, res, next) => {
 // ── DELETE /api/profile ──────────────────────────────
 
 const deleteProfile = async (req, res, next) => {
+  if (blockStaff(req, res)) return;
   const client = await db.pool.connect();
   try {
     const userId = req.user.id;
@@ -321,6 +392,7 @@ const deleteProfile = async (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
   try {
+    if (blockStaff(req, res)) return;
     const userId = req.user.id;
 
     const user = await User.findByIdWithPassword(userId);

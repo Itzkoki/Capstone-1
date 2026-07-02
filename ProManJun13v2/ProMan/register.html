@@ -450,8 +450,6 @@
           // Store email and name for the OTP page
           sessionStorage.setItem('bps_user', JSON.stringify({ nickname, email, contact }));
           window.location.href = 'verify-otp.html';
-        } else if (res.status === 409) {
-          showError('An account with this email already exists. Please log in instead.');
         } else if (data.errors && data.errors.length > 0) {
           showError(data.errors.map(e => e.message).join('. '));
         } else {

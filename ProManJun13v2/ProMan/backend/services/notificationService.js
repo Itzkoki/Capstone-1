@@ -7,10 +7,13 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const notificationService = {
   /**
-   * Send an in-app notification to a specific user.
+   * Send an in-app notification to a specific recipient.
+   * `recipientType` selects the id namespace: 'user' (clients, the default) or
+   * 'staff' (staff_id). It MUST match the table the id came from, otherwise the
+   * recipient — who reads by the id they authenticate with — never sees it.
    */
-  async notifyUser(userId, type, title, message, link = null) {
-    return Notification.create(userId, type, title, message, link);
+  async notifyUser(userId, type, title, message, link = null, recipientType = 'user') {
+    return Notification.create(userId, type, title, message, link, recipientType);
   },
 
   /**
@@ -20,7 +23,7 @@ const notificationService = {
    */
   async notifyRole(role, type, title, message, link = null) {
     const users = await User.findByRole(role);
-    await Promise.all(users.map(u => Notification.create(u.id, type, title, message, link)));
+    await Promise.all(users.map(u => Notification.create(u.id, type, title, message, link, 'user')));
     // Also reach staff-table accounts holding this role.
     await this.notifyStaffRole(role, type, title, message, link);
   },
@@ -52,7 +55,7 @@ const notificationService = {
     const targets = excludeUserId
       ? users.filter(u => u.id !== excludeUserId)
       : users;
-    const promises = targets.map(u => Notification.create(u.id, type, title, message, link));
+    const promises = targets.map(u => Notification.create(u.id, type, title, message, link, 'user'));
     return Promise.all(promises);
   },
 
@@ -70,7 +73,7 @@ const notificationService = {
     const userPromises = staffRoles.map(role =>
       User.findByRole(role).then(users => {
         const targets = excludeUserId ? users.filter(u => u.id !== excludeUserId) : users;
-        return Promise.all(targets.map(u => Notification.create(u.id, type, title, message, link)));
+        return Promise.all(targets.map(u => Notification.create(u.id, type, title, message, link, 'user')));
       })
     );
     // Dedicated staff-table accounts (all active clinical staff).
@@ -78,7 +81,7 @@ const notificationService = {
     const staffTargets = excludeUserId
       ? staffRows.filter(s => s.staff_id !== excludeUserId)
       : staffRows;
-    const staffPromises = staffTargets.map(s => Notification.create(s.staff_id, type, title, message, link));
+    const staffPromises = staffTargets.map(s => Notification.create(s.staff_id, type, title, message, link, 'staff'));
 
     return Promise.all([...userPromises, ...staffPromises]);
   },
@@ -95,7 +98,7 @@ const notificationService = {
     const staff = await Staff.findAll({ role });
     const targets = staff.filter(s => s.is_active);
     return Promise.all(
-      targets.map(s => Notification.create(s.staff_id, type, title, message, link))
+      targets.map(s => Notification.create(s.staff_id, type, title, message, link, 'staff'))
     );
   },
 

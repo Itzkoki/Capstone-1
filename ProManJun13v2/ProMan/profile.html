@@ -146,7 +146,7 @@
           </div>
 
           <!-- Additional Information -->
-          <div class="profile-card">
+          <div class="profile-card" id="card-additional-info">
             <h2 class="profile-card__heading">Additional Information</h2>
             <p class="profile-card__subheading">Optional personal details</p>
 
@@ -1030,6 +1030,32 @@
           hideNavSection('#sidebar-my-requests', 'section-my-requests');
           hideNavSection('#sidebar-reports', 'section-reports');
           hideNavSection('.sidebar__nav a[data-section="transactions"]', 'section-transactions');
+
+          // Staff accounts live in a separate namespace and are managed through
+          // Staff Management — the client profile-edit endpoints reject staff
+          // tokens server-side (they'd otherwise collide with an unrelated
+          // client id). Present the identity read-only and drop the controls
+          // that would only ever 403 for staff.
+          const form = document.getElementById('profile-form');
+          if (form) {
+            form.querySelectorAll('input, select, textarea').forEach((el) => {
+              el.readOnly = true;
+              el.disabled = true;
+            });
+          }
+          ['card-additional-info', 'danger-zone'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
+          const savePanel = document.querySelector('.profile-save');
+          if (savePanel) savePanel.style.display = 'none';
+          const cpBtn = document.getElementById('change-password-btn');
+          const securityCard = cpBtn && cpBtn.closest('.profile-card');
+          if (securityCard) securityCard.style.display = 'none';
+
+          const subtitle = document.querySelector('.profile-main__subtitle');
+          if (subtitle) subtitle.textContent =
+            'Your staff account details are managed by the Clinical Director in Staff Management.';
         }
 
         // Clinical Director additionally gets the Audit / Action Center tools.
@@ -1244,7 +1270,7 @@
         }
 
         if (res.status === 409) {
-          showToast(json.message || 'Email already in use.', 'error');
+          showToast(json.message || 'Please enter a valid email address.', 'error');
           return;
         }
 

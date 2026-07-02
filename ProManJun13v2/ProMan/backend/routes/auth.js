@@ -17,8 +17,9 @@ router.post('/register', registerRules, handleValidation, register);
 // POST /api/auth/login
 router.post('/login', loginRules, handleValidation, login);
 
-// POST /api/auth/verify-email
-router.post('/verify-email', verifyEmailRules, handleValidation, verifyEmail);
+// POST /api/auth/verify-email — registration OTP; rate-limited (per IP) to stop
+// brute-forcing the 6-digit code.
+router.post('/verify-email', otpVerifyLimiter, verifyEmailRules, handleValidation, verifyEmail);
 
 // POST /api/auth/resend-otp
 router.post('/resend-otp', resendOtpRules, handleValidation, resendOtp);

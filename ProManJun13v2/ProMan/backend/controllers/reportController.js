@@ -1131,7 +1131,7 @@ exports.workflowPrepare = async (req, res) => {
       // Confirm to the Supervising Psychometrician (submitter) that their report was submitted and is being reviewed.
       await NotificationService.notifyUser(req.user.id, 'report', 'Report Submitted to Quality Control',
         `Your report for ${report.client_name} has been submitted to the Quality Control Psychometrician and is being reviewed.`,
-        `psych-reports.html?reportId=${report.id}`);
+        `psych-reports.html?reportId=${report.id}`, 'staff');
     } catch (e) { console.warn('workflowPrepare notification failed:', e.message); }
 
     res.json({ success: true, report: updated });
@@ -1167,12 +1167,12 @@ exports.workflowReview = async (req, res) => {
       if (report.prepared_by) {
         await NotificationService.notifyUser(report.prepared_by, 'report', 'Report Reviewed & Validated',
           `Your report for ${report.client_name} has been reviewed and validated by the Quality Control Psychometrician.`,
-          null);
+          null, 'staff');
       }
       // Confirm to the QC Psychometrician (submitter) that their report was submitted to the Psychologist.
       await NotificationService.notifyUser(req.user.id, 'report', 'Report Submitted to Psychologist',
         `Your report for ${report.client_name} has been submitted to the Psychologist and is being reviewed.`,
-        `psych-reports.html?reportId=${report.id}`);
+        `psych-reports.html?reportId=${report.id}`, 'staff');
     } catch (e) { console.warn('workflowReview notification failed:', e.message); }
 
     res.json({ success: true, report: updated });
@@ -1371,7 +1371,7 @@ exports.workflowQcRevise = async (req, res) => {
       const msg = `The Quality Control Psychometrician has requested revisions on the report for ${report.client_name}.` + (comment ? ` Notes: "${comment}"` : '') +
         ' Please edit and resubmit the report for QC review.';
       if (notifyId) {
-        await NotificationService.notifyUser(notifyId, 'report', 'Report Revision Requested by QC', msg, `psych-reports.html?reportId=${report.id}`);
+        await NotificationService.notifyUser(notifyId, 'report', 'Report Revision Requested by QC', msg, `psych-reports.html?reportId=${report.id}`, 'staff');
       } else {
         await NotificationService.notifyStaffRole('supervising_psychometrician', 'report', 'Report Revision Requested by QC', msg, `psych-reports.html?reportId=${report.id}`);
       }
@@ -1559,7 +1559,7 @@ exports.markSigned = async (req, res) => {
       if (recipientId) {
         await NotificationService.notifyUser(recipientId, 'report', 'Report Approved — Signature Required',
           `The report for ${report.client_name} requires your signature. Open it in Psych Reports to sign.`,
-          `psych-reports.html?reportId=${report.id}`);
+          `psych-reports.html?reportId=${report.id}`, 'staff');
       }
     } catch (e) { console.warn('markSigned notification failed:', e.message); }
 

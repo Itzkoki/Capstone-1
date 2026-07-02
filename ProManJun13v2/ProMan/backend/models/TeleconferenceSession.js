@@ -96,6 +96,16 @@ const TeleconferenceSession = {
     return result.rows[0] || null;
   },
 
+  // Look up a session by its Twilio room SID — used by the recording webhooks,
+  // which only know the RoomSid Twilio sends back.
+  async findByRoomSid(roomSid) {
+    const result = await db.query(
+      `SELECT * FROM teleconference_sessions WHERE twilio_room_sid = $1`,
+      [roomSid]
+    );
+    return result.rows[0] || null;
+  },
+
   async findByMeetingId(meetingId) {
     const result = await db.query(
       `SELECT ts.*,

@@ -90,12 +90,18 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Check if email already exists
-    const existingUser = await User.findByEmail(email);
-    if (existingUser) {
-      return res.status(409).json({
+    // Reject an email already registered in EITHER table (client `users` or
+    // `staff`) — users.id and staff_id overlap, so a shared address yields a
+    // tangled dual identity across the two portals.
+    //
+    // Anti-enumeration: respond IDENTICALLY to the invalid-email case above
+    // (same 400 + same message). A "taken" address is therefore indistinguishable
+    // from an invalid one, so a suspicious user can't probe which emails already
+    // have an account.
+    if ((await User.findByEmail(email)) || (await Staff.existsEmail(email))) {
+      return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists',
+        message: 'Please enter a valid email address.',
       });
     }
 
@@ -340,7 +346,21 @@ const verifyLoginOtp = async (req, res, next) => {
     }
 
     const isValid = await bcrypt.compare(String(otp || ''), verification.otp_hash);
-    if (!isValid) return invalid();
+    if (!isValid) {
+      // Per-code brute-force guard: count the wrong guess and, once too many have
+      // been made against this code, invalidate it so the attacker must request a
+      // fresh one (which resets the counter). Complements the per-IP rate limiter
+      // and the ~2-minute expiry.
+      const attempts = await Verification.incrementAttempts(verification.id);
+      if (attempts >= Verification.MAX_OTP_ATTEMPTS) {
+        await Verification.deleteByUserId(user.id);
+        return res.status(400).json({
+          success: false,
+          message: 'Too many incorrect attempts. Please request a new code.',
+        });
+      }
+      return invalid();
+    }
 
     // Single-use: consume the code, then issue the session token.
     await Verification.deleteByUserId(user.id);
@@ -503,6 +523,16 @@ const verifyEmail = async (req, res, next) => {
     // Compare OTP
     const isValid = await bcrypt.compare(otp, verification.otp_hash);
     if (!isValid) {
+      // Per-code brute-force guard: count the wrong guess and invalidate the code
+      // once too many have been made, forcing the user to request a new one.
+      const attempts = await Verification.incrementAttempts(verification.id);
+      if (attempts >= Verification.MAX_OTP_ATTEMPTS) {
+        await Verification.deleteByUserId(user.id);
+        return res.status(400).json({
+          success: false,
+          message: 'Too many incorrect attempts. Please request a new code.',
+        });
+      }
       return res.status(400).json({
         success: false,
         message: 'Invalid code. Please try again.',

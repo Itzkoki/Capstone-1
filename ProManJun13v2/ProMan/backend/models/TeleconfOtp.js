@@ -7,6 +7,9 @@ const crypto = require('crypto');
 const OTP_EXPIRY_MINUTES       = 2;
 const RESEND_COOLDOWN_SECONDS  = 120;
 const SALT_ROUNDS              = 10;
+// Max wrong guesses allowed against a single code before it is burned, matching
+// the platform-wide OTP policy (see Verification.MAX_OTP_ATTEMPTS).
+const MAX_OTP_ATTEMPTS         = 5;
 
 const TeleconfOtp = {
   // Rate limit with a "first resend free" allowance: the user may send the
@@ -51,7 +54,7 @@ const TeleconfOtp = {
 
   async verify(userId, otp) {
     const result = await db.query(
-      `SELECT id, otp_hash, expires_at FROM teleconf_otp
+      `SELECT id, otp_hash, expires_at, attempts FROM teleconf_otp
        WHERE user_id = $1 AND is_used = FALSE
        ORDER BY created_at DESC LIMIT 1`,
       [userId]
@@ -65,7 +68,20 @@ const TeleconfOtp = {
     }
 
     const match = await bcrypt.compare(otp, record.otp_hash);
-    if (!match) return { valid: false, reason: 'Invalid code. Please try again.' };
+    if (!match) {
+      // Per-code brute-force guard: count the wrong guess and burn the code
+      // (mark it used, so verify() no longer finds it) once too many have been
+      // made, forcing the user to request a new one.
+      const r = await db.query(
+        `UPDATE teleconf_otp SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts`,
+        [record.id]
+      );
+      if ((r.rows[0]?.attempts ?? 0) >= MAX_OTP_ATTEMPTS) {
+        await db.query(`UPDATE teleconf_otp SET is_used = TRUE WHERE id = $1`, [record.id]);
+        return { valid: false, reason: 'Too many incorrect attempts. Please request a new code.' };
+      }
+      return { valid: false, reason: 'Invalid code. Please try again.' };
+    }
 
     // Mark as used
     await db.query(`UPDATE teleconf_otp SET is_used = TRUE WHERE id = $1`, [record.id]);
@@ -74,6 +90,7 @@ const TeleconfOtp = {
 
   OTP_EXPIRY_MINUTES,
   RESEND_COOLDOWN_SECONDS,
+  MAX_OTP_ATTEMPTS,
 };
 
 module.exports = TeleconfOtp;

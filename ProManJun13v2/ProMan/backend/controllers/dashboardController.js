@@ -9,10 +9,13 @@ const ActivityLog = require('../models/ActivityLog');
 const getDashboard = async (req, res, next) => {
   try {
     const { role, id: userId } = req.user;
+    // Notifications live in two overlapping id spaces (client `users` vs `staff`);
+    // scope by the token type so a staff member never sees a client id-twin's alerts.
+    const recipientType = req.user.type === 'staff' ? 'staff' : 'user';
 
     // Base data for all roles
-    const unreadNotifications = await Notification.getUnreadCount(userId);
-    const recentNotifications = await Notification.findByUserId(userId, 5);
+    const unreadNotifications = await Notification.getUnreadCount(userId, recipientType);
+    const recentNotifications = await Notification.findByUserId(userId, recipientType, 5);
     const articleCount = await Article.getCount();
     const activeMeetings = await Meeting.getActiveCount();
 

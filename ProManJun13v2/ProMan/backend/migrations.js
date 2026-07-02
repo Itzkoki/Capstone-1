@@ -1289,10 +1289,14 @@ async function runMigrations() {
         staff_id    INTEGER NOT NULL REFERENCES staff(staff_id) ON DELETE CASCADE,
         otp_hash    VARCHAR(255) NOT NULL,
         expires_at  TIMESTAMP NOT NULL,
+        attempts    INTEGER NOT NULL DEFAULT 0,
         created_at  TIMESTAMP DEFAULT NOW()
       )
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_staff_verif_staff ON staff_verifications (staff_id)`);
+    // Per-code brute-force guard (existing DBs): counts wrong guesses so the code
+    // can be invalidated after too many (see StaffVerification.incrementAttempts).
+    await db.query(`ALTER TABLE staff_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`);
 
     // ── 33d. Decouple teleconference identities from users(id) ───────
     // Staff now live in the `staff` table, but the teleconference schema
@@ -1317,6 +1321,28 @@ async function runMigrations() {
     // id from EITHER table; the recipient reads their own notifications by the
     // id they authenticate with (users.id for clients, staff_id for staff).
     await db.query(`ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_user_id_fkey`);
+
+    // ── 33e-2. Namespace notification recipients (staff vs client) ────
+    // Dropping the FK above let notifications target an id from EITHER table,
+    // but user_id alone is ambiguous: a client (users.id = 5) and a staff member
+    // (staff_id = 5) share the SAME integer, so they would read/mark/delete each
+    // other's notifications. Add an explicit recipient_type discriminator; every
+    // read/write filters on (user_id, recipient_type) so the two namespaces can
+    // never cross. Existing rows default to 'user' (the pre-staff-table norm).
+    await db.query(`
+      ALTER TABLE notifications
+        ADD COLUMN IF NOT EXISTS recipient_type VARCHAR(10) NOT NULL DEFAULT 'user'
+    `);
+    await db.query(`ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_recipient_type_check`);
+    await db.query(`
+      ALTER TABLE notifications
+        ADD CONSTRAINT notifications_recipient_type_check
+        CHECK (recipient_type IN ('user', 'staff'))
+    `);
+    // Replace the plain user_id indexes with (recipient_type, user_id) so the
+    // namespaced lookups stay index-backed.
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications (recipient_type, user_id)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read ON notifications (recipient_type, user_id, is_read)`);
 
     // ── 33f. Decouple STAFF-ACTOR columns from users(id) ─────────────
     // Staff now live in the `staff` table (staff_id), but many "who did this"
@@ -1838,10 +1864,14 @@ async function runMigrations() {
         otp_hash   TEXT    NOT NULL,
         expires_at TIMESTAMPTZ NOT NULL,
         is_used    BOOLEAN DEFAULT FALSE,
+        attempts   INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_teleconf_otp_user_id ON teleconf_otp(user_id)`);
+    // Per-code brute-force guard (existing DBs): counts wrong guesses so the code
+    // is burned after too many (see TeleconfOtp.verify).
+    await db.query(`ALTER TABLE teleconf_otp ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`);
     // teleconf_otp.user_id may be a users.id OR a staff.staff_id (teleconference is
     // used by both clients and staff). Drop the users(id) FK so staff can receive
     // OTPs — otherwise the INSERT fails for staff and they never get a code.
@@ -1861,10 +1891,14 @@ async function runMigrations() {
         otp_hash   TEXT    NOT NULL,
         expires_at TIMESTAMPTZ NOT NULL,
         is_used    BOOLEAN DEFAULT FALSE,
+        attempts   INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_module_access_otp_user_id ON module_access_otp(user_id)`);
+    // Per-code brute-force guard (existing DBs): counts wrong guesses so the code
+    // is burned after too many (see ModuleOtp.verify).
+    await db.query(`ALTER TABLE module_access_otp ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`);
 
     // ── 49. Security audit log table ─────────────────────────────────────
     await db.query(`
@@ -2615,6 +2649,12 @@ async function ensureFeatureColumns() {
     // staff_profile_completed columns are legacy and intentionally NOT recreated
     // on `users` (clients don't use them; staff live in the `staff` table).
     await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender                  VARCHAR(20)`);
+
+    // Per-code OTP brute-force guard: tracks how many wrong guesses have been made
+    // against a single login code. verifyLoginOtp invalidates the code once this
+    // reaches Verification.MAX_OTP_ATTEMPTS. Ensured up front so the model's
+    // increment/select can never hit a missing column on an existing database.
+    await db.query(`ALTER TABLE email_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`);
   } catch (err) {
     console.error('❌ Failed ensuring feature columns:', err.message);
   }

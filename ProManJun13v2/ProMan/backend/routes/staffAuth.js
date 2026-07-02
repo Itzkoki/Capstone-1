@@ -3,7 +3,7 @@ const router  = express.Router();
 const { body } = require('express-validator');
 const { login, verifyOtp, resendOtp } = require('../controllers/staffAuthController');
 const { staffLoginRules, handleValidation } = require('../middleware/validate');
-const { staffLoginLimiter } = require('../middleware/rateLimiter');
+const { staffLoginLimiter, otpVerifyLimiter } = require('../middleware/rateLimiter');
 
 // POST /api/staff-auth/login  — step 1: username + password → emails an OTP.
 // Rate limiter runs first (per-IP), then validation, then the controller
@@ -18,7 +18,8 @@ const verifyOtpRules = [
     .isLength({ min: 6, max: 6 }).withMessage('Enter the 6-digit code')
     .isNumeric().withMessage('The code is numeric'),
 ];
-router.post('/verify-otp', verifyOtpRules, handleValidation, verifyOtp);
+// Rate-limited (per IP) so the staff second factor can't be brute-forced.
+router.post('/verify-otp', otpVerifyLimiter, verifyOtpRules, handleValidation, verifyOtp);
 
 // POST /api/staff-auth/resend-otp — re-send a code for an in-progress login.
 const resendRules = [body('username').trim().notEmpty().withMessage('Username is required')];

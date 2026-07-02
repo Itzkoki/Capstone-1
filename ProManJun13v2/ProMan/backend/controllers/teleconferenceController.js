@@ -8,6 +8,8 @@ const User = require('../models/User');
 const Staff = require('../models/Staff');
 const notificationService = require('../services/notificationService');
 const emailService = require('../services/emailService');
+const twilioRecording = require('../services/twilioRecording');
+const s3 = require('../services/s3Storage');
 const db = require('../config/db');
 
 // Twilio setup
@@ -156,6 +158,22 @@ async function isDuplicateLiveEntry(session, userId, presentedToken) {
 async function issueRoomAccess(session, reqUser, source) {
   if (session.session_status === 'scheduled') {
     await TeleconferenceSession.updateStatus(session.id, 'active');
+  }
+
+  // Ensure a server-owned GROUP room exists so consent-gated recording is
+  // possible. Best-effort: if Twilio room creation fails, the client still
+  // connects (to an auto-created room) — only recording is unavailable.
+  if (!session.twilio_room_sid && twilioRecording.configured()) {
+    try {
+      const sid = await twilioRecording.ensureGroupRoom(session);
+      if (sid) {
+        await TeleconferenceSession.updateTwilioRoom(session.id, sid, session.twilio_room_name);
+        session.twilio_room_sid = sid;
+        await TeleconferenceSession.addLog(session.id, 'twilio_room_created', reqUser.id, `Group room provisioned (${sid}).`).catch(() => {});
+      }
+    } catch (e) {
+      console.error('Twilio group room creation failed (recording disabled for this session):', e.message);
+    }
   }
 
   const identity = await resolveIdentity(reqUser);
@@ -325,7 +343,7 @@ const createSession = async (req, res, next) => {
         ? 'Click to join your scheduled consultation meeting.'
         : `You've been invited to the teleconference "${title}". Click to join.`;
       try {
-        await notificationService.notifyUser(participantId, 'teleconference', notifTitle, notifBody, link);
+        await notificationService.notifyUser(participantId, 'teleconference', notifTitle, notifBody, link, isClient ? 'user' : 'staff');
       } catch (err) { console.error('Meeting notification failed:', err.message); }
     }
 
@@ -840,6 +858,18 @@ const consentRecording = async (req, res, next) => {
     const approved = consent === true || consent === 'true' || consent === 1 || consent === '1';
     const updated = await TeleconferenceSession.setRecordingResponse(session.id, approved);
 
+    // Consent is the boundary that actually starts (or blocks) Twilio recording.
+    // Best-effort: a Twilio hiccup must not fail the consent write.
+    if (session.twilio_room_sid && twilioRecording.configured()) {
+      try {
+        if (approved) await twilioRecording.startRecording(session.twilio_room_sid);
+        else await twilioRecording.stopRecording(session.twilio_room_sid);
+      } catch (e) {
+        console.error('Twilio recording rule update failed:', e.message);
+        await TeleconferenceSession.addLog(session.id, 'recording_rule_error', req.user.id, `Failed to ${approved ? 'start' : 'stop'} recording: ${e.message}`).catch(() => {});
+      }
+    }
+
     await TeleconferenceSession.addLog(
       session.id, approved ? 'recording_consented' : 'recording_denied', req.user.id,
       approved ? 'Client approved recording (stored as 1).' : 'Client rejected recording (stored as 0).'
@@ -1053,6 +1083,11 @@ const stopRecording = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Only staff can stop recording.' });
     }
 
+    // Stop the live Twilio capture (best-effort), then clear the flags.
+    if (session.twilio_room_sid && twilioRecording.configured()) {
+      try { await twilioRecording.stopRecording(session.twilio_room_sid); }
+      catch (e) { console.error('Twilio stop-recording failed:', e.message); }
+    }
     await TeleconferenceSession.resetRecording(session.id);
 
     await TeleconferenceSession.addLog(
@@ -1064,9 +1099,75 @@ const stopRecording = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// ── POST /api/teleconference/twilio/room-status — Twilio room lifecycle webhook ──
+// Unauthenticated (Twilio can't send a JWT); protected by signature validation.
+// On 'room-ended', if the session was recorded, kick off the single-MP4
+// composition (Twilio then calls composition-status when the file is ready).
+const roomStatusWebhook = async (req, res) => {
+  try {
+    if (!twilioRecording.validateWebhook(req)) return res.status(403).send('invalid signature');
+    const event = req.body.StatusCallbackEvent;
+    const roomSid = req.body.RoomSid;
+    res.status(200).send('ok'); // ack Twilio immediately; work continues async
+
+    if (event !== 'room-ended' || !roomSid) return;
+    const session = await TeleconferenceSession.findByRoomSid(roomSid);
+    if (!session) return;
+    if (Number(session.recording_response) !== 1) return; // nothing was recorded
+
+    const compSid = await twilioRecording.createComposition(roomSid, session.id);
+    await TeleconferenceSession.addLog(session.id, 'composition_requested', null, `Composition ${compSid} requested for room ${roomSid}.`).catch(() => {});
+  } catch (e) {
+    console.error('room-status webhook error:', e.message);
+  }
+};
+
+// ── POST /api/teleconference/twilio/composition-status — Twilio composition webhook ──
+// On 'composition-available', download the finished MP4 and store it in S3, then
+// record the S3 key on the session (recording_url).
+const compositionStatusWebhook = async (req, res) => {
+  try {
+    if (!twilioRecording.validateWebhook(req)) return res.status(403).send('invalid signature');
+    const event = req.body.StatusCallbackEvent;
+    const compositionSid = req.body.CompositionSid;
+    const sessionId = req.query.sessionId;
+    res.status(200).send('ok');
+
+    if (event !== 'composition-available' || !compositionSid || !sessionId) return;
+    const key = await twilioRecording.storeCompositionInS3(compositionSid, sessionId);
+    await TeleconferenceSession.setRecordingUrl(sessionId, key);
+    await TeleconferenceSession.addLog(sessionId, 'recording_stored', null, `Recording stored in S3: ${key}`).catch(() => {});
+  } catch (e) {
+    console.error('composition-status webhook error:', e.message);
+  }
+};
+
+// ── GET /api/teleconference/:id/recording — presigned playback URL (host/staff) ──
+const getRecording = async (req, res, next) => {
+  try {
+    const session = await TeleconferenceSession.findById(req.params.id);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
+
+    const isHost = session.psychologist_id === req.user.id;
+    if (!isHost && !isStaff(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Only staff can access the recording.' });
+    }
+    if (!session.recording_url) {
+      return res.status(404).json({ success: false, code: 'NO_RECORDING', message: 'No recording is available for this session yet.' });
+    }
+    if (!s3.isConfigured()) {
+      return res.status(503).json({ success: false, message: 'Recording storage is not configured.' });
+    }
+    const url = await s3.getPresignedUrl(session.recording_url, 300, `recording-session-${session.id}.mp4`);
+    await TeleconferenceSession.addLog(session.id, 'recording_accessed', req.user.id, `Recording playback link issued.`).catch(() => {});
+    return res.json({ success: true, data: { url } });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   createSession, getMySessions, getAllSessions, getSession, pollSession,
   joinSession, redeemInvite, heartbeat, reconnectSession, admitParticipant, removeParticipant, leaveSession,
   startRecording, consentRecording, endSession,
   getSessionLogs, getMessages, postMessage, assignClient, getClients, getStaffList, stopRecording,
+  roomStatusWebhook, compositionStatusWebhook, getRecording,
 };

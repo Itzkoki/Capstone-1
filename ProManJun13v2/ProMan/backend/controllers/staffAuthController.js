@@ -180,7 +180,20 @@ const verifyOtp = async (req, res, next) => {
     }
 
     const isValid = await bcrypt.compare(String(otp || ''), record.otp_hash);
-    if (!isValid) return invalid();
+    if (!isValid) {
+      // Per-code brute-force guard: count the wrong guess and invalidate the code
+      // once too many have been made, forcing a fresh one (which resets the
+      // counter). Complements the per-IP rate limiter and the OTP expiry.
+      const attempts = await StaffVerification.incrementAttempts(record.id);
+      if (attempts >= StaffVerification.MAX_OTP_ATTEMPTS) {
+        await StaffVerification.deleteByStaffId(staff.staff_id);
+        return res.status(400).json({
+          success: false,
+          message: 'Too many incorrect attempts. Please request a new code.',
+        });
+      }
+      return invalid();
+    }
 
     // Single-use: consume the code, and promote status to 'verified'.
     await StaffVerification.deleteByStaffId(staff.staff_id);

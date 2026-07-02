@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Staff = require('../models/Staff');
+const User = require('../models/User');
 const { COUNSELING_ROLES, ASSESSMENT_ROLES } = require('../models/Staff');
 const ActivityLog = require('../models/ActivityLog');
 const { invalidateAccountCache } = require('../middleware/auth');
@@ -96,8 +97,14 @@ const createStaff = async (req, res, next) => {
     if (await Staff.existsUsername(username)) {
       return res.status(409).json({ success: false, message: 'That username is already taken.' });
     }
-    if (email && await Staff.existsEmail(email)) {
-      return res.status(409).json({ success: false, message: 'That email is already in use.' });
+    // An email must not exist as a staff OR a client account: staff_id and
+    // users.id are drawn from separate, overlapping sequences, so a shared email
+    // produces two records that look like one tangled identity across the two
+    // login portals (e.g. a client "Yoji" and a staff "Van Wes" on the same
+    // address). Respond with the neutral invalid-email message rather than
+    // "already in use" so the existence of an account is never disclosed.
+    if (email && ((await Staff.existsEmail(email)) || (await User.findByEmail(email)))) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
     }
 
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);

@@ -26,6 +26,14 @@ router.delete('/', deleteProfile);
 // DELETE /api/profile/my-data — Right to be forgotten: anonymize all community content
 router.delete('/my-data', async (req, res, next) => {
   try {
+    // Client-namespace action — staff IDs collide with unrelated client IDs, so a
+    // staff token must never anonymize a client's content. (See profileController.)
+    if (req.user && req.user.type === 'staff') {
+      return res.status(403).json({
+        success: false,
+        message: 'Staff accounts are managed through Staff Management, not the client profile.',
+      });
+    }
     const privacyService = require('../services/privacyService');
     const counts = await privacyService.deleteAllUserContent(req.user.id, req.user.id);
     return res.json({

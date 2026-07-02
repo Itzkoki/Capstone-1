@@ -126,6 +126,18 @@ const Staff = {
   },
 
   /**
+   * Set a new password hash for a staff member (used by the reset flow).
+   * @param {number} staffId
+   * @param {string} passwordHash
+   */
+  async updatePassword(staffId, passwordHash) {
+    await db.query(
+      `UPDATE staff SET password_hash = $1, updated_at = NOW() WHERE staff_id = $2`,
+      [passwordHash, staffId]
+    );
+  },
+
+  /**
    * Permanently delete a staff account.
    * @param {number} staffId
    * @returns {Object|null} the deleted row (public cols) or null if not found

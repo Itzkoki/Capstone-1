@@ -1298,6 +1298,22 @@ async function runMigrations() {
     // can be invalidated after too many (see StaffVerification.incrementAttempts).
     await db.query(`ALTER TABLE staff_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`);
 
+    // Staff password-reset tokens. Kept SEPARATE from the client `password_resets`
+    // table (which is FK'd to users(id)) because staff_id and users.id overlap —
+    // a shared table would let a client and a staff member with the same integer
+    // id consume each other's reset tokens.
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS staff_password_resets (
+        id          SERIAL PRIMARY KEY,
+        staff_id    INTEGER NOT NULL REFERENCES staff(staff_id) ON DELETE CASCADE,
+        token_hash  VARCHAR(255) NOT NULL,
+        expires_at  TIMESTAMP NOT NULL,
+        used        BOOLEAN DEFAULT FALSE,
+        created_at  TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_staff_pwreset_staff ON staff_password_resets (staff_id)`);
+
     // ── 33d. Decouple teleconference identities from users(id) ───────
     // Staff now live in the `staff` table, but the teleconference schema
     // originally FK-constrained the host/staff/message/log id columns to

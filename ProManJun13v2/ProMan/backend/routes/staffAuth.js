@@ -1,8 +1,8 @@
 const express = require('express');
 const router  = express.Router();
 const { body } = require('express-validator');
-const { login, verifyOtp, resendOtp } = require('../controllers/staffAuthController');
-const { staffLoginRules, handleValidation } = require('../middleware/validate');
+const { login, verifyOtp, resendOtp, forgotPassword, resetPassword } = require('../controllers/staffAuthController');
+const { staffLoginRules, forgotPasswordRules, resetPasswordRules, handleValidation } = require('../middleware/validate');
 const { staffLoginLimiter, otpVerifyLimiter } = require('../middleware/rateLimiter');
 
 // POST /api/staff-auth/login  — step 1: username + password → emails an OTP.
@@ -24,5 +24,13 @@ router.post('/verify-otp', otpVerifyLimiter, verifyOtpRules, handleValidation, v
 // POST /api/staff-auth/resend-otp — re-send a code for an in-progress login.
 const resendRules = [body('username').trim().notEmpty().withMessage('Username is required')];
 router.post('/resend-otp', resendRules, handleValidation, resendOtp);
+
+// POST /api/staff-auth/forgot-password — email a single-use reset link.
+// Per-IP rate limited (reuses the staff-login limiter) so the endpoint can't be
+// hammered to probe emails or spam mailboxes. Enumeration-safe response.
+router.post('/forgot-password', staffLoginLimiter, forgotPasswordRules, handleValidation, forgotPassword);
+
+// POST /api/staff-auth/reset-password — consume the token and set a new password.
+router.post('/reset-password', resetPasswordRules, handleValidation, resetPassword);
 
 module.exports = router;

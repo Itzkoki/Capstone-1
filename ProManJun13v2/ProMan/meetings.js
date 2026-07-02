@@ -27,6 +27,37 @@ let intentionalLeave = false;
 // Set when the host ends the call for everyone (detected via poll or a
 // SESSION_ENDED response). Suppresses auto-reconnect so we don't fight the end.
 let sessionWasEnded = false;
+
+// ── Auto-reconnect throttle ──
+// A flaky network can drop and restore the Twilio room repeatedly. Without a
+// guard, EVERY cycle fired a "Session Active"/"Reconnected" toast and immediately
+// kicked off another reconnect, so the popups never stopped until a manual
+// refresh (which just reset this state). We now: (a) allow only one in-flight
+// attempt, (b) back off between tries, (c) cap rapid retries, and (d) reset the
+// budget only once the call has stayed up long enough to be considered stable.
+let isReconnecting = false;
+let reconnectAttempts = 0;
+let reconnectTimer = null;
+let stabilityTimer = null;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const STABLE_AFTER_MS = 20000;
+function stopReconnecting() {
+  isReconnecting = false;
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+}
+function resetReconnectState() {
+  stopReconnecting();
+  reconnectAttempts = 0;
+  if (stabilityTimer) { clearTimeout(stabilityTimer); stabilityTimer = null; }
+}
+// After a successful (re)connect: if the call stays up for STABLE_AFTER_MS, the
+// drop was a one-off, so refill the retry budget — a much later, unrelated drop
+// still gets its full set of attempts.
+function markConnectedStable() {
+  if (stabilityTimer) clearTimeout(stabilityTimer);
+  stabilityTimer = setTimeout(() => { reconnectAttempts = 0; }, STABLE_AFTER_MS);
+}
+
 // localStorage is SHARED across all tabs/windows of the browser, so the key must
 // include the user id — otherwise two accounts joining the same conference in
 // one browser would overwrite each other's reconnect token (device binding).
@@ -40,26 +71,48 @@ function clearReconnectToken(sid)   { try { localStorage.removeItem(rcKey(sid));
 // durable reconnect token. Falls back to a manual rejoin prompt if the server
 // can't verify us (NEEDS_REJOIN / NEEDS_OTP) — the intruder path.
 async function attemptReconnect(sessionId) {
-  if (sessionWasEnded) return;
+  if (sessionWasEnded || intentionalLeave) return;
+  if (isReconnecting) return; // an attempt is already scheduled/in-flight
   const rt = loadReconnectToken(sessionId);
   if (!rt) { promptManualRejoin(); return; }
-  try {
-    const data = await apiFetch(`/teleconference/${sessionId}/reconnect`, {
-      method: 'POST',
-      body: JSON.stringify({ reconnectToken: rt }),
-    });
-    // The host ended the call while we were dropped — don't keep trying.
-    if (data && data.code === 'SESSION_ENDED') { onHostEnded(); return; }
-    if (data && data.success && data.data) {
-      currentSession = data.data.session;
-      await connectToRoom(data.data);
-      BPSToast.success('Reconnected to your session.', { title: 'Reconnected' });
-      return;
-    }
+
+  // Bounded retries: after repeated rapid drops, give up with a SINGLE prompt
+  // instead of looping reconnect toasts forever.
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    resetReconnectState();
     promptManualRejoin();
-  } catch (_) {
-    promptManualRejoin();
+    return;
   }
+
+  isReconnecting = true;
+  reconnectAttempts++;
+  // Exponential backoff: ~1s, 2s, 4s, 8s, 15s (cap). This also spaces out the
+  // toasts so a genuinely recovering connection settles instead of flapping.
+  const delay = Math.min(1000 * 2 ** (reconnectAttempts - 1), 15000);
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    if (sessionWasEnded || intentionalLeave) { isReconnecting = false; return; }
+    try {
+      const data = await apiFetch(`/teleconference/${sessionId}/reconnect`, {
+        method: 'POST',
+        body: JSON.stringify({ reconnectToken: rt }),
+      });
+      // The host ended the call while we were dropped — don't keep trying.
+      if (data && data.code === 'SESSION_ENDED') { isReconnecting = false; onHostEnded(); return; }
+      if (data && data.success && data.data) {
+        currentSession = data.data.session;
+        // connectToRoom shows the single "Reconnected" toast on this path.
+        await connectToRoom(data.data, { isReconnect: true });
+        isReconnecting = false;
+        return;
+      }
+      isReconnecting = false;
+      promptManualRejoin();
+    } catch (_) {
+      isReconnecting = false;
+      promptManualRejoin();
+    }
+  }, delay);
 }
 
 // Called when the HOST has ended the call for everyone. Notifies this
@@ -68,6 +121,7 @@ function onHostEnded() {
   if (sessionWasEnded) return;
   sessionWasEnded = true;
   stopSeatHeartbeat();
+  resetReconnectState(); // stop any in-flight auto-reconnect + its toasts
   if (currentSession) clearReconnectToken(currentSession.id);
   BPSToast.info('The host has ended the teleconference for everyone.', { title: 'Call Ended' });
   leaveSession(); // tears down the call UI and returns to the sessions list
@@ -737,7 +791,7 @@ function showWaitingOverlay() {
   lucide.createIcons();
 }
 
-async function connectToRoom(joinData) {
+async function connectToRoom(joinData, opts = {}) {
   const btn = document.getElementById('btn-join');
   btn.textContent = 'Connecting...';
   awaitingAdmission = false;
@@ -822,6 +876,9 @@ async function connectToRoom(joinData) {
     startSeatHeartbeat();
     twilioRoom.on('disconnected', () => {
       stopSeatHeartbeat();
+      // The call dropped before reaching the "stable" mark — cancel the pending
+      // budget reset so repeated churn actually counts toward the retry cap.
+      if (stabilityTimer) { clearTimeout(stabilityTimer); stabilityTimer = null; }
       // Don't auto-reconnect if we left on purpose or the host ended the call.
       if (!intentionalLeave && !sessionWasEnded && sid) attemptReconnect(sid);
     });
@@ -846,7 +903,16 @@ async function connectToRoom(joinData) {
     badge.className = 'meeting-status meeting-status--active';
 
     lucide.createIcons();
-    BPSToast.success('Connected to session successfully!', { title: 'Session Active' });
+    // Exactly ONE toast per (re)connect. Reconnects show the "Reconnected"
+    // wording; a first/normal join shows "Session Active".
+    if (opts.isReconnect) {
+      BPSToast.success('Reconnected to your session.', { title: 'Reconnected' });
+    } else {
+      BPSToast.success('Connected to session successfully!', { title: 'Session Active' });
+    }
+    // Arm the stability timer: staying connected long enough refills the retry
+    // budget so an unrelated later drop still gets a full set of attempts.
+    markConnectedStable();
   } catch (err) {
     console.error('Failed to join video:', err);
     // Report the ACTUAL cause instead of always blaming camera/mic. The video
@@ -1228,6 +1294,7 @@ function leaveSession() {
   // when the session ends or the host removes us.
   intentionalLeave = true;
   stopSeatHeartbeat();
+  resetReconnectState(); // cancel any pending auto-reconnect + its toasts
   // Tell the backend we left so we drop out of the roster (keeps us admitted
   // so a rejoin reinstates us as an active participant automatically).
   if (currentSession && twilioRoom) {

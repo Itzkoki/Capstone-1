@@ -3,8 +3,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const Staff = require('../models/Staff');
 const StaffVerification = require('../models/StaffVerification');
+const StaffPasswordReset = require('../models/StaffPasswordReset');
 const LoginAttempt = require('../models/LoginAttempt');
-const { sendVerificationEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
 const { makeFingerprint, setFingerprintCookie } = require('../utils/tokenBinding');
 
 // Keep the existing hashing strength — do NOT weaken.
@@ -27,6 +28,12 @@ const fullName = (staff) =>
   [staff.first_name, staff.last_name].filter(Boolean).join(' ').trim() || staff.username;
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
+const generateResetToken = () => crypto.randomBytes(32).toString('hex');
+// A staff reset link is valid for 30 minutes (matches the client flow).
+const RESET_TOKEN_EXPIRY_MINUTES = 30;
+// Same policy the reset page enforces client-side — re-checked here so the API
+// can't be called directly with a weak password.
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 
 // Issue the final JWT + user payload after both factors pass. `fpHash` binds the
 // token to the HttpOnly fingerprint cookie set by the caller (replay defense).
@@ -244,4 +251,95 @@ const resendOtp = async (req, res, next) => {
   }
 };
 
-module.exports = { login, verifyOtp, resendOtp, SALT_ROUNDS };
+// ── POST /api/staff-auth/forgot-password ─────────────────
+// Emails a single-use reset link to a staff member. Always responds success to
+// avoid revealing which emails belong to a staff account (enumeration-safe).
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const generic = {
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    };
+
+    const staff = await Staff.findByEmail(email);
+    // Only active accounts can reset; a suspended account must contact the CD.
+    if (!staff || !staff.is_active) {
+      return res.status(200).json(generic);
+    }
+
+    const token = generateResetToken();
+    const tokenHash = await bcrypt.hash(token, SALT_ROUNDS);
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000);
+    await StaffPasswordReset.create(staff.staff_id, tokenHash, expiresAt);
+
+    // Link points at the shared reset page in STAFF mode so it posts back to the
+    // staff endpoint. Prefer FRONTEND_URL; else derive from the request origin.
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${baseUrl}/reset-password.html?token=${token}&portal=staff`;
+
+    try {
+      await sendPasswordResetEmail(staff.email, resetUrl, fullName(staff));
+    } catch (emailError) {
+      console.error('⚠️  Failed to send staff password reset email:', emailError.message);
+    }
+
+    return res.status(200).json(generic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── POST /api/staff-auth/reset-password ──────────────────
+// Consumes a single-use token and sets a new staff password. Ends all other
+// sessions so the new password is required everywhere.
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!password || !PASSWORD_RULE.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 12 characters and include upper, lower, a number and a special character.',
+      });
+    }
+
+    // Tokens are hashed at rest, so scan the valid set and bcrypt-compare.
+    const records = await StaffPasswordReset.findAllValid();
+    let matched = null;
+    for (const record of records) {
+      if (await bcrypt.compare(token || '', record.token_hash)) { matched = record; break; }
+    }
+
+    if (!matched) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset link. Please request a new one.',
+      });
+    }
+
+    const staff = await Staff.findByIdWithPassword(matched.staff_id);
+    // New password must differ from the current one.
+    if (staff && staff.password_hash && await bcrypt.compare(password, staff.password_hash)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your new password must be different from your previous password.',
+      });
+    }
+
+    const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+    await Staff.updatePassword(matched.staff_id, hashed);
+    await StaffPasswordReset.markUsed(matched.id);
+    // Revoke every existing session so a leaked/older token can't stay signed in.
+    try { await Staff.invalidateSessions(matched.staff_id); } catch (_) {}
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, verifyOtp, resendOtp, forgotPassword, resetPassword, SALT_ROUNDS };

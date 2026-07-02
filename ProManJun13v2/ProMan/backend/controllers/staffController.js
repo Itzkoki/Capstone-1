@@ -191,6 +191,57 @@ const setStaffStatus = async (req, res, next) => {
   }
 };
 
+// DELETE /api/staff/:id — Permanently delete a staff account.
+// Requires the acting Clinical Director to re-enter their own password.
+const deleteStaff = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required to delete this account.',
+      });
+    }
+
+    const targetId = parseInt(req.params.id);
+
+    // A director can't delete their own account here (that's the profile page).
+    if (targetId === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account here.' });
+    }
+
+    // Re-authenticate the acting director before allowing the destructive action.
+    const actor = await Staff.findByIdWithPassword(req.user.id);
+    if (!actor) {
+      return res.status(404).json({ success: false, message: 'Acting account not found.' });
+    }
+    const isMatch = await bcrypt.compare(password, actor.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect password.' });
+    }
+
+    const deleted = await Staff.remove(targetId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Staff member not found.' });
+    }
+    // Immediately reject any in-flight sessions for the removed account.
+    try { invalidateAccountCache('staff', targetId); } catch (_) {}
+
+    await safeLog(
+      req.user.id, 'DELETE_STAFF', 'staff', targetId,
+      getClientIP(req), { username: deleted.username }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Staff account permanently deleted.',
+      data: deleted,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/staff/activity-logs — View all activity logs
 const getActivityLogs = async (req, res, next) => {
   try {
@@ -226,6 +277,7 @@ module.exports = {
   createStaff,
   updateStaffRole,
   setStaffStatus,
+  deleteStaff,
   getActivityLogs,
   getStaffActivity,
 };

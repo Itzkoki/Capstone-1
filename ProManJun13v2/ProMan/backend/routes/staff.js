@@ -9,6 +9,7 @@ const {
   createStaff,
   updateStaffRole,
   setStaffStatus,
+  deleteStaff,
   getActivityLogs,
   getStaffActivity,
 } = require('../controllers/staffController');
@@ -27,5 +28,6 @@ router.post('/',              staffCreateRules, handleValidation, createStaff);
 
 router.put('/:id/role',       updateStaffRole);
 router.patch('/:id/status',   setStaffStatus);
+router.delete('/:id',         deleteStaff);
 
 module.exports = router;

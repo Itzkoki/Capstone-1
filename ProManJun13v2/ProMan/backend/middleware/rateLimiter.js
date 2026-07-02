@@ -61,6 +61,36 @@ const captchaVerifyLimiter = rateLimit({
 });
 
 /**
+ * Per-IP rate limiter for login OTP verification (second factor).
+ *
+ * The OTP is the second authentication factor: a 6-digit code has only
+ * 1,000,000 combinations, so without a cap an attacker who already passed the
+ * password step could brute-force the active code. Policy: at most 10 *failed*
+ * verification attempts per IP within a 15-minute window; exceeding it returns
+ * HTTP 429. Successful verifications (2xx) are never counted, so a legitimate
+ * user mistyping the code a few times is unaffected. This is defense-in-depth
+ * alongside the ~2-minute OTP expiry.
+ *
+ * Kept separate from staffLoginLimiter so client-OTP checks and staff logins
+ * don't share one bucket. Loopback is skipped for the same reason as the login
+ * limiter: during local testing every account shares 127.0.0.1.
+ */
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,      // 15 minutes
+  max: 10,                        // 10 *failed* attempts per IP per window
+  skipSuccessfulRequests: true,   // a correct OTP does NOT count
+  skip: (req) => LOOPBACK_IPS.has(req.ip),  // never rate-limit localhost
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many attempts. Please request a new code and try again later.',
+    });
+  },
+});
+
+/**
  * Per-IP rate limiter for the public Contact Us form.
  * Policy: at most 5 submissions per IP per 15-minute window to curb spam.
  */
@@ -77,4 +107,4 @@ const contactLimiter = rateLimit({
   },
 });
 
-module.exports = { staffLoginLimiter, captchaVerifyLimiter, contactLimiter };
+module.exports = { staffLoginLimiter, captchaVerifyLimiter, otpVerifyLimiter, contactLimiter };

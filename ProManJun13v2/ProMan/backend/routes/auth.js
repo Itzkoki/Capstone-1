@@ -3,6 +3,7 @@ const router   = express.Router();
 const { register, login, verifyEmail, resendOtp, verifyLoginOtp, resendLoginOtp, forgotPassword, resetPassword, forceResetPassword, verifyToken, logout } = require('../controllers/authController');
 const { registerRules, loginRules, verifyEmailRules, resendOtpRules, forgotPasswordRules, resetPasswordRules, handleValidation } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
+const { otpVerifyLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/auth/verify-token
 router.get('/verify-token', authenticate, verifyToken);
@@ -22,8 +23,10 @@ router.post('/verify-email', verifyEmailRules, handleValidation, verifyEmail);
 // POST /api/auth/resend-otp
 router.post('/resend-otp', resendOtpRules, handleValidation, resendOtp);
 
-// POST /api/auth/verify-login-otp — second factor on every client login
-router.post('/verify-login-otp', verifyEmailRules, handleValidation, verifyLoginOtp);
+// POST /api/auth/verify-login-otp — second factor on every client login.
+// Rate-limited (per IP) so the 6-digit code can't be brute-forced; the limiter
+// runs before validation/DB work.
+router.post('/verify-login-otp', otpVerifyLimiter, verifyEmailRules, handleValidation, verifyLoginOtp);
 
 // POST /api/auth/resend-login-otp — resend the login code (2-min cooldown)
 router.post('/resend-login-otp', resendOtpRules, handleValidation, resendLoginOtp);

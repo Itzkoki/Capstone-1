@@ -228,7 +228,7 @@ const importPreview = async (req, res, next) => {
 
     // Validate URL format
     try {
-      articleScraper.validateUrl(url.trim());
+      await articleScraper.validateUrl(url.trim());
     } catch (err) {
       return res.status(400).json({ success: false, message: err.message });
     }

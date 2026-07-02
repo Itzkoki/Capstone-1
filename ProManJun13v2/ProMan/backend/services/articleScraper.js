@@ -9,6 +9,8 @@
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
+const dns = require('dns').promises;
+const net = require('net');
 const cheerio = require('cheerio');
 
 // ── Configuration ──
@@ -16,14 +18,40 @@ const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB max response
 const REQUEST_TIMEOUT = 15000; // 15 seconds
 const MAX_REDIRECTS = 5;
 
-// ── Blocked hosts (security) ──
-const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
-const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/;
+// ── SSRF protection (security) ──
+// A string-based hostname blocklist is bypassable (DNS names that resolve to
+// loopback, IPv6-mapped IPv4, decimal/hex encodings, link-local, etc.). Instead
+// we RESOLVE the hostname and validate the actual IP the request will connect to.
 
 /**
- * Validate that a URL is safe to fetch.
+ * Returns true if an IP string falls in a blocked (internal) range.
  */
-function validateUrl(urlString) {
+function isBlockedIp(ip) {
+  // Normalize IPv6-mapped IPv4 (::ffff:127.0.0.1 → 127.0.0.1)
+  if (ip.startsWith('::ffff:')) ip = ip.slice(7);
+
+  if (net.isIPv4(ip)) {
+    const p = ip.split('.').map(Number);
+    if (p[0] === 127) return true;                              // 127.0.0.0/8 loopback
+    if (p[0] === 10) return true;                               // 10.0.0.0/8
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true;  // 172.16.0.0/12
+    if (p[0] === 192 && p[1] === 168) return true;              // 192.168.0.0/16
+    if (p[0] === 169 && p[1] === 254) return true;              // 169.254.0.0/16 (AWS metadata)
+    if (p[0] === 0) return true;                                // 0.0.0.0/8
+    return false;
+  }
+  if (net.isIPv6(ip)) {
+    return ip === '::1' || ip.startsWith('fc') || ip.startsWith('fd') || ip.startsWith('fe80');
+  }
+  return true; // unknown format → block to be safe
+}
+
+/**
+ * Validate that a URL is safe to fetch. Resolves the hostname and checks the
+ * real IP(s), so encoded/aliased representations of internal addresses cannot
+ * bypass the check. Async because DNS resolution is async.
+ */
+async function validateUrl(urlString) {
   let parsed;
   try {
     parsed = new URL(urlString);
@@ -35,12 +63,17 @@ function validateUrl(urlString) {
     throw new Error('Only HTTP and HTTPS URLs are supported.');
   }
 
-  if (BLOCKED_HOSTS.includes(parsed.hostname)) {
-    throw new Error('Cannot fetch from localhost or private addresses.');
+  let addresses;
+  try {
+    addresses = await dns.lookup(parsed.hostname, { all: true });
+  } catch {
+    throw new Error('Could not resolve host.');
   }
 
-  if (PRIVATE_IP_REGEX.test(parsed.hostname)) {
-    throw new Error('Cannot fetch from private IP ranges.');
+  for (const { address } of addresses) {
+    if (isBlockedIp(address)) {
+      throw new Error('Cannot fetch from localhost or private addresses.');
+    }
   }
 
   return parsed;
@@ -69,7 +102,11 @@ function fetchUrl(urlString, redirectCount = 0) {
       // Handle redirects
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
         const redirectUrl = new URL(res.headers.location, urlString).href;
-        return resolve(fetchUrl(redirectUrl, redirectCount + 1));
+        // Re-validate the redirect target — a public URL could 302 to an
+        // internal address, which the initial validation would never have seen.
+        return resolve(
+          validateUrl(redirectUrl).then(() => fetchUrl(redirectUrl, redirectCount + 1))
+        );
       }
 
       if (res.statusCode !== 200) {
@@ -311,8 +348,8 @@ function sanitizeHtml(html) {
  * @returns {Promise<Object>} Extracted article data
  */
 async function scrape(url) {
-  // Validate
-  validateUrl(url);
+  // Validate (async — must be awaited so the fetch blocks on validation)
+  await validateUrl(url);
 
   // Fetch
   const html = await fetchUrl(url);

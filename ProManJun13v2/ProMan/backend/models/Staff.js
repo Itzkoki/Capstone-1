@@ -112,6 +112,33 @@ const Staff = {
   },
 
   /**
+   * Find a staff member by ID, INCLUDING the password hash (for actions that
+   * require re-authenticating the acting staff member, e.g. account deletion).
+   * @param {number} staffId
+   * @returns {Object|null}
+   */
+  async findByIdWithPassword(staffId) {
+    const result = await db.query(
+      `SELECT staff_id, username, email, role, password_hash FROM staff WHERE staff_id = $1`,
+      [staffId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Permanently delete a staff account.
+   * @param {number} staffId
+   * @returns {Object|null} the deleted row (public cols) or null if not found
+   */
+  async remove(staffId) {
+    const result = await db.query(
+      `DELETE FROM staff WHERE staff_id = $1 RETURNING ${PUBLIC_COLS}`,
+      [staffId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * List staff accounts (without password hash), optionally filtered by role.
    * @param {Object} opts - { role }
    * @returns {Array}
